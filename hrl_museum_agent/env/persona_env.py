@@ -31,7 +31,7 @@ class MuseumDialogueEnv(gym.Env):
     def step(self, action):
         facts = get_facts_for_template(action)
         new_facts = set(facts) - self.used_facts
-        novelty_reward = 0.3 * len(new_facts)
+        novelty_reward = 0.3 * len(new_facts) 
         self.used_facts.update(new_facts)
 
         dwell_ratio = simulate_dwell_ratio(self.persona)
