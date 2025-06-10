@@ -1,0 +1,10 @@
+{
+  "Explain": [
+    "This object was created by {artist} in {year}.",
+    "It belongs to the {period} period."
+  ],
+  "Query": [
+    "Would you like to learn more about {topic}?",
+    "Should we explore something else?"
+  ]
+}

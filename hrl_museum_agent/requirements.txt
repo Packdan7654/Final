@@ -1,0 +1,10 @@
+torch
+transformers
+gymnasium
+numpy
+scikit-learn
+matplotlib
+tqdm
+sentence-transformers
+openai
+python-dotenv
