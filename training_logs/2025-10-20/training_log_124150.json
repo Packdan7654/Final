@@ -1,0 +1,280 @@
+{
+  "training_summary": {
+    "total_episodes": 0,
+    "total_turns": 10,
+    "average_reward_per_turn": 0.6346727451102107,
+    "average_reward_per_episode": 0.0,
+    "best_episode_reward": 0.0,
+    "most_used_option": "OfferTransition",
+    "most_used_subaction": "CheckReadiness",
+    "option_usage": {
+      "AskQuestion": 3,
+      "OfferTransition": 6,
+      "Explain": 1
+    },
+    "subaction_usage": {
+      "AskClarification": 1,
+      "AskOpinion": 2,
+      "LinkToOtherExhibit": 2,
+      "CheckReadiness": 3,
+      "ExplainNewFact": 1,
+      "SuggestMove": 1
+    }
+  },
+  "episode_rewards": [
+    3.1295863921324543,
+    3.2171410589696525
+  ],
+  "training_history": [
+    {
+      "episode": 0,
+      "turn": 0,
+      "action": {
+        "option": 1,
+        "subaction": 2,
+        "terminate_option": false
+      },
+      "reward": 0.0,
+      "done": false,
+      "info": {
+        "option": "AskQuestion",
+        "subaction": "AskClarification",
+        "agent_utterance": "\"I see you're admiring our turban exhibit. Could you share what particularly captures your attention? I'd love to hear more about your thoughts.\"",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 1,
+      "action": {
+        "option": 1,
+        "subaction": 0,
+        "terminate_option": false
+      },
+      "reward": 0.9030098462268734,
+      "done": false,
+      "info": {
+        "option": "AskQuestion",
+        "subaction": "AskOpinion",
+        "agent_utterance": "\"I'm curious to hear more about your thoughts on the intricate detail in this turban, especially the white ostrich feathers. What aspect of it catches your eye the most?\"",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 2,
+      "action": {
+        "option": 2,
+        "subaction": 1,
+        "terminate_option": true
+      },
+      "reward": 0.22657654590558116,
+      "done": false,
+      "info": {
+        "option": "OfferTransition",
+        "subaction": "LinkToOtherExhibit",
+        "agent_utterance": "\"I'm glad you appreciate the detail in our current exhibit. If you have a moment, I'd recommend taking a look at our adjacent display featuring Sikh turbans as well. The vibrant colors and traditional designs might pique your interest.\"",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 3,
+      "action": {
+        "option": 2,
+        "subaction": 1,
+        "terminate_option": true
+      },
+      "reward": 1.0,
+      "done": false,
+      "info": {
+        "option": "OfferTransition",
+        "subaction": "LinkToOtherExhibit",
+        "agent_utterance": "\"I'm glad you find the turban intriguing! If you have a moment, I'd like to draw your attention to another exhibit nearby. It showcases a variety of turbans from different cultures and periods. You might find it fascinating to compare and contrast them with the one we have here.\"",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 4,
+      "action": {
+        "option": 2,
+        "subaction": 2,
+        "terminate_option": false
+      },
+      "reward": 1.0,
+      "done": false,
+      "info": {
+        "option": "OfferTransition",
+        "subaction": "CheckReadiness",
+        "agent_utterance": "\"Shall we make our way to the exhibit now? I'm eager to hear your thoughts about the intricate turban once we get there.\"",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 5,
+      "action": {
+        "option": 2,
+        "subaction": 2,
+        "terminate_option": false
+      },
+      "reward": 0.0,
+      "done": false,
+      "info": {
+        "option": "OfferTransition",
+        "subaction": "CheckReadiness",
+        "agent_utterance": "\"Welcome back! I noticed you've been admiring our exhibit of rings. Are you ready to explore them more deeply, or would you like to know about something else first?\"",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 6,
+        "current_exhibit": "Ring"
+      },
+      "simulator_data": {
+        "aoi": "Cavalier_hat",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 6,
+      "action": {
+        "option": 1,
+        "subaction": 0,
+        "terminate_option": true
+      },
+      "reward": 1.0,
+      "done": false,
+      "info": {
+        "option": "AskQuestion",
+        "subaction": "AskOpinion",
+        "agent_utterance": "\"I'm delighted to see your interest in our exhibit! The Cavalier hat is a fascinating piece of history, isn't it? Would you like to know more about its symbolic significance during the time it was worn?\"",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 5,
+        "current_exhibit": "Cavalier_hat"
+      },
+      "simulator_data": {
+        "aoi": "Cavalier_hat",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 7,
+      "action": {
+        "option": 0,
+        "subaction": 2,
+        "terminate_option": true
+      },
+      "reward": 1.012821034440654,
+      "done": false,
+      "info": {
+        "option": "Explain",
+        "subaction": "ExplainNewFact",
+        "agent_utterance": "Delightful to see your interest! The hat you're admiring is indeed a Cavalier hat, an exquisite piece crafted in 1643 by Jeronimus Beckx. Its intricate design, with ostrich feathers and gold trim, truly exemplifies the artistic prowess of that era. Have you noticed any specific details that drew your attention?",
+        "facts_shared": 1,
+        "exhibits_covered": 1,
+        "current_focus": 5,
+        "current_exhibit": "Cavalier_hat"
+      },
+      "simulator_data": {
+        "aoi": "Cavalier_hat",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 8,
+      "action": {
+        "option": 2,
+        "subaction": 2,
+        "terminate_option": true
+      },
+      "reward": 0.1870786452186539,
+      "done": false,
+      "info": {
+        "option": "OfferTransition",
+        "subaction": "CheckReadiness",
+        "agent_utterance": "\"I'm glad to see your interest! Shall we delve deeper into the fascinating world of the Cavalier hat? Perhaps we could discuss its connection to a significant historical event or explore the intricacies of its design?\"",
+        "facts_shared": 1,
+        "exhibits_covered": 1,
+        "current_focus": 5,
+        "current_exhibit": "Cavalier_hat"
+      },
+      "simulator_data": {
+        "aoi": "Cavalier_hat",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 9,
+      "action": {
+        "option": 2,
+        "subaction": 0,
+        "terminate_option": false
+      },
+      "reward": 1.0172413793103448,
+      "done": false,
+      "info": {
+        "option": "OfferTransition",
+        "subaction": "SuggestMove",
+        "agent_utterance": "\"Would you like to explore more about the Cavalier hat in our next exhibit? It offers a fascinating look into the symbolic significance of this historic piece.\"",
+        "facts_shared": 1,
+        "exhibits_covered": 1,
+        "current_focus": 5,
+        "current_exhibit": "Cavalier_hat"
+      },
+      "simulator_data": {
+        "aoi": "Cavalier_hat",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    }
+  ]
+}

@@ -1,0 +1,177 @@
+{
+  "training_summary": {
+    "total_episodes": 0,
+    "total_turns": 6,
+    "average_reward_per_turn": 0.747638585901449,
+    "average_reward_per_episode": 0.0,
+    "best_episode_reward": 0.0,
+    "most_used_option": "OfferTransition",
+    "most_used_subaction": "AskMemory",
+    "option_usage": {
+      "OfferTransition": 4,
+      "AskQuestion": 2
+    },
+    "subaction_usage": {
+      "SuggestMove": 1,
+      "CheckReadiness": 1,
+      "AskMemory": 2,
+      "LinkToOtherExhibit": 2
+    }
+  },
+  "episode_rewards": [
+    2.0082490067223553,
+    2.4775825086863392
+  ],
+  "training_history": [
+    {
+      "episode": 0,
+      "turn": 0,
+      "action": {
+        "option": 2,
+        "subaction": 0,
+        "terminate_option": true
+      },
+      "reward": 0.19,
+      "done": false,
+      "info": {
+        "option": "OfferTransition",
+        "subaction": "SuggestMove",
+        "agent_utterance": "I see you're interested in King Caspar's story. Since you're intrigued by royal themes, I recommend we explore the Turban exhibit next. Turbans are not only symbols of cultural significance but also often worn by royalty, connecting back to the regal theme of King Caspar's painting. Would you like to learn more about the intricate history and meanings behind turbans?",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 1,
+        "current_exhibit": "King_Caspar"
+      },
+      "simulator_data": {
+        "aoi": "King_Caspar",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 1,
+      "action": {
+        "option": 2,
+        "subaction": 2,
+        "terminate_option": false
+      },
+      "reward": 0.927442895698549,
+      "done": false,
+      "info": {
+        "option": "OfferTransition",
+        "subaction": "CheckReadiness",
+        "agent_utterance": "Are you ready to explore something else, or would you like to learn more about King Caspar and the fascinating history behind this painting?",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 1,
+        "current_exhibit": "King_Caspar"
+      },
+      "simulator_data": {
+        "aoi": "King_Caspar",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 2,
+      "action": {
+        "option": 1,
+        "subaction": 1,
+        "terminate_option": false
+      },
+      "reward": 0.8908061110238064,
+      "done": false,
+      "info": {
+        "option": "AskQuestion",
+        "subaction": "AskMemory",
+        "agent_utterance": "What do you find most intriguing about King Caspar and the significance of the gifts he presented to the Christ child?",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 1,
+        "current_exhibit": "King_Caspar"
+      },
+      "simulator_data": {
+        "aoi": "King_Caspar",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 3,
+      "action": {
+        "option": 1,
+        "subaction": 1,
+        "terminate_option": false
+      },
+      "reward": 0.2,
+      "done": false,
+      "info": {
+        "option": "AskQuestion",
+        "subaction": "AskMemory",
+        "agent_utterance": "What do you find most intriguing about the ivory tusk exhibit? Are you drawn to the historical significance, the craftsmanship involved, or perhaps the cultural connections it represents? I'd love to hear your thoughts!",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 4,
+        "current_exhibit": "Ivory_tusk"
+      },
+      "simulator_data": {
+        "aoi": "Ivory_tusk",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 4,
+      "action": {
+        "option": 2,
+        "subaction": 1,
+        "terminate_option": false
+      },
+      "reward": 1.137994504824121,
+      "done": false,
+      "info": {
+        "option": "OfferTransition",
+        "subaction": "LinkToOtherExhibit",
+        "agent_utterance": "This Ivory tusk exhibit connects to the King Caspar exhibit in a fascinating way. Both items hold significant historical value related to trade and cultural exchange. When you explore King Caspar's exhibit, you'll see how luxury goods like ivory played a crucial role in shaping diplomatic relationships and power dynamics during that time period. It's a great opportunity to delve deeper into the interconnectedness of art, trade, and global history.",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 4,
+        "current_exhibit": "Ivory_tusk"
+      },
+      "simulator_data": {
+        "aoi": "King_Caspar",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 5,
+      "action": {
+        "option": 2,
+        "subaction": 1,
+        "terminate_option": false
+      },
+      "reward": 1.1395880038622181,
+      "done": false,
+      "info": {
+        "option": "OfferTransition",
+        "subaction": "LinkToOtherExhibit",
+        "agent_utterance": "This connects to the Ivory tusk exhibit in a fascinating way. Just like the precious gifts brought by the magi in King Caspar, the Ivory tusk holds significance as a symbol of wealth, luxury, and cultural exchange. As you explore the Ivory tusk, you'll see this theme of valuable offerings and cross-cultural connections echoed throughout our collection. It's a captivating journey to trace the exchange of treasures across different cultures and time periods.",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 1,
+        "current_exhibit": "King_Caspar"
+      },
+      "simulator_data": {
+        "aoi": "King_Caspar",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    }
+  ]
+}

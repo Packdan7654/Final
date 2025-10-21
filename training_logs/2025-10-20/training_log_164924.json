@@ -1,0 +1,97 @@
+{
+  "training_summary": {
+    "total_episodes": 0,
+    "total_turns": 3,
+    "average_reward_per_turn": 0.6770394727284504,
+    "average_reward_per_episode": 0.0,
+    "best_episode_reward": 0.0,
+    "most_used_option": "Explain",
+    "most_used_subaction": "ExplainNewFact",
+    "option_usage": {
+      "Explain": 3
+    },
+    "subaction_usage": {
+      "ExplainNewFact": 3
+    }
+  },
+  "episode_rewards": [
+    2.0311184181853514
+  ],
+  "training_history": [
+    {
+      "episode": 0,
+      "turn": 0,
+      "action": {
+        "option": 0,
+        "subaction": 0,
+        "terminate_option": false
+      },
+      "reward": 0.0,
+      "done": false,
+      "info": {
+        "option": "Explain",
+        "subaction": "ExplainNewFact",
+        "agent_utterance": "Welcome to our current exhibit! This stunning piece is a turban, a traditional head covering worn in various cultures. It's quite remarkable how it catches the eye with its fine silk material and exquisite decoration of precious stones. The artwork was skilfully crafted by Gerrit Dou back in 1635, and I must say, it still looks as magnificent today. Would you like to know more about where this masterpiece is located or perhaps the style and technique used?",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 1,
+      "action": {
+        "option": 0,
+        "subaction": 0,
+        "terminate_option": false
+      },
+      "reward": 0.9030098462268734,
+      "done": false,
+      "info": {
+        "option": "Explain",
+        "subaction": "ExplainNewFact",
+        "agent_utterance": "\"The turban you're admiring is a stunning example of craftsmanship, isn't it? It dates back to 1635 when it was skillfully created by Gerrit Dou. This artwork is particularly unique as it's made from fine silk and adorned with precious stones - a testament to the artist's talent.\"",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 2,
+      "action": {
+        "option": 0,
+        "subaction": 0,
+        "terminate_option": true
+      },
+      "reward": 1.1281085719584778,
+      "done": false,
+      "info": {
+        "option": "Explain",
+        "subaction": "ExplainNewFact",
+        "agent_utterance": "The turban dates back to 1635, created by the renowned artist Gerrit Dou [TU_006]. It's a remarkable piece, adorned with precious stones and made from fine silk [TU_002]. Would you like to know more about its historical significance or the techniques used in creating it?",
+        "facts_shared": 2,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    }
+  ]
+}

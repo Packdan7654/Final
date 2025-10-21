@@ -1,0 +1,530 @@
+{
+  "training_summary": {
+    "total_episodes": 1,
+    "total_turns": 20,
+    "average_reward_per_turn": 0.9423607861471434,
+    "average_reward_per_episode": 18.847215722942867,
+    "best_episode_reward": 18.847215722942867,
+    "most_used_option": "AskQuestion",
+    "most_used_subaction": "TransitionToExhibit",
+    "option_usage": {
+      "Explain": 4,
+      "AskQuestion": 9,
+      "OfferTransition": 7
+    },
+    "subaction_usage": {
+      "ExplainNewFact": 2,
+      "AskMemory": 4,
+      "ClarifyFact": 1,
+      "RepeatFact": 1,
+      "AskClarification": 4,
+      "AskOpinion": 1,
+      "TransitionToExhibit": 7
+    }
+  },
+  "episode_rewards": [
+    18.847215722942867
+  ],
+  "training_history": [
+    {
+      "episode": 0,
+      "turn": 0,
+      "action": {
+        "option": 0,
+        "subaction": 2,
+        "terminate_option": false
+      },
+      "reward": 0.3,
+      "done": false,
+      "info": {
+        "option": "Explain",
+        "subaction": "ExplainNewFact",
+        "agent_utterance": "\"The turban you see here is a traditional head covering worn across various cultures [TU_001]. It's made of fine silk and adorned with precious stones [TU_002], making it an exquisite piece to behold.\"",
+        "facts_shared": 2,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 1,
+      "action": {
+        "option": 0,
+        "subaction": 0,
+        "terminate_option": false
+      },
+      "reward": 1.3,
+      "done": false,
+      "info": {
+        "option": "Explain",
+        "subaction": "ExplainNewFact",
+        "agent_utterance": "\"This exquisite turban [TU_001] was masterfully crafted by Gerrit Dou in 1635 [TU_003]. It's a true testament to the artist's skill and the oil on panel style [TU_005] he employed.\"",
+        "facts_shared": 2,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 2,
+      "action": {
+        "option": 1,
+        "subaction": 1,
+        "terminate_option": true
+      },
+      "reward": 0.8281085719584778,
+      "done": false,
+      "info": {
+        "option": "AskQuestion",
+        "subaction": "AskMemory",
+        "agent_utterance": "\"I'm glad you find the turban fascinating! Have you ever wondered about the story behind its creation or the cultural significance it holds? Perhaps delving into those aspects would further enrich your appreciation for this masterpiece.\"",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 3,
+      "action": {
+        "option": 0,
+        "subaction": 2,
+        "terminate_option": true
+      },
+      "reward": 0.9758559462884976,
+      "done": false,
+      "info": {
+        "option": "Explain",
+        "subaction": "ClarifyFact",
+        "agent_utterance": "Absolutely! I'd be happy to share more about our current exhibit, the Turban. Did you know that this remarkable piece is not only a masterpiece by Gerrit Dou [TU_003], but it also has an interesting travel history? It's currently residing in Hannover at the Landesmuseum [TU_004]. This move gives many more people the opportunity to appreciate its beauty and intricate details. The story and cultural significance of this artwork are truly captivating, and I'd love to delve deeper into that if you're interested?",
+        "facts_shared": 1,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 4,
+      "action": {
+        "option": 0,
+        "subaction": 2,
+        "terminate_option": false
+      },
+      "reward": 1.0,
+      "done": false,
+      "info": {
+        "option": "Explain",
+        "subaction": "RepeatFact",
+        "agent_utterance": "Absolutely! Let's delve into the world of the Turban exhibit. This display isn't just about a piece of clothing; it's a symbol of rich history and diverse cultures [EX_001]. The turban has been worn for centuries, from royalty to commoners, across various continents. It's fascinating to see how this single item can represent different cultural identities [EX_002] and religious beliefs [EX_003]. As you explore, you'll find examples of turbans from various regions, each with its unique style and significance. Enjoy the journey through time and cultures!",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 5,
+      "action": {
+        "option": 1,
+        "subaction": 2,
+        "terminate_option": true
+      },
+      "reward": 1.0,
+      "done": false,
+      "info": {
+        "option": "AskQuestion",
+        "subaction": "AskClarification",
+        "agent_utterance": "\"I'm glad to hear you're interested in our exhibit on the Turban! To make your visit even more enriching, would you like to know about its cultural significance across different regions or perhaps the various materials used in its creation? Or maybe there's a specific aspect of it that particularly caught your eye?\"",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 6,
+      "action": {
+        "option": 1,
+        "subaction": 1,
+        "terminate_option": true
+      },
+      "reward": 0.942138481982314,
+      "done": false,
+      "info": {
+        "option": "AskQuestion",
+        "subaction": "AskMemory",
+        "agent_utterance": "\"I'm so glad you find the turban exhibit intriguing! To truly appreciate its rich history and cultural significance, have you considered delving deeper into our collection? Perhaps there are specific aspects or stories about turbans that spark your interest?\"",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 7,
+      "action": {
+        "option": 1,
+        "subaction": 1,
+        "terminate_option": false
+      },
+      "reward": 1.0,
+      "done": false,
+      "info": {
+        "option": "AskQuestion",
+        "subaction": "AskMemory",
+        "agent_utterance": "\"I'm so glad you find the turban exhibit fascinating! To help you learn more, have you considered taking a closer look at some of the turbans on display? Or perhaps reading about their historical significance in different cultures?\"",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 8,
+      "action": {
+        "option": 1,
+        "subaction": 2,
+        "terminate_option": true
+      },
+      "reward": 0.9955796551303093,
+      "done": false,
+      "info": {
+        "option": "AskQuestion",
+        "subaction": "AskClarification",
+        "agent_utterance": "I'm delighted to hear your interest in our Turban exhibit! To make sure we cover what you're most curious about, could you please tell me which aspects or periods of turban history you find particularly intriguing? Or perhaps there's a specific type of turban you'd like to learn more about? Let's delve deeper together!",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 9,
+      "action": {
+        "option": 1,
+        "subaction": 0,
+        "terminate_option": false
+      },
+      "reward": 1.0,
+      "done": false,
+      "info": {
+        "option": "AskQuestion",
+        "subaction": "AskOpinion",
+        "agent_utterance": "\"I'm glad to hear your interest in our current exhibit, the Turban! Would you like to share what aspect of its history or evolution particularly intrigues you? Or perhaps there's a specific region or culture's turban style that you'd like to explore further?\"",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 10,
+      "action": {
+        "option": 1,
+        "subaction": 2,
+        "terminate_option": false
+      },
+      "reward": 1.0,
+      "done": false,
+      "info": {
+        "option": "AskQuestion",
+        "subaction": "AskClarification",
+        "agent_utterance": "I'm glad to hear your interest in learning more about the turban! To help you better understand its history and evolution, could you please specify which aspects or periods you're particularly curious about? For example, are you interested in the origins of turbans, their significance in different cultures, or perhaps how they have changed over time? Let's tailor our discussion to your preferences.",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 11,
+      "action": {
+        "option": 2,
+        "subaction": 0,
+        "terminate_option": true
+      },
+      "reward": 1.0,
+      "done": false,
+      "info": {
+        "option": "OfferTransition",
+        "subaction": "TransitionToExhibit",
+        "agent_utterance": "Let's move on to our next exhibit! The intricate beauty of the Turban is just a few steps away. Shall we take a closer look at its fascinating evolution and cultural significance?",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 12,
+      "action": {
+        "option": 2,
+        "subaction": 0,
+        "terminate_option": false
+      },
+      "reward": 0.7658845521910806,
+      "done": false,
+      "info": {
+        "option": "OfferTransition",
+        "subaction": "TransitionToExhibit",
+        "agent_utterance": "Let's move on to our next exhibit, shall we? The intricate beauty of the Turban awaits you. Are you ready to explore its rich cultural significance and artistic expressions from various regions around the world?",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 13,
+      "action": {
+        "option": 2,
+        "subaction": 0,
+        "terminate_option": false
+      },
+      "reward": 1.0,
+      "done": false,
+      "info": {
+        "option": "OfferTransition",
+        "subaction": "TransitionToExhibit",
+        "agent_utterance": "\"Delighted to hear your interest, visitor! Let's move on to our next exhibit - the Turban. Shall we explore its rich history together? Or perhaps you'd like to learn about the various cultural significance it holds across different regions?\"",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 14,
+      "action": {
+        "option": 2,
+        "subaction": 0,
+        "terminate_option": true
+      },
+      "reward": 0.7637879632162421,
+      "done": false,
+      "info": {
+        "option": "OfferTransition",
+        "subaction": "TransitionToExhibit",
+        "agent_utterance": "I'm thrilled to hear your enthusiasm! Let's move forward to our next exhibit, shall we? The Turban display offers a captivating journey through its rich history and cultural significance across various regions. Are you ready to explore more about this fascinating headgear?",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 15,
+      "action": {
+        "option": 2,
+        "subaction": 0,
+        "terminate_option": false
+      },
+      "reward": 1.0,
+      "done": false,
+      "info": {
+        "option": "OfferTransition",
+        "subaction": "TransitionToExhibit",
+        "agent_utterance": "\"Delighted to hear your interest! Shall we proceed to the next exhibit that showcases various turbans from different cultures and eras? Each piece tells a unique story, so I'm sure you'll find it fascinating.\"",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 16,
+      "action": {
+        "option": 2,
+        "subaction": 0,
+        "terminate_option": false
+      },
+      "reward": 0.9938641518314566,
+      "done": false,
+      "info": {
+        "option": "OfferTransition",
+        "subaction": "TransitionToExhibit",
+        "agent_utterance": "Let's delve deeper into our Turban exhibit! Would you like to explore its cultural significance across various regions, or perhaps learn about the intricate designs and materials used in its creation? Or maybe you're interested in understanding the symbolism behind turbans throughout history? The choice is yours!",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 17,
+      "action": {
+        "option": 2,
+        "subaction": 0,
+        "terminate_option": false
+      },
+      "reward": 0.9819964003444901,
+      "done": false,
+      "info": {
+        "option": "OfferTransition",
+        "subaction": "TransitionToExhibit",
+        "agent_utterance": "\"I'm glad to hear you're interested in learning more about our exhibit on the turban! Let's delve deeper into its cultural significance, historical evolution, and artistic representations. Shall we proceed to the next exhibit? It offers a captivating exploration of various turbans from different regions and time periods.\" [OT_001]",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 18,
+      "action": {
+        "option": 1,
+        "subaction": 2,
+        "terminate_option": true
+      },
+      "reward": 1.0,
+      "done": false,
+      "info": {
+        "option": "AskQuestion",
+        "subaction": "AskClarification",
+        "agent_utterance": "\"I'm glad to hear you're interested in our exhibit on the turban! To help you get the most out of your visit, could I ask if there are specific aspects or cultures related to turbans that you'd like to focus on during your exploration?\"",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 19,
+      "action": {
+        "option": 1,
+        "subaction": 1,
+        "terminate_option": true
+      },
+      "reward": 1.0,
+      "done": true,
+      "info": {
+        "option": "AskQuestion",
+        "subaction": "AskMemory",
+        "agent_utterance": "I'm glad to hear you're excited about our current exhibit! To make your visit even more enjoyable, would you like me to share some interesting facts about different types of turbans from various cultures? Or perhaps you have a specific type or region in mind that you'd like to learn more about?",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    }
+  ]
+}

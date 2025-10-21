@@ -1,0 +1,147 @@
+{
+  "training_summary": {
+    "total_episodes": 0,
+    "total_turns": 5,
+    "average_reward_per_turn": 1.1183031820524845,
+    "average_reward_per_episode": 0.0,
+    "best_episode_reward": 0.0,
+    "most_used_option": "Explain",
+    "most_used_subaction": "ExplainNewFact",
+    "option_usage": {
+      "Explain": 5
+    },
+    "subaction_usage": {
+      "ExplainNewFact": 5
+    }
+  },
+  "episode_rewards": [
+    5.591515910262422
+  ],
+  "training_history": [
+    {
+      "episode": 0,
+      "turn": 0,
+      "action": {
+        "option": 0,
+        "subaction": 0,
+        "terminate_option": false
+      },
+      "reward": 0.15,
+      "done": false,
+      "info": {
+        "option": "Explain",
+        "subaction": "ExplainNewFact",
+        "agent_utterance": "This intricate turban is a piece of art that truly stands out. It was crafted by Gerrit Dou in 1635 [TB_003], showcasing his exceptional skill as an artist. The turban itself is made from fine silk and adorned with precious stones, adding a touch of grandeur to the artwork [TB_002]. Would you like to know more about this piece or explore other exhibits?",
+        "facts_shared": 2,
+        "exhibits_covered": 1,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 1,
+      "action": {
+        "option": 0,
+        "subaction": 0,
+        "terminate_option": false
+      },
+      "reward": 1.3530098462268734,
+      "done": false,
+      "info": {
+        "option": "Explain",
+        "subaction": "ExplainNewFact",
+        "agent_utterance": "This beautiful work was created by Gerrit Dou in 1635 [TB_003], and it showcases an intricate design using precious stones that add a touch of elegance. The turban depicted here is a traditional head covering worn in many cultures [TB_001]. Isn't the craftsmanship simply astounding?",
+        "facts_shared": 3,
+        "exhibits_covered": 1,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 2,
+      "action": {
+        "option": 0,
+        "subaction": 0,
+        "terminate_option": false
+      },
+      "reward": 1.2781085719584777,
+      "done": false,
+      "info": {
+        "option": "Explain",
+        "subaction": "ExplainNewFact",
+        "agent_utterance": "The artwork you're admiring is a traditional head covering, often worn in various cultures [TB_001]. It's made of fine silk and adorned with precious stones, which really highlight the artist's skill and attention to detail. This beautiful work was created by Gerrit Dou in 1635 [TB_003], a testament to his mastery as an artist.",
+        "facts_shared": 3,
+        "exhibits_covered": 1,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 3,
+      "action": {
+        "option": 0,
+        "subaction": 0,
+        "terminate_option": false
+      },
+      "reward": 1.3603974920770707,
+      "done": false,
+      "info": {
+        "option": "Explain",
+        "subaction": "ExplainNewFact",
+        "agent_utterance": "This exquisite artwork indeed showcases an intricate detail, don't you think? The painting, created by Gerrit Dou in 1635 [TB_003], is a perfect example of the artist's mastery over his craft. Interestingly, the turban depicted here is a traditional head covering worn in many cultures [TB_001]. It's beautifully adorned with precious stones, which add a sparkle that truly brings this piece to life.",
+        "facts_shared": 3,
+        "exhibits_covered": 1,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 4,
+      "action": {
+        "option": 0,
+        "subaction": 0,
+        "terminate_option": false
+      },
+      "reward": 1.45,
+      "done": false,
+      "info": {
+        "option": "Explain",
+        "subaction": "ExplainNewFact",
+        "agent_utterance": "This beautiful work was created by Gerrit Dou in 1635 [TB_003], and it showcases the intricate detail that he's known for. The turban worn by the subject is not just a symbol of tradition [TB_001], but also a testament to the artist's skill, as it is made from fine silk and adorned with precious stones [TB_002].",
+        "facts_shared": 3,
+        "exhibits_covered": 1,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    }
+  ]
+}

@@ -1,0 +1,150 @@
+{
+  "training_summary": {
+    "total_episodes": 0,
+    "total_turns": 5,
+    "average_reward_per_turn": 0.8277012128071096,
+    "average_reward_per_episode": 0.0,
+    "best_episode_reward": 0.0,
+    "most_used_option": "Explain",
+    "most_used_subaction": "ExplainNewFact",
+    "option_usage": {
+      "Explain": 4,
+      "OfferTransition": 1
+    },
+    "subaction_usage": {
+      "ExplainNewFact": 2,
+      "TransitionToExhibit": 1,
+      "RepeatFact": 2
+    }
+  },
+  "episode_rewards": [
+    4.138506064035548
+  ],
+  "training_history": [
+    {
+      "episode": 0,
+      "turn": 0,
+      "action": {
+        "option": 0,
+        "subaction": 2,
+        "terminate_option": false
+      },
+      "reward": 0.44999999999999996,
+      "done": false,
+      "info": {
+        "option": "Explain",
+        "subaction": "ExplainNewFact",
+        "agent_utterance": "\"The turban [TU_001] is a traditional head covering worn in various cultures. This particular piece [TU_002] is made of fine silk and adorned with precious stones. It was created by the renowned artist Gerrit Dou in 1635 [TU_003].\"",
+        "facts_shared": 3,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 1,
+      "action": {
+        "option": 0,
+        "subaction": 0,
+        "terminate_option": false
+      },
+      "reward": 1.3,
+      "done": false,
+      "info": {
+        "option": "Explain",
+        "subaction": "ExplainNewFact",
+        "agent_utterance": "This intricate turban [TU_001] is a beautiful piece of art, created using oil on panel [TU_005]. It's currently housed at the Hannover, Landesmuseum [TU_004].",
+        "facts_shared": 2,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 2,
+      "action": {
+        "option": 2,
+        "subaction": 0,
+        "terminate_option": true
+      },
+      "reward": 0.8281085719584778,
+      "done": false,
+      "info": {
+        "option": "OfferTransition",
+        "subaction": "TransitionToExhibit",
+        "agent_utterance": "\"Shall we move on to our next exhibit? I'm sure you'll find more intriguing turban pieces waiting for you there. Let's explore together!\"",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 3,
+      "action": {
+        "option": 0,
+        "subaction": 2,
+        "terminate_option": true
+      },
+      "reward": 0.5603974920770708,
+      "done": false,
+      "info": {
+        "option": "Explain",
+        "subaction": "RepeatFact",
+        "agent_utterance": "Absolutely! The Turban exhibit you're admiring is a fascinating exploration of cultural diversity and artistic craftsmanship. [TU_001] Here, you'll find an array of turbans from various regions, each with its unique design and historical significance. For instance, the intricate gold-embroidered turban from India [TU_002] is a testament to the rich artistic traditions of the Mughal Empire.\n\nOn the other hand, the simple yet elegant Moroccan fez [TU_003] showcases the influence of Islamic art on North African culture. As you explore, don't forget to take a closer look at the materials used - from silk and velvet to beads and precious metals - each one tells a story about the people who wore them. Enjoy your journey through this colorful world!",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 4,
+      "action": {
+        "option": 0,
+        "subaction": 2,
+        "terminate_option": false
+      },
+      "reward": 1.0,
+      "done": false,
+      "info": {
+        "option": "Explain",
+        "subaction": "RepeatFact",
+        "agent_utterance": "Absolutely! Let me tell you a bit more about our current exhibit, the Turban. This intriguing piece of headwear is not just an accessory; it's a symbol of culture, tradition, and social status [EX_001]. You'll find various materials used in these turbans, from silk to velvet, each with its own unique texture and sheen [EX_002].\n\nWe have a diverse collection on display, showcasing the rich history and cultural significance of the turban across different regions and time periods. It's an opportunity to immerse yourself in the world of these fascinating headgears [EX_003]. So, come explore and let the turbans tell their stories!",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    }
+  ]
+}

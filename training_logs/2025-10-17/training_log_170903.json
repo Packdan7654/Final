@@ -1,0 +1,276 @@
+{
+  "training_summary": {
+    "total_episodes": 0,
+    "total_turns": 10,
+    "average_reward_per_turn": 0.8021992677050722,
+    "average_reward_per_episode": 0.0,
+    "best_episode_reward": 0.0,
+    "most_used_option": "Ask",
+    "most_used_subaction": "SuggestMove",
+    "option_usage": {
+      "Ask": 6,
+      "Transition": 4
+    },
+    "subaction_usage": {
+      "AskMemory": 2,
+      "AskOpinion": 2,
+      "AskClarification": 2,
+      "SuggestMove": 4
+    }
+  },
+  "episode_rewards": [
+    8.021992677050722
+  ],
+  "training_history": [
+    {
+      "episode": 0,
+      "turn": 0,
+      "action": {
+        "option": 1,
+        "subaction": 1,
+        "terminate_option": false
+      },
+      "reward": 0.2,
+      "done": false,
+      "info": {
+        "option": "Ask",
+        "subaction": "AskMemory",
+        "agent_utterance": "Do you recall our earlier conversation about the significance of turbans? It was quite fascinating, wasn't it? Perhaps there's something specific you'd like to revisit?",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 1,
+      "action": {
+        "option": 1,
+        "subaction": 0,
+        "terminate_option": false
+      },
+      "reward": 0.9148483598983126,
+      "done": false,
+      "info": {
+        "option": "Ask",
+        "subaction": "AskOpinion",
+        "agent_utterance": "What do you make of the white ostrich feather in this turban? Does it intrigue you in any particular way?",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 2,
+      "action": {
+        "option": 1,
+        "subaction": 0,
+        "terminate_option": false
+      },
+      "reward": 0.9543369114332252,
+      "done": false,
+      "info": {
+        "option": "Ask",
+        "subaction": "AskOpinion",
+        "agent_utterance": "What do you think the significance of the white ostrich feather might be in this turban? And have you noticed any other elements that stand out to you in this exhibit?",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 3,
+      "action": {
+        "option": 1,
+        "subaction": 2,
+        "terminate_option": true
+      },
+      "reward": 1.012636739126964,
+      "done": false,
+      "info": {
+        "option": "Ask",
+        "subaction": "AskClarification",
+        "agent_utterance": "I'm glad you're interested in our Turban exhibit! Could you tell me specifically what aspect of the turban captures your attention the most? Would you like to explore its symbolic significance, cultural context, or perhaps the materials used in creating these stunning headgear pieces?",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 4,
+      "action": {
+        "option": 1,
+        "subaction": 1,
+        "terminate_option": false
+      },
+      "reward": 1.1173673942959972,
+      "done": false,
+      "info": {
+        "option": "Ask",
+        "subaction": "AskMemory",
+        "agent_utterance": "Did the story behind the turban and its significance resonate with you? Perhaps you'd like to revisit some points we discussed earlier?",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 5,
+      "action": {
+        "option": 1,
+        "subaction": 2,
+        "terminate_option": false
+      },
+      "reward": 1.0091752822166946,
+      "done": false,
+      "info": {
+        "option": "Ask",
+        "subaction": "AskClarification",
+        "agent_utterance": "I'm glad you're interested in our Turban exhibit! What particular aspect of it catches your eye, and would you like to know more about that?",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 6,
+      "action": {
+        "option": 2,
+        "subaction": 0,
+        "terminate_option": true
+      },
+      "reward": 0.9124408953700911,
+      "done": false,
+      "info": {
+        "option": "Transition",
+        "subaction": "SuggestMove",
+        "agent_utterance": "After learning about the Turban, wouldn't you also be interested in exploring our exhibits on King Caspar's regal attire or the Cavalier hat? Both items offer fascinating insights into historical headwear.",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 7,
+      "action": {
+        "option": 2,
+        "subaction": 0,
+        "terminate_option": false
+      },
+      "reward": 1.1729803461056643,
+      "done": false,
+      "info": {
+        "option": "Transition",
+        "subaction": "SuggestMove",
+        "agent_utterance": "Have you ever explored the intricacies of headwear from other periods? I'd recommend checking out our exhibits on King Caspar's crown or the Cavalier hat for a comparison. It might give you a fresh perspective on this turban!",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 8,
+      "action": {
+        "option": 2,
+        "subaction": 0,
+        "terminate_option": false
+      },
+      "reward": 0.3683694826954641,
+      "done": false,
+      "info": {
+        "option": "Transition",
+        "subaction": "SuggestMove",
+        "agent_utterance": "After learning about the turban, would you be interested in exploring our exhibits on King Caspar's coronation attire or the Cavalier hat? They offer fascinating insights into historical headwear from different eras.",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 9,
+      "action": {
+        "option": 2,
+        "subaction": 0,
+        "terminate_option": true
+      },
+      "reward": 0.35983726590830906,
+      "done": false,
+      "info": {
+        "option": "Transition",
+        "subaction": "SuggestMove",
+        "agent_utterance": "After exploring the turban, would you like to learn more about headgear from different eras? I'd recommend visiting our exhibits on King Caspar's crown or a Cavalier hat for a comparison.",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    }
+  ]
+}

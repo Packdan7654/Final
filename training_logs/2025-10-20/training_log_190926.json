@@ -1,0 +1,149 @@
+{
+  "training_summary": {
+    "total_episodes": 0,
+    "total_turns": 5,
+    "average_reward_per_turn": 0.41767671474630425,
+    "average_reward_per_episode": 0.0,
+    "best_episode_reward": 0.0,
+    "most_used_option": "OfferTransition",
+    "most_used_subaction": "TransitionToExhibit",
+    "option_usage": {
+      "OfferTransition": 4,
+      "AskQuestion": 1
+    },
+    "subaction_usage": {
+      "TransitionToExhibit": 4,
+      "AskOpinion": 1
+    }
+  },
+  "episode_rewards": [
+    2.0883835737315213
+  ],
+  "training_history": [
+    {
+      "episode": 0,
+      "turn": 0,
+      "action": {
+        "option": 2,
+        "subaction": 0,
+        "terminate_option": false
+      },
+      "reward": 0.0,
+      "done": false,
+      "info": {
+        "option": "OfferTransition",
+        "subaction": "TransitionToExhibit",
+        "agent_utterance": "\"That's fascinating, isn't it? Now, let me guide you to another intriguing exhibit. The Doublet is where we have some truly captivating artifacts that I believe will pique your interest even further.\"",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "King_Caspar",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 1,
+      "action": {
+        "option": 2,
+        "subaction": 0,
+        "terminate_option": false
+      },
+      "reward": 0.8307485528514522,
+      "done": false,
+      "info": {
+        "option": "OfferTransition",
+        "subaction": "TransitionToExhibit",
+        "agent_utterance": "Absolutely, I'm thrilled that you find King Caspar intriguing! Now, if you'd like to delve deeper into the splendors of the past, let's move on to the Gemstones exhibit. There, you'll find a dazzling array of precious stones that once adorned kings and queens, each with its own fascinating story to tell. I believe you'll find it equally captivating!",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 1,
+        "current_exhibit": "King_Caspar"
+      },
+      "simulator_data": {
+        "aoi": "King_Caspar",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 2,
+      "action": {
+        "option": 1,
+        "subaction": 0,
+        "terminate_option": true
+      },
+      "reward": 0.1,
+      "done": false,
+      "info": {
+        "option": "AskQuestion",
+        "subaction": "AskOpinion",
+        "agent_utterance": "I'm glad to hear you're excited about our current exhibit! What do you think about King Caspar, have you formed any initial impressions? Maybe there's something specific that caught your eye or piqued your curiosity?",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 1,
+        "current_exhibit": "King_Caspar"
+      },
+      "simulator_data": {
+        "aoi": "King_Caspar",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 3,
+      "action": {
+        "option": 2,
+        "subaction": 0,
+        "terminate_option": true
+      },
+      "reward": 0.564805883876721,
+      "done": false,
+      "info": {
+        "option": "OfferTransition",
+        "subaction": "TransitionToExhibit",
+        "agent_utterance": "\"I'm so happy to hear that you find King Caspar fascinating! Now, if you'd like to delve deeper into our collection, let me guide you to the Gemstones exhibit. It showcases an array of captivating gems that I believe will truly pique your interest.\"",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 1,
+        "current_exhibit": "King_Caspar"
+      },
+      "simulator_data": {
+        "aoi": "King_Caspar",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 4,
+      "action": {
+        "option": 2,
+        "subaction": 0,
+        "terminate_option": false
+      },
+      "reward": 0.592829137003348,
+      "done": false,
+      "info": {
+        "option": "OfferTransition",
+        "subaction": "TransitionToExhibit",
+        "agent_utterance": "\"Delighted to hear your interest! The Ring section is just around the corner, and I promise it won't disappoint. There are some truly fascinating pieces that you might find equally captivating.\"",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 1,
+        "current_exhibit": "King_Caspar"
+      },
+      "simulator_data": {
+        "aoi": "King_Caspar",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    }
+  ]
+}

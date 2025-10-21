@@ -1,0 +1,99 @@
+{
+  "training_summary": {
+    "total_episodes": 0,
+    "total_turns": 3,
+    "average_reward_per_turn": 0.7593695239861592,
+    "average_reward_per_episode": 0.0,
+    "best_episode_reward": 0.0,
+    "most_used_option": "Explain",
+    "most_used_subaction": "ExplainNewFact",
+    "option_usage": {
+      "Explain": 2,
+      "OfferTransition": 1
+    },
+    "subaction_usage": {
+      "ExplainNewFact": 2,
+      "TransitionToExhibit": 1
+    }
+  },
+  "episode_rewards": [
+    2.2781085719584775
+  ],
+  "training_history": [
+    {
+      "episode": 0,
+      "turn": 0,
+      "action": {
+        "option": 0,
+        "subaction": 2,
+        "terminate_option": false
+      },
+      "reward": 0.15,
+      "done": false,
+      "info": {
+        "option": "Explain",
+        "subaction": "ExplainNewFact",
+        "agent_utterance": "\"The turban [TU_001], a traditional head covering worn in many cultures, is beautifully depicted here. This artwork was created by the renowned artist Gerrit Dou in 1635 [TU_003, TU_006].\"",
+        "facts_shared": 1,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 1,
+      "action": {
+        "option": 0,
+        "subaction": 0,
+        "terminate_option": false
+      },
+      "reward": 1.3,
+      "done": false,
+      "info": {
+        "option": "Explain",
+        "subaction": "ExplainNewFact",
+        "agent_utterance": "\"That's indeed a beautiful piece! The intricate details you noticed are part of a fine silk turban [TU_002], decorated with precious stones. It was created by the renowned artist Gerrit Dou in 1635 [TU_003].\"",
+        "facts_shared": 2,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 2,
+      "action": {
+        "option": 2,
+        "subaction": 0,
+        "terminate_option": true
+      },
+      "reward": 0.8281085719584778,
+      "done": false,
+      "info": {
+        "option": "OfferTransition",
+        "subaction": "TransitionToExhibit",
+        "agent_utterance": "\"Shall we move on to our next exhibit? The intricate turban you've been admiring is just one piece in a collection that showcases the rich diversity of headgear from around the world. Would you like to explore more turbans or perhaps delve into another type of headwear?\"",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    }
+  ]
+}

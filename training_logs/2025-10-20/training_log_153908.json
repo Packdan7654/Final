@@ -1,0 +1,97 @@
+{
+  "training_summary": {
+    "total_episodes": 0,
+    "total_turns": 3,
+    "average_reward_per_turn": 0.9770394727284503,
+    "average_reward_per_episode": 0.0,
+    "best_episode_reward": 0.0,
+    "most_used_option": "Explain",
+    "most_used_subaction": "ExplainNewFact",
+    "option_usage": {
+      "Explain": 3
+    },
+    "subaction_usage": {
+      "ExplainNewFact": 3
+    }
+  },
+  "episode_rewards": [
+    2.931118418185351
+  ],
+  "training_history": [
+    {
+      "episode": 0,
+      "turn": 0,
+      "action": {
+        "option": 0,
+        "subaction": 0,
+        "terminate_option": false
+      },
+      "reward": 0.15,
+      "done": false,
+      "info": {
+        "option": "Explain",
+        "subaction": "ExplainNewFact",
+        "agent_utterance": "This stunning piece, the turban, is a work of art that truly stands out. It was created by Gerrit Dou [TB_003], an artist known for his meticulous details. The artwork is also remarkable for its intricate decoration with precious stones [TB_002]. Would you like to know more about the turban's cultural significance or the style and medium used in this piece?",
+        "facts_shared": 2,
+        "exhibits_covered": 1,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 1,
+      "action": {
+        "option": 0,
+        "subaction": 0,
+        "terminate_option": false
+      },
+      "reward": 1.3530098462268734,
+      "done": false,
+      "info": {
+        "option": "Explain",
+        "subaction": "ExplainNewFact",
+        "agent_utterance": "This captivating masterpiece you're admiring, indeed, is a testament to the artist's skill [TB_003]. The turban itself is a traditional head covering worn in many cultures around the world [TB_001], and it is beautifully adorned with precious stones and fine silk [TB_002]. If you'd like, I can share more about the artist or the location where this artwork resides now.",
+        "facts_shared": 3,
+        "exhibits_covered": 1,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 2,
+      "action": {
+        "option": 0,
+        "subaction": 0,
+        "terminate_option": false
+      },
+      "reward": 1.4281085719584778,
+      "done": false,
+      "info": {
+        "option": "Explain",
+        "subaction": "ExplainNewFact",
+        "agent_utterance": "This stunning artwork, created by Gerrit Dou in 1635 [TB_003], is a masterpiece indeed. The turban it depicts is not just any ordinary head covering but a traditional one worn across many cultures [TB_001]. It's fascinating to see how the artist has carefully crafted the details, including the use of precious stones that add an extra layer of beauty to this piece.",
+        "facts_shared": 3,
+        "exhibits_covered": 1,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    }
+  ]
+}

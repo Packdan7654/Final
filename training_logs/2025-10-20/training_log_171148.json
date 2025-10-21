@@ -1,0 +1,100 @@
+{
+  "training_summary": {
+    "total_episodes": 0,
+    "total_turns": 3,
+    "average_reward_per_turn": 0.6770394727284504,
+    "average_reward_per_episode": 0.0,
+    "best_episode_reward": 0.0,
+    "most_used_option": "AskQuestion",
+    "most_used_subaction": "AskOpinion",
+    "option_usage": {
+      "AskQuestion": 2,
+      "Explain": 1
+    },
+    "subaction_usage": {
+      "AskOpinion": 1,
+      "AskClarification": 1,
+      "ExplainNewFact": 1
+    }
+  },
+  "episode_rewards": [
+    2.0311184181853514
+  ],
+  "training_history": [
+    {
+      "episode": 0,
+      "turn": 0,
+      "action": {
+        "option": 1,
+        "subaction": 0,
+        "terminate_option": false
+      },
+      "reward": 0.0,
+      "done": false,
+      "info": {
+        "option": "AskQuestion",
+        "subaction": "AskOpinion",
+        "agent_utterance": "As you admire the intricate design of our current exhibit, a stunning turban, I'd love to hear your thoughts! What do you find most captivating about this piece? Is it the vibrant colors, the delicate embroidery, or perhaps the history behind it that draws your attention?",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 1,
+      "action": {
+        "option": 1,
+        "subaction": 2,
+        "terminate_option": false
+      },
+      "reward": 0.9030098462268734,
+      "done": false,
+      "info": {
+        "option": "AskQuestion",
+        "subaction": "AskClarification",
+        "agent_utterance": "\"I'm glad you appreciate the vibrant colors and intricate embroidery on this turban! Could you tell me more about what specifically catches your eye? Perhaps we can delve deeper into its history or cultural significance.\"",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 2,
+      "action": {
+        "option": 0,
+        "subaction": 2,
+        "terminate_option": true
+      },
+      "reward": 1.1281085719584778,
+      "done": false,
+      "info": {
+        "option": "Explain",
+        "subaction": "ExplainNewFact",
+        "agent_utterance": "The artwork you're admiring was indeed created by the renowned artist Gerrit Dou in 1635, as displayed by [TU_003]. This piece is a beautiful representation of the intricate details and traditional head coverings, such as turbans, found in many cultures [TU_001].",
+        "facts_shared": 2,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    }
+  ]
+}

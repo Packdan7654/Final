@@ -1,0 +1,406 @@
+{
+  "training_summary": {
+    "total_episodes": 0,
+    "total_turns": 15,
+    "average_reward_per_turn": 0.6871263230444753,
+    "average_reward_per_episode": 0.0,
+    "best_episode_reward": 0.0,
+    "most_used_option": "Ask",
+    "most_used_subaction": "AskClarification",
+    "option_usage": {
+      "Ask": 6,
+      "Transition": 5,
+      "Explain": 4
+    },
+    "subaction_usage": {
+      "AskClarification": 3,
+      "AskOpinion": 1,
+      "SuggestMove": 2,
+      "CheckReadiness": 2,
+      "AskMemory": 2,
+      "LinkToOtherExhibit": 1,
+      "ExplainNewFact": 2,
+      "ClarifyFact": 2
+    }
+  },
+  "episode_rewards": [
+    10.306894845667129
+  ],
+  "training_history": [
+    {
+      "episode": 0,
+      "turn": 0,
+      "action": {
+        "option": 1,
+        "subaction": 2,
+        "terminate_option": false
+      },
+      "reward": 0.2,
+      "done": false,
+      "info": {
+        "option": "Ask",
+        "subaction": "AskClarification",
+        "agent_utterance": "\"I'm glad you find the turban captivating! What specific details about it spark your interest?\"",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 1,
+      "action": {
+        "option": 1,
+        "subaction": 0,
+        "terminate_option": false
+      },
+      "reward": 0.0,
+      "done": false,
+      "info": {
+        "option": "Ask",
+        "subaction": "AskOpinion",
+        "agent_utterance": "\"I'm glad to hear you find the turban marvelous. The intricate weaving indeed catches the eye, doesn't it? What do you think sets this piece apart for you?\"",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 2,
+      "action": {
+        "option": 2,
+        "subaction": 0,
+        "terminate_option": true
+      },
+      "reward": 0.8930098462268734,
+      "done": false,
+      "info": {
+        "option": "Transition",
+        "subaction": "SuggestMove",
+        "agent_utterance": "I'm glad you find the turban fascinating! If you have some more time, be sure to check out our King Caspar or Cavalier hat exhibits. They too showcase intricate headgear from different periods in history.",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "King_Caspar",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 3,
+      "action": {
+        "option": 2,
+        "subaction": 2,
+        "terminate_option": true
+      },
+      "reward": 0.36657654590558114,
+      "done": false,
+      "info": {
+        "option": "Transition",
+        "subaction": "CheckReadiness",
+        "agent_utterance": "Are you ready to delve deeper into the intricacies of King Caspar's attire? Or would you prefer to explore other aspects of our exhibition before moving on?",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 1,
+        "current_exhibit": "King_Caspar"
+      },
+      "simulator_data": {
+        "aoi": "King_Caspar",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 4,
+      "action": {
+        "option": 2,
+        "subaction": 0,
+        "terminate_option": false
+      },
+      "reward": 1.064805883876721,
+      "done": false,
+      "info": {
+        "option": "Transition",
+        "subaction": "SuggestMove",
+        "agent_utterance": "The Cavalier hat is another fascinating piece in our collection, a perfect complement to King Caspar's attire. I encourage you to explore it and delve deeper into the fashion of that era.",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 1,
+        "current_exhibit": "King_Caspar"
+      },
+      "simulator_data": {
+        "aoi": "King_Caspar",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 5,
+      "action": {
+        "option": 1,
+        "subaction": 1,
+        "terminate_option": true
+      },
+      "reward": 0.5819496279034183,
+      "done": false,
+      "info": {
+        "option": "Ask",
+        "subaction": "AskMemory",
+        "agent_utterance": "\"Delving deeper into King Caspar's attire, do you recall the interesting details we discussed earlier? Perhaps there's something specific you'd like to revisit?\"",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 1,
+        "current_exhibit": "King_Caspar"
+      },
+      "simulator_data": {
+        "aoi": "King_Caspar",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 6,
+      "action": {
+        "option": 2,
+        "subaction": 1,
+        "terminate_option": true
+      },
+      "reward": 0.9190482387019572,
+      "done": false,
+      "info": {
+        "option": "Transition",
+        "subaction": "LinkToOtherExhibit",
+        "agent_utterance": "Absolutely! The King Caspar exhibit indeed showcases a unique piece from a different era. Have you had a chance to explore our collection on the Renaissance period? It has some fascinating artifacts that might interest you, as they share similar historical context. Would you like to take a look?",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 1,
+        "current_exhibit": "King_Caspar"
+      },
+      "simulator_data": {
+        "aoi": "King_Caspar",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 7,
+      "action": {
+        "option": 2,
+        "subaction": 2,
+        "terminate_option": false
+      },
+      "reward": 0.8546384819823142,
+      "done": false,
+      "info": {
+        "option": "Transition",
+        "subaction": "CheckReadiness",
+        "agent_utterance": "Are you interested in learning more about King Caspar's unique detachable portrait? Shall we delve deeper into the Renaissance collection, or would you like to explore another exhibit?",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 1,
+        "current_exhibit": "King_Caspar"
+      },
+      "simulator_data": {
+        "aoi": "King_Caspar",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 8,
+      "action": {
+        "option": 0,
+        "subaction": 0,
+        "terminate_option": true
+      },
+      "reward": 1.1357279598988885,
+      "done": false,
+      "info": {
+        "option": "Explain",
+        "subaction": "ExplainNewFact",
+        "agent_utterance": "The Renaissance collection indeed is intriguing, isn't it? This particular artwork, depicting King Caspar, was created by Hendrick Heerschop in 1654. Can you see the detail and craftsmanship that went into this piece? Do you notice anything specific about it that catches your eye?",
+        "facts_shared": 1,
+        "exhibits_covered": 1,
+        "current_focus": 1,
+        "current_exhibit": "King_Caspar"
+      },
+      "simulator_data": {
+        "aoi": "King_Caspar",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 9,
+      "action": {
+        "option": 0,
+        "subaction": 2,
+        "terminate_option": false
+      },
+      "reward": 0.2944745689128867,
+      "done": false,
+      "info": {
+        "option": "Explain",
+        "subaction": "ClarifyFact",
+        "agent_utterance": "This Renaissance piece we are currently admiring is a depiction of one of the Three Wise Men, King Caspar. You might remember him from the biblical story as the king who brought gold. The artwork was beautifully crafted by Hendrick Heerschop in 1654, which is comparable to a modern-day artist creating a masterpiece for an important occasion.",
+        "facts_shared": 1,
+        "exhibits_covered": 1,
+        "current_focus": 1,
+        "current_exhibit": "King_Caspar"
+      },
+      "simulator_data": {
+        "aoi": "King_Caspar",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 10,
+      "action": {
+        "option": 0,
+        "subaction": 0,
+        "terminate_option": false
+      },
+      "reward": 0.3198372659083091,
+      "done": false,
+      "info": {
+        "option": "Explain",
+        "subaction": "ExplainNewFact",
+        "agent_utterance": "Delightful to see your interest in our exhibit! The piece you're admiring is truly a testament to the artistic prowess of Hendrick Heerschop, who created it in 1654. You mentioned being captivated by the intricate details, and one such detail is the doublet King Caspar is wearing - a fitted jacket that was quite popular among men during the Renaissance. Have you noticed any other specific elements that caught your attention?",
+        "facts_shared": 2,
+        "exhibits_covered": 1,
+        "current_focus": 1,
+        "current_exhibit": "King_Caspar"
+      },
+      "simulator_data": {
+        "aoi": "King_Caspar",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 11,
+      "action": {
+        "option": 1,
+        "subaction": 1,
+        "terminate_option": true
+      },
+      "reward": 0.9510541400455043,
+      "done": false,
+      "info": {
+        "option": "Ask",
+        "subaction": "AskMemory",
+        "agent_utterance": "\"I'm glad you found the piece intriguing. Do you recall our discussion about some of the subtle details that make this artwork truly remarkable? Perhaps there's something specific you'd like to revisit?\"",
+        "facts_shared": 2,
+        "exhibits_covered": 1,
+        "current_focus": 1,
+        "current_exhibit": "King_Caspar"
+      },
+      "simulator_data": {
+        "aoi": "King_Caspar",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 12,
+      "action": {
+        "option": 1,
+        "subaction": 2,
+        "terminate_option": false
+      },
+      "reward": 1.0,
+      "done": false,
+      "info": {
+        "option": "Ask",
+        "subaction": "AskClarification",
+        "agent_utterance": "I'm glad you found the exhibit fascinating! What specific details about King Caspar caught your attention? Would you like to explore more about that aspect during our visit today?",
+        "facts_shared": 2,
+        "exhibits_covered": 1,
+        "current_focus": 1,
+        "current_exhibit": "King_Caspar"
+      },
+      "simulator_data": {
+        "aoi": "King_Caspar",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 13,
+      "action": {
+        "option": 1,
+        "subaction": 2,
+        "terminate_option": false
+      },
+      "reward": 0.9229228501979749,
+      "done": false,
+      "info": {
+        "option": "Ask",
+        "subaction": "AskClarification",
+        "agent_utterance": "Great to hear you're interested in King Caspar! What specifically about him captivates your attention? Would you like to focus more on his reign, artistic portrayal, or perhaps the story behind this magnificent artwork?",
+        "facts_shared": 2,
+        "exhibits_covered": 1,
+        "current_focus": 1,
+        "current_exhibit": "King_Caspar"
+      },
+      "simulator_data": {
+        "aoi": "King_Caspar",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 14,
+      "action": {
+        "option": 0,
+        "subaction": 2,
+        "terminate_option": true
+      },
+      "reward": 0.8028494361066987,
+      "done": false,
+      "info": {
+        "option": "Explain",
+        "subaction": "ClarifyFact",
+        "agent_utterance": "It's truly a magnificent piece, isn't it? The artist, Hendrick Heerschop, masterfully captured King Caspar in a doublet, which you might compare to a modern-day tailored suit, fitting snugly to highlight the figure. This was a common style during the Renaissance era.",
+        "facts_shared": 2,
+        "exhibits_covered": 1,
+        "current_focus": 1,
+        "current_exhibit": "King_Caspar"
+      },
+      "simulator_data": {
+        "aoi": "King_Caspar",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    }
+  ]
+}

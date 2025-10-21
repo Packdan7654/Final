@@ -1,0 +1,178 @@
+{
+  "training_summary": {
+    "total_episodes": 0,
+    "total_turns": 6,
+    "average_reward_per_turn": 0.8493052525681156,
+    "average_reward_per_episode": 0.0,
+    "best_episode_reward": 0.0,
+    "most_used_option": "AskQuestion",
+    "most_used_subaction": "AskMemory",
+    "option_usage": {
+      "OfferTransition": 1,
+      "AskQuestion": 3,
+      "Explain": 2
+    },
+    "subaction_usage": {
+      "LinkToOtherExhibit": 1,
+      "AskMemory": 2,
+      "ExplainNewFact": 2,
+      "AskClarification": 1
+    }
+  },
+  "episode_rewards": [
+    2.3182490067223553,
+    2.777582508686339
+  ],
+  "training_history": [
+    {
+      "episode": 0,
+      "turn": 0,
+      "action": {
+        "option": 2,
+        "subaction": 1,
+        "terminate_option": false
+      },
+      "reward": 0.2,
+      "done": false,
+      "info": {
+        "option": "OfferTransition",
+        "subaction": "LinkToOtherExhibit",
+        "agent_utterance": "This painting of King Caspar connects to the Turban exhibit in our museum. When you explore the Turban display, you'll see how different cultures use headwear to symbolize status and identity, just like King Caspar's regal attire. The intricate designs and materials used in both exhibits highlight the importance of clothing and accessories in expressing cultural significance. Let's head over to the Turban exhibit next to delve deeper into this fascinating connection.",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 1,
+        "current_exhibit": "King_Caspar"
+      },
+      "simulator_data": {
+        "aoi": "King_Caspar",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 1,
+      "action": {
+        "option": 1,
+        "subaction": 1,
+        "terminate_option": false
+      },
+      "reward": 0.927442895698549,
+      "done": false,
+      "info": {
+        "option": "AskQuestion",
+        "subaction": "AskMemory",
+        "agent_utterance": "What do you find most intriguing about the African King Caspar painting? Is it the symbolism behind the gifts brought to the Christ child or perhaps the details in the artwork that catch your eye? I'd love to hear your thoughts!",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 1,
+        "current_exhibit": "King_Caspar"
+      },
+      "simulator_data": {
+        "aoi": "King_Caspar",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 2,
+      "action": {
+        "option": 0,
+        "subaction": 2,
+        "terminate_option": false
+      },
+      "reward": 1.1908061110238064,
+      "done": false,
+      "info": {
+        "option": "Explain",
+        "subaction": "ExplainNewFact",
+        "agent_utterance": "\"Ah, you're curious about the significance of King Caspar! In the Biblical story, King Caspar was one of the three magi who visited Jesus, bearing gifts to honor his birth. Speaking of this, did you know that the African King Caspar is uniquely depicted in this painting as part of the Dutch Golden Age, a period of great cultural and artistic flourishing in the Netherlands?\"",
+        "facts_shared": 1,
+        "exhibits_covered": 1,
+        "current_focus": 1,
+        "current_exhibit": "King_Caspar"
+      },
+      "simulator_data": {
+        "aoi": "King_Caspar",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 3,
+      "action": {
+        "option": 1,
+        "subaction": 1,
+        "terminate_option": false
+      },
+      "reward": 0.2,
+      "done": false,
+      "info": {
+        "option": "AskQuestion",
+        "subaction": "AskMemory",
+        "agent_utterance": "What do you find most intriguing about the Ivory tusk exhibit? Is it the detailed carving, the historical significance, or maybe something else that catches your eye? I'd love to hear your thoughts on this unique piece!",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 4,
+        "current_exhibit": "Ivory_tusk"
+      },
+      "simulator_data": {
+        "aoi": "Ivory_tusk",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 4,
+      "action": {
+        "option": 1,
+        "subaction": 2,
+        "terminate_option": false
+      },
+      "reward": 1.137994504824121,
+      "done": false,
+      "info": {
+        "option": "AskQuestion",
+        "subaction": "AskClarification",
+        "agent_utterance": "Could you tell me more about what specifically you find intriguing about the Ivory tusk exhibit? Are you interested in its historical significance, craftsmanship, or cultural symbolism? I'd love to learn more about what aspect of the Ivory tusk caught your attention.",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 4,
+        "current_exhibit": "Ivory_tusk"
+      },
+      "simulator_data": {
+        "aoi": "Ivory_tusk",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 5,
+      "action": {
+        "option": 0,
+        "subaction": 2,
+        "terminate_option": false
+      },
+      "reward": 1.4395880038622182,
+      "done": false,
+      "info": {
+        "option": "Explain",
+        "subaction": "ExplainNewFact",
+        "agent_utterance": "I'm glad you're curious about the Ivory tusk! In this painting, Pedro Sunda is depicted holding the tusk of an elephant, showcasing the value and significance of ivory. It's fascinating to note that ivory was highly sought after for its beauty and durability, often used for crafting objects and intricate carvings known as ivories. Isn't it intriguing how materials like ivory have played such a vital role in art and trade throughout history?",
+        "facts_shared": 1,
+        "exhibits_covered": 1,
+        "current_focus": 4,
+        "current_exhibit": "Ivory_tusk"
+      },
+      "simulator_data": {
+        "aoi": "Ivory_tusk",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    }
+  ]
+}

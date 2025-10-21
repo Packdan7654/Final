@@ -1,0 +1,72 @@
+{
+  "training_summary": {
+    "total_episodes": 0,
+    "total_turns": 2,
+    "average_reward_per_turn": 0.4515049231134367,
+    "average_reward_per_episode": 0.0,
+    "best_episode_reward": 0.0,
+    "most_used_option": "OfferTransition",
+    "most_used_subaction": "TransitionToExhibit",
+    "option_usage": {
+      "OfferTransition": 2
+    },
+    "subaction_usage": {
+      "TransitionToExhibit": 2
+    }
+  },
+  "episode_rewards": [
+    0.9030098462268734
+  ],
+  "training_history": [
+    {
+      "episode": 0,
+      "turn": 0,
+      "action": {
+        "option": 2,
+        "subaction": 0,
+        "terminate_option": false
+      },
+      "reward": 0.0,
+      "done": false,
+      "info": {
+        "option": "OfferTransition",
+        "subaction": "TransitionToExhibit",
+        "agent_utterance": "Let's take a closer look at the turban exhibit. I'd be delighted to hear your thoughts or any questions you might have about it. Would you like to try on our replica turban for a better understanding of its intricate design? Or perhaps there's a particular aspect that caught your attention?",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 1,
+      "action": {
+        "option": 2,
+        "subaction": 0,
+        "terminate_option": false
+      },
+      "reward": 0.9030098462268734,
+      "done": false,
+      "info": {
+        "option": "OfferTransition",
+        "subaction": "TransitionToExhibit",
+        "agent_utterance": "\"Shall we begin our exploration of the turban exhibit? I'd be delighted to guide you through its intricacies.\"",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    }
+  ]
+}

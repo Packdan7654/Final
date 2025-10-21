@@ -1,0 +1,226 @@
+{
+  "training_summary": {
+    "total_episodes": 0,
+    "total_turns": 8,
+    "average_reward_per_turn": 0.7963168347045444,
+    "average_reward_per_episode": 0.0,
+    "best_episode_reward": 0.0,
+    "most_used_option": "AskQuestion",
+    "most_used_subaction": "TransitionToExhibit",
+    "option_usage": {
+      "OfferTransition": 2,
+      "AskQuestion": 6
+    },
+    "subaction_usage": {
+      "TransitionToExhibit": 2,
+      "AskClarification": 2,
+      "AskMemory": 2,
+      "AskOpinion": 2
+    }
+  },
+  "episode_rewards": [
+    6.370534677636355
+  ],
+  "training_history": [
+    {
+      "episode": 0,
+      "turn": 0,
+      "action": {
+        "option": 2,
+        "subaction": 0,
+        "terminate_option": false
+      },
+      "reward": 0.0,
+      "done": false,
+      "info": {
+        "option": "OfferTransition",
+        "subaction": "TransitionToExhibit",
+        "agent_utterance": "Let's take a closer look at our current exhibit, the magnificent turban. How does its intricate design capture your attention? Or perhaps you'd like to learn more about its history or materials used in crafting it? Feel free to explore and ask any questions that come to mind!",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 1,
+      "action": {
+        "option": 2,
+        "subaction": 0,
+        "terminate_option": false
+      },
+      "reward": 0.9030098462268734,
+      "done": false,
+      "info": {
+        "option": "OfferTransition",
+        "subaction": "TransitionToExhibit",
+        "agent_utterance": "I'm delighted to see your interest in our turban exhibit! Would you like to learn more about the craftsmanship involved, perhaps focusing on the intricate details that catch your eye? Or maybe there's a specific aspect of its history you'd like to explore further?",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 2,
+      "action": {
+        "option": 1,
+        "subaction": 2,
+        "terminate_option": true
+      },
+      "reward": 0.8281085719584778,
+      "done": false,
+      "info": {
+        "option": "AskQuestion",
+        "subaction": "AskClarification",
+        "agent_utterance": "\"Could you tell me more about what specifically captivates your attention in this intricately crafted turban? I'd love to explore its details together.\"",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 3,
+      "action": {
+        "option": 1,
+        "subaction": 1,
+        "terminate_option": true
+      },
+      "reward": 0.8258559462884976,
+      "done": false,
+      "info": {
+        "option": "AskQuestion",
+        "subaction": "AskMemory",
+        "agent_utterance": "\"I'm glad to hear that you're fascinated by the embroidery on our turban exhibit! Would you like me to share some stories about how these intricate designs were created or perhaps point out specific patterns that showcase the artisan's skill?\"",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 4,
+      "action": {
+        "option": 1,
+        "subaction": 0,
+        "terminate_option": false
+      },
+      "reward": 1.0,
+      "done": false,
+      "info": {
+        "option": "AskQuestion",
+        "subaction": "AskOpinion",
+        "agent_utterance": "\"Wonderful! The embroidery indeed is captivating. Have you noticed any specific patterns or designs that stand out to you?\"",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 5,
+      "action": {
+        "option": 1,
+        "subaction": 2,
+        "terminate_option": true
+      },
+      "reward": 1.0,
+      "done": false,
+      "info": {
+        "option": "AskQuestion",
+        "subaction": "AskClarification",
+        "agent_utterance": "\"I'm glad to hear you find the turban fascinating! If you have a moment, I'd love to share some more about the intricate embroidery techniques used in this piece. Could you tell me which patterns or colors particularly catch your eye?\"",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 6,
+      "action": {
+        "option": 1,
+        "subaction": 0,
+        "terminate_option": true
+      },
+      "reward": 1.0,
+      "done": false,
+      "info": {
+        "option": "AskQuestion",
+        "subaction": "AskOpinion",
+        "agent_utterance": "\"I'm glad to see you're captivated by the intricate patterns and vibrant colors of our turban exhibit! Have you ever considered what materials were used to create such a masterpiece? Or perhaps there's a specific region or culture you think it might originate from?\"",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 7,
+      "action": {
+        "option": 1,
+        "subaction": 1,
+        "terminate_option": false
+      },
+      "reward": 0.813560313162506,
+      "done": false,
+      "info": {
+        "option": "AskQuestion",
+        "subaction": "AskMemory",
+        "agent_utterance": "\"I'm glad to see you find the turban intriguing! If you'd like, we can delve a bit deeper into its history or the techniques used in its creation. What would you be most interested in learning more about?\"",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    }
+  ]
+}

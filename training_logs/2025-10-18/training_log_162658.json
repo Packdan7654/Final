@@ -1,0 +1,150 @@
+{
+  "training_summary": {
+    "total_episodes": 0,
+    "total_turns": 5,
+    "average_reward_per_turn": 0.5428784552018351,
+    "average_reward_per_episode": 0.0,
+    "best_episode_reward": 0.0,
+    "most_used_option": "Ask",
+    "most_used_subaction": "AskMemory",
+    "option_usage": {
+      "Ask": 4,
+      "Transition": 1
+    },
+    "subaction_usage": {
+      "AskMemory": 2,
+      "AskClarification": 2,
+      "SuggestMove": 1
+    }
+  },
+  "episode_rewards": [
+    2.7143922760091757
+  ],
+  "training_history": [
+    {
+      "episode": 0,
+      "turn": 0,
+      "action": {
+        "option": 1,
+        "subaction": 1,
+        "terminate_option": false
+      },
+      "reward": 0.2,
+      "done": false,
+      "info": {
+        "option": "Ask",
+        "subaction": "AskMemory",
+        "agent_utterance": "\"Did the turban we discussed earlier catch your interest? I was hoping you might have some questions or thoughts to share about it.\"",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 1,
+      "action": {
+        "option": 1,
+        "subaction": 2,
+        "terminate_option": false
+      },
+      "reward": 0.15,
+      "done": false,
+      "info": {
+        "option": "Ask",
+        "subaction": "AskClarification",
+        "agent_utterance": "That turban certainly captures one's attention with its intricate design. Have you noticed a specific aspect of it that particularly caught your interest?",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 2,
+      "action": {
+        "option": 2,
+        "subaction": 0,
+        "terminate_option": true
+      },
+      "reward": 0.9330098462268734,
+      "done": false,
+      "info": {
+        "option": "Transition",
+        "subaction": "SuggestMove",
+        "agent_utterance": "After exploring the turban, I'd recommend you also take a look at our exhibits on King Caspar's crown and the Cavalier hat. Both pieces showcase fascinating elements of historical fashion and design that might pique your interest.",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "King_Caspar",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 3,
+      "action": {
+        "option": 1,
+        "subaction": 2,
+        "terminate_option": true
+      },
+      "reward": 0.41657654590558113,
+      "done": false,
+      "info": {
+        "option": "Ask",
+        "subaction": "AskClarification",
+        "agent_utterance": "\"I'm glad to hear you find the intricate design and historical significance fascinating! Which aspect of King Caspar's exhibit are you particularly drawn to?\"",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 1,
+        "current_exhibit": "King_Caspar"
+      },
+      "simulator_data": {
+        "aoi": "King_Caspar",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 4,
+      "action": {
+        "option": 1,
+        "subaction": 1,
+        "terminate_option": false
+      },
+      "reward": 1.014805883876721,
+      "done": false,
+      "info": {
+        "option": "Ask",
+        "subaction": "AskMemory",
+        "agent_utterance": "Did you have a chance to explore King Caspar's crown and the ring we discussed earlier? I was hoping to hear your thoughts on them.",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 1,
+        "current_exhibit": "King_Caspar"
+      },
+      "simulator_data": {
+        "aoi": "King_Caspar",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    }
+  ]
+}

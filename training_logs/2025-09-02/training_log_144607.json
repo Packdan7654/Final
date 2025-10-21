@@ -1,0 +1,179 @@
+{
+  "training_summary": {
+    "total_episodes": 0,
+    "total_turns": 6,
+    "average_reward_per_turn": 0.8159719192347824,
+    "average_reward_per_episode": 0.0,
+    "best_episode_reward": 0.0,
+    "most_used_option": "Explain",
+    "most_used_subaction": "ExplainNewFact",
+    "option_usage": {
+      "OfferTransition": 1,
+      "Explain": 3,
+      "AskQuestion": 2
+    },
+    "subaction_usage": {
+      "CheckReadiness": 1,
+      "ExplainNewFact": 2,
+      "AskClarification": 1,
+      "AskMemory": 1,
+      "RepeatFact": 1
+    }
+  },
+  "episode_rewards": [
+    2.3182490067223553,
+    2.577582508686339
+  ],
+  "training_history": [
+    {
+      "episode": 0,
+      "turn": 0,
+      "action": {
+        "option": 2,
+        "subaction": 2,
+        "terminate_option": false
+      },
+      "reward": 0.2,
+      "done": false,
+      "info": {
+        "option": "OfferTransition",
+        "subaction": "CheckReadiness",
+        "agent_utterance": "Are you ready to explore another exhibit, or would you like to learn more about King Caspar? Feel free to let me know if you'd like to delve deeper into this artwork or move on to something else in the museum.",
+        "facts_shared": 1,
+        "exhibits_covered": 0,
+        "current_focus": 1,
+        "current_exhibit": "King_Caspar"
+      },
+      "simulator_data": {
+        "aoi": "King_Caspar",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 1,
+      "action": {
+        "option": 0,
+        "subaction": 0,
+        "terminate_option": false
+      },
+      "reward": 1.227442895698549,
+      "done": false,
+      "info": {
+        "option": "Explain",
+        "subaction": "ExplainNewFact",
+        "agent_utterance": "Great question about King Caspar! In this painting, King Caspar symbolizes one of the three magi who visited Jesus. They brought precious gifts to honor his birth. Speaking of gifts, did you know that Caspar presented a golden vessel filled with incense to represent Jesus' deity? What aspect of this story interests you the most?",
+        "facts_shared": 4,
+        "exhibits_covered": 1,
+        "current_focus": 1,
+        "current_exhibit": "King_Caspar"
+      },
+      "simulator_data": {
+        "aoi": "King_Caspar",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 2,
+      "action": {
+        "option": 1,
+        "subaction": 2,
+        "terminate_option": false
+      },
+      "reward": 0.8908061110238064,
+      "done": false,
+      "info": {
+        "option": "AskQuestion",
+        "subaction": "AskClarification",
+        "agent_utterance": "Could you tell me more about what specifically interests you about King Caspar? Are you curious about the symbolism, the artist who created the painting, or any other aspect of this exhibit that caught your attention? I'd love to hear your thoughts to help tailor our conversation further.",
+        "facts_shared": 5,
+        "exhibits_covered": 1,
+        "current_focus": 1,
+        "current_exhibit": "King_Caspar"
+      },
+      "simulator_data": {
+        "aoi": "King_Caspar",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 3,
+      "action": {
+        "option": 1,
+        "subaction": 1,
+        "terminate_option": false
+      },
+      "reward": 0.2,
+      "done": false,
+      "info": {
+        "option": "AskQuestion",
+        "subaction": "AskMemory",
+        "agent_utterance": "What do you think about the significance of ivory in historical art pieces like this tusk? How do you feel it adds to the story portrayed in the exhibit?",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 4,
+        "current_exhibit": "Ivory_tusk"
+      },
+      "simulator_data": {
+        "aoi": "Ivory_tusk",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 4,
+      "action": {
+        "option": 0,
+        "subaction": 2,
+        "terminate_option": false
+      },
+      "reward": 1.437994504824121,
+      "done": false,
+      "info": {
+        "option": "Explain",
+        "subaction": "ExplainNewFact",
+        "agent_utterance": "Great question! The ivory tusk in this exhibit signifies the importance of trade and cultural exchange. Speaking of ivory, did you know that in the painting featuring Pedro Sunda, he is shown holding an elephant's tusk? Ivory was a significant export product for the Congo at that time. What do you find most intriguing about the connection between Pedro Sunda and the ivory trade?",
+        "facts_shared": 2,
+        "exhibits_covered": 1,
+        "current_focus": 4,
+        "current_exhibit": "Ivory_tusk"
+      },
+      "simulator_data": {
+        "aoi": "Ivory_tusk",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 5,
+      "action": {
+        "option": 0,
+        "subaction": 1,
+        "terminate_option": false
+      },
+      "reward": 0.9395880038622182,
+      "done": false,
+      "info": {
+        "option": "Explain",
+        "subaction": "RepeatFact",
+        "agent_utterance": "The Ivory tusk in this exhibit is an important symbol, much like the elephant tusk held by Pedro Sunda in the painting. Just as ivory was a significant export for the Congo, the tusk here represents power and prestige in certain cultures. It's fascinating how objects like these can carry deep historical meanings.",
+        "facts_shared": 4,
+        "exhibits_covered": 1,
+        "current_focus": 4,
+        "current_exhibit": "Ivory_tusk"
+      },
+      "simulator_data": {
+        "aoi": "Ivory_tusk",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    }
+  ]
+}

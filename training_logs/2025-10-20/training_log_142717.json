@@ -1,0 +1,1112 @@
+{
+  "training_summary": {
+    "total_episodes": 2,
+    "total_turns": 43,
+    "average_reward_per_turn": 0.7286238841578482,
+    "average_reward_per_episode": 15.665413509393733,
+    "best_episode_reward": 24.85352234269413,
+    "most_used_option": "OfferTransition",
+    "most_used_subaction": "AskMemory",
+    "option_usage": {
+      "AskQuestion": 13,
+      "OfferTransition": 18,
+      "Explain": 10,
+      "Conclude": 2
+    },
+    "subaction_usage": {
+      "AskMemory": 8,
+      "SuggestMove": 5,
+      "LinkToOtherExhibit": 8,
+      "CheckReadiness": 5,
+      "ExplainNewFact": 7,
+      "ClarifyFact": 3,
+      "AskClarification": 4,
+      "WrapUp": 2,
+      "AskOpinion": 1
+    }
+  },
+  "episode_rewards": [
+    5.3691346833344165,
+    8.691859486385901,
+    7.677238093275738,
+    3.11529007969808,
+    6.477304676093338
+  ],
+  "training_history": [
+    {
+      "episode": 0,
+      "turn": 0,
+      "action": {
+        "option": 1,
+        "subaction": 1,
+        "terminate_option": false
+      },
+      "reward": 0.0,
+      "done": false,
+      "info": {
+        "option": "AskQuestion",
+        "subaction": "AskMemory",
+        "agent_utterance": "\"I'd love to hear your thoughts about our current exhibit, the intricate turban. What initially draws your attention?\"",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 1,
+      "action": {
+        "option": 1,
+        "subaction": 1,
+        "terminate_option": false
+      },
+      "reward": 0.9030098462268734,
+      "done": false,
+      "info": {
+        "option": "AskQuestion",
+        "subaction": "AskMemory",
+        "agent_utterance": "\"I'm curious, what draws your attention most in this turban? The intricate design or perhaps the use of delicate white ostrich feathers?\"",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 2,
+      "action": {
+        "option": 2,
+        "subaction": 0,
+        "terminate_option": true
+      },
+      "reward": 0.22657654590558116,
+      "done": false,
+      "info": {
+        "option": "OfferTransition",
+        "subaction": "SuggestMove",
+        "agent_utterance": "\"Would you like to take a closer look at the intricate embroidery details on the turban? Or perhaps there's another exhibit nearby that might catch your interest?\"",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 3,
+      "action": {
+        "option": 2,
+        "subaction": 1,
+        "terminate_option": true
+      },
+      "reward": 0.9103974920770708,
+      "done": false,
+      "info": {
+        "option": "OfferTransition",
+        "subaction": "LinkToOtherExhibit",
+        "agent_utterance": "\"Would you like to see another exhibit that showcases intricate craftsmanship, similar to this turban? It's a beautiful display of beadwork from a different culture.\"",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 4,
+      "action": {
+        "option": 2,
+        "subaction": 2,
+        "terminate_option": false
+      },
+      "reward": 1.0,
+      "done": false,
+      "info": {
+        "option": "OfferTransition",
+        "subaction": "CheckReadiness",
+        "agent_utterance": "\"Shall we delve deeper into the intricate embroidery of this beautiful turban? Or perhaps you'd like to learn more about its history or materials?\"",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 5,
+      "action": {
+        "option": 0,
+        "subaction": 2,
+        "terminate_option": true
+      },
+      "reward": 0.39790446226629944,
+      "done": false,
+      "info": {
+        "option": "Explain",
+        "subaction": "ExplainNewFact",
+        "agent_utterance": "Delighted to see your interest! The turban you're looking at is indeed quite remarkable. It's crafted from fine silk and adorned with precious stones, which truly highlight the artist's skill. Have you ever seen a piece like this before? Or perhaps you have some insights about the significance of turbans in various cultures?",
+        "facts_shared": 1,
+        "exhibits_covered": 1,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 6,
+      "action": {
+        "option": 0,
+        "subaction": 2,
+        "terminate_option": true
+      },
+      "reward": 0.7681098067467551,
+      "done": false,
+      "info": {
+        "option": "Explain",
+        "subaction": "ClarifyFact",
+        "agent_utterance": "The turban you're admiring is a traditional headpiece worn across various cultures, similar to how a hat is common in Western societies. It's made from fine silk, much like a luxurious silk scarf, and adorned with precious stones, adding an elegant shimmer akin to a diamond-studded necklace.",
+        "facts_shared": 1,
+        "exhibits_covered": 1,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 7,
+      "action": {
+        "option": 0,
+        "subaction": 2,
+        "terminate_option": false
+      },
+      "reward": 0.7904470228873735,
+      "done": false,
+      "info": {
+        "option": "Explain",
+        "subaction": "ClarifyFact",
+        "agent_utterance": "The turban you're admiring is indeed a traditional headpiece that has been a part of various cultures for centuries. Think of it as an exquisite crown woven from silken threads, adorned with precious gems acting as the sparkling jewels on top.",
+        "facts_shared": 1,
+        "exhibits_covered": 1,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 8,
+      "action": {
+        "option": 2,
+        "subaction": 1,
+        "terminate_option": true
+      },
+      "reward": 0.18561086200580892,
+      "done": false,
+      "info": {
+        "option": "OfferTransition",
+        "subaction": "LinkToOtherExhibit",
+        "agent_utterance": "\"Have you explored our exhibition on Mughal Art? You might find it interesting to see how similar artistic techniques were employed in other works from that period.\"",
+        "facts_shared": 1,
+        "exhibits_covered": 1,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 9,
+      "action": {
+        "option": 2,
+        "subaction": 2,
+        "terminate_option": false
+      },
+      "reward": 0.1870786452186539,
+      "done": false,
+      "info": {
+        "option": "OfferTransition",
+        "subaction": "CheckReadiness",
+        "agent_utterance": "\"Would you like to delve deeper into the history of this fascinating turban? Or perhaps explore its connection with the rich cultural tradition it represents?\"",
+        "facts_shared": 1,
+        "exhibits_covered": 1,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 10,
+      "action": {
+        "option": 2,
+        "subaction": 1,
+        "terminate_option": false
+      },
+      "reward": 0.0,
+      "done": false,
+      "info": {
+        "option": "OfferTransition",
+        "subaction": "LinkToOtherExhibit",
+        "agent_utterance": "Let me direct your attention to our next exhibit, just a few steps away. It's called \"The Miner's Treasure\" and it showcases various minerals that are often mistaken for gemstones. I think you might find it fascinating! Would you like to take a look?",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 3,
+        "current_exhibit": "Gemstones"
+      },
+      "simulator_data": {
+        "aoi": "King_Caspar",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 11,
+      "action": {
+        "option": 2,
+        "subaction": 1,
+        "terminate_option": false
+      },
+      "reward": 1.0,
+      "done": false,
+      "info": {
+        "option": "OfferTransition",
+        "subaction": "LinkToOtherExhibit",
+        "agent_utterance": "\"After admiring King Caspar, have you considered visiting our neighboring exhibit, 'The Mine of Emeralds'? It delves into the fascinating world of gemstone mining during his reign. You might find a new point of interest!\"",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 1,
+        "current_exhibit": "King_Caspar"
+      },
+      "simulator_data": {
+        "aoi": "King_Caspar",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 12,
+      "action": {
+        "option": 1,
+        "subaction": 1,
+        "terminate_option": true
+      },
+      "reward": 1.0,
+      "done": false,
+      "info": {
+        "option": "AskQuestion",
+        "subaction": "AskMemory",
+        "agent_utterance": "\"I'm glad you're interested in learning more about our exhibit, 'King Caspar.' Did you know that during his reign, he was known for his extensive knowledge about gemstone mining? Would you like to hear a fascinating story related to this topic?\"",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 1,
+        "current_exhibit": "King_Caspar"
+      },
+      "simulator_data": {
+        "aoi": "King_Caspar",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 13,
+      "action": {
+        "option": 1,
+        "subaction": 1,
+        "terminate_option": true
+      },
+      "reward": 0.7344033642395434,
+      "done": false,
+      "info": {
+        "option": "AskQuestion",
+        "subaction": "AskMemory",
+        "agent_utterance": "\"Would you be interested in delving deeper into how gemstone mining during King Caspar's era might have contributed to his wealth and power? We can explore that aspect further if you'd like.\"",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 1,
+        "current_exhibit": "King_Caspar"
+      },
+      "simulator_data": {
+        "aoi": "King_Caspar",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 14,
+      "action": {
+        "option": 1,
+        "subaction": 2,
+        "terminate_option": true
+      },
+      "reward": 0.9493255015387967,
+      "done": false,
+      "info": {
+        "option": "AskQuestion",
+        "subaction": "AskClarification",
+        "agent_utterance": "\"I'm glad to see you're interested in learning more about King Caspar! To help tailor our conversation, could you please share what specific aspects of his life or reign pique your curiosity?\"",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 1,
+        "current_exhibit": "King_Caspar"
+      },
+      "simulator_data": {
+        "aoi": "King_Caspar",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 15,
+      "action": {
+        "option": 1,
+        "subaction": 2,
+        "terminate_option": false
+      },
+      "reward": 1.0,
+      "done": false,
+      "info": {
+        "option": "AskQuestion",
+        "subaction": "AskClarification",
+        "agent_utterance": "\"I'm glad to hear your interest in learning more about King Caspar! To help you better understand, could you tell me what specific aspects of his life or reign you find particularly intriguing?\"",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 1,
+        "current_exhibit": "King_Caspar"
+      },
+      "simulator_data": {
+        "aoi": "King_Caspar",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 16,
+      "action": {
+        "option": 1,
+        "subaction": 1,
+        "terminate_option": false
+      },
+      "reward": 1.0,
+      "done": false,
+      "info": {
+        "option": "AskQuestion",
+        "subaction": "AskMemory",
+        "agent_utterance": "\"I'm glad to see you're interested in learning more about King Caspar! Would you like to hear some interesting stories or challenges he faced during his reign that might not be commonly known?\"",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 1,
+        "current_exhibit": "King_Caspar"
+      },
+      "simulator_data": {
+        "aoi": "King_Caspar",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 17,
+      "action": {
+        "option": 2,
+        "subaction": 2,
+        "terminate_option": true
+      },
+      "reward": 0.9802828239963627,
+      "done": false,
+      "info": {
+        "option": "OfferTransition",
+        "subaction": "CheckReadiness",
+        "agent_utterance": "\"I'm delighted to hear your interest in learning more about King Caspar! Shall we delve deeper into his life or perhaps explore some fascinating artifacts associated with him? Or maybe you have a specific question in mind?\"",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 1,
+        "current_exhibit": "King_Caspar"
+      },
+      "simulator_data": {
+        "aoi": "King_Caspar",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 18,
+      "action": {
+        "option": 0,
+        "subaction": 2,
+        "terminate_option": true
+      },
+      "reward": 1.0106064173008533,
+      "done": false,
+      "info": {
+        "option": "Explain",
+        "subaction": "ExplainNewFact",
+        "agent_utterance": "The intriguing story of King Caspar is deeply rooted in tradition. He's often depicted as one of the Three Wise Men who brought gifts to the newborn Jesus, and notably, he's known for the golden gift he presented. Would you like to learn more about his significance or the other Wise Men in this biblical tale?",
+        "facts_shared": 1,
+        "exhibits_covered": 1,
+        "current_focus": 1,
+        "current_exhibit": "King_Caspar"
+      },
+      "simulator_data": {
+        "aoi": "King_Caspar",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 19,
+      "action": {
+        "option": 2,
+        "subaction": 1,
+        "terminate_option": true
+      },
+      "reward": 1.0172413793103448,
+      "done": false,
+      "info": {
+        "option": "OfferTransition",
+        "subaction": "LinkToOtherExhibit",
+        "agent_utterance": "\"As you delve deeper into our exhibit on King Caspar, would you be interested in exploring other artifacts from his reign? Perhaps there's a connection between them that might further enrich your understanding of this remarkable monarch.\"",
+        "facts_shared": 1,
+        "exhibits_covered": 1,
+        "current_focus": 1,
+        "current_exhibit": "King_Caspar"
+      },
+      "simulator_data": {
+        "aoi": "King_Caspar",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 20,
+      "action": {
+        "option": 1,
+        "subaction": 1,
+        "terminate_option": false
+      },
+      "reward": 0.0,
+      "done": false,
+      "info": {
+        "option": "AskQuestion",
+        "subaction": "AskMemory",
+        "agent_utterance": "\"I'd love to hear more about what catches your eye in this beautiful necklace. Can you share what stands out to you?\"",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 4,
+        "current_exhibit": "Necklace"
+      },
+      "simulator_data": {
+        "aoi": "King_Caspar",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 21,
+      "action": {
+        "option": 2,
+        "subaction": 0,
+        "terminate_option": true
+      },
+      "reward": 0.9755480483187107,
+      "done": false,
+      "info": {
+        "option": "OfferTransition",
+        "subaction": "SuggestMove",
+        "agent_utterance": "\"I'm glad you find the exhibit fascinating! There are more treasures to discover in our collection. Shall we proceed to the next display that showcases some of King Caspar's personal belongings? I believe you might find it equally interesting.\"",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 1,
+        "current_exhibit": "King_Caspar"
+      },
+      "simulator_data": {
+        "aoi": "King_Caspar",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 22,
+      "action": {
+        "option": 2,
+        "subaction": 1,
+        "terminate_option": false
+      },
+      "reward": 0.7922542376207984,
+      "done": false,
+      "info": {
+        "option": "OfferTransition",
+        "subaction": "LinkToOtherExhibit",
+        "agent_utterance": "\"I'm glad you find our exhibit of King Caspar captivating! Have you had a chance to explore the rest of our museum? I'd be delighted to guide you through another exhibit that showcases one of his contemporaries.\"",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 1,
+        "current_exhibit": "King_Caspar"
+      },
+      "simulator_data": {
+        "aoi": "King_Caspar",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 23,
+      "action": {
+        "option": 2,
+        "subaction": 0,
+        "terminate_option": false
+      },
+      "reward": 1.0,
+      "done": false,
+      "info": {
+        "option": "OfferTransition",
+        "subaction": "SuggestMove",
+        "agent_utterance": "\"Would you like to delve deeper into our exhibit about King Caspar? We have several intriguing artifacts related to him that you might find interesting.\"",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 1,
+        "current_exhibit": "King_Caspar"
+      },
+      "simulator_data": {
+        "aoi": "King_Caspar",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 24,
+      "action": {
+        "option": 2,
+        "subaction": 0,
+        "terminate_option": true
+      },
+      "reward": 0.1319184468545635,
+      "done": false,
+      "info": {
+        "option": "OfferTransition",
+        "subaction": "SuggestMove",
+        "agent_utterance": "\"I'm glad you find it fascinating! If you'd like to learn more about King Caspar, I'd recommend moving on to the next exhibit. It delves deeper into his life and reign. Shall we proceed?\"",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 1,
+        "current_exhibit": "King_Caspar"
+      },
+      "simulator_data": {
+        "aoi": "King_Caspar",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 25,
+      "action": {
+        "option": 0,
+        "subaction": 0,
+        "terminate_option": true
+      },
+      "reward": 0.8369390693095736,
+      "done": false,
+      "info": {
+        "option": "Explain",
+        "subaction": "ExplainNewFact",
+        "agent_utterance": "Delighted to see your interest! King Caspar, as you might have guessed, is indeed one of the Three Wise Men from the biblical story. This artwork is believed to depict him bringing gold, his traditional gift. Would you like to learn more about this painting or perhaps explore another exhibit?",
+        "facts_shared": 1,
+        "exhibits_covered": 1,
+        "current_focus": 1,
+        "current_exhibit": "King_Caspar"
+      },
+      "simulator_data": {
+        "aoi": "King_Caspar",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 26,
+      "action": {
+        "option": 2,
+        "subaction": 2,
+        "terminate_option": true
+      },
+      "reward": 0.9800465585756138,
+      "done": false,
+      "info": {
+        "option": "OfferTransition",
+        "subaction": "CheckReadiness",
+        "agent_utterance": "\"Shall we proceed to explore more about King Caspar? There are several intriguing artifacts and stories waiting for us.\"",
+        "facts_shared": 1,
+        "exhibits_covered": 1,
+        "current_focus": 1,
+        "current_exhibit": "King_Caspar"
+      },
+      "simulator_data": {
+        "aoi": "King_Caspar",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 27,
+      "action": {
+        "option": 2,
+        "subaction": 2,
+        "terminate_option": false
+      },
+      "reward": 0.9807214449324063,
+      "done": false,
+      "info": {
+        "option": "OfferTransition",
+        "subaction": "CheckReadiness",
+        "agent_utterance": "\"I'm thrilled to see your interest in King Caspar! Would you like to dive deeper into his history, or perhaps explore some interesting artifacts related to him?\"",
+        "facts_shared": 1,
+        "exhibits_covered": 1,
+        "current_focus": 1,
+        "current_exhibit": "King_Caspar"
+      },
+      "simulator_data": {
+        "aoi": "King_Caspar",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 28,
+      "action": {
+        "option": 1,
+        "subaction": 2,
+        "terminate_option": true
+      },
+      "reward": 0.9937037490553499,
+      "done": false,
+      "info": {
+        "option": "AskQuestion",
+        "subaction": "AskClarification",
+        "agent_utterance": "\"I'm delighted to hear your interest in King Caspar! To fully appreciate him, I'd like to understand what aspects particularly catch your attention. Are you more interested in his reign, personal life, or perhaps his contributions to our society? This way, I can tailor my storytelling to meet your interests.\"",
+        "facts_shared": 1,
+        "exhibits_covered": 1,
+        "current_focus": 1,
+        "current_exhibit": "King_Caspar"
+      },
+      "simulator_data": {
+        "aoi": "King_Caspar",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 29,
+      "action": {
+        "option": 2,
+        "subaction": 0,
+        "terminate_option": true
+      },
+      "reward": 0.9861065386087212,
+      "done": false,
+      "info": {
+        "option": "OfferTransition",
+        "subaction": "SuggestMove",
+        "agent_utterance": "\"Shall we continue our exploration of King Caspar's exhibit? There are several interesting artifacts on display that provide further insights into his life and reign. Would you like to see more?\"",
+        "facts_shared": 1,
+        "exhibits_covered": 1,
+        "current_focus": 1,
+        "current_exhibit": "King_Caspar"
+      },
+      "simulator_data": {
+        "aoi": "King_Caspar",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 30,
+      "action": {
+        "option": 2,
+        "subaction": 1,
+        "terminate_option": false
+      },
+      "reward": 0.0,
+      "done": false,
+      "info": {
+        "option": "OfferTransition",
+        "subaction": "LinkToOtherExhibit",
+        "agent_utterance": "This exhibit is fascinating. [KC_005] It represents wealth and status. [KC_004] The craftsmanship is remarkable.",
+        "facts_shared": 2,
+        "exhibits_covered": 0,
+        "current_focus": 7,
+        "current_exhibit": "Doublet"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 31,
+      "action": {
+        "option": 0,
+        "subaction": 0,
+        "terminate_option": true
+      },
+      "reward": 1.0517241379310345,
+      "done": false,
+      "info": {
+        "option": "Explain",
+        "subaction": "ExplainNewFact",
+        "agent_utterance": "The artwork you're admiring is indeed impressive. It was crafted by none other than Gerrit Dou, a renowned artist from the 17th century. Have you noticed any specific details about this piece that catch your eye? Perhaps there's something in particular that draws you to it.",
+        "facts_shared": 3,
+        "exhibits_covered": 1,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 32,
+      "action": {
+        "option": 2,
+        "subaction": 1,
+        "terminate_option": true
+      },
+      "reward": 1.0118418038360106,
+      "done": false,
+      "info": {
+        "option": "OfferTransition",
+        "subaction": "LinkToOtherExhibit",
+        "agent_utterance": "\"I'm glad you find our exhibit intriguing! If you have more time, I'd recommend visiting our neighboring exhibit on Dou's embroidery work. It showcases his mastery of various textile techniques, which were also applied to this turban.\"",
+        "facts_shared": 3,
+        "exhibits_covered": 1,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 33,
+      "action": {
+        "option": 3,
+        "subaction": 0,
+        "terminate_option": true
+      },
+      "reward": 1.0517241379310345,
+      "done": true,
+      "info": {
+        "option": "Conclude",
+        "subaction": "WrapUp",
+        "agent_utterance": "Thank you for joining us today. I hope you've found our exhibit on Dou's turban as captivating as we intended it to be. Is there perhaps something specific that caught your attention or piqued your interest?",
+        "facts_shared": 3,
+        "exhibits_covered": 1,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 1,
+      "turn": 0,
+      "action": {
+        "option": 0,
+        "subaction": 2,
+        "terminate_option": false
+      },
+      "reward": 0.017241379310344827,
+      "done": false,
+      "info": {
+        "option": "Explain",
+        "subaction": "ExplainNewFact",
+        "agent_utterance": "The intricate incense pot you're admiring was skillfully crafted by Hendrick Heerschop in 1654. Can you tell me what attracts your attention about this piece?",
+        "facts_shared": 1,
+        "exhibits_covered": 1,
+        "current_focus": 8,
+        "current_exhibit": "Incense_Pot"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 1,
+      "turn": 1,
+      "action": {
+        "option": 0,
+        "subaction": 2,
+        "terminate_option": false
+      },
+      "reward": 1.0344827586206897,
+      "done": false,
+      "info": {
+        "option": "Explain",
+        "subaction": "ExplainNewFact",
+        "agent_utterance": "The turban you're admiring is indeed intricate. I find it particularly fascinating that this artwork, created by Hendrick Heerschop in 1654, was done using oil on panel. It's interesting to note that such techniques were quite popular during his time. Does the medium's richness in detail add to its captivating nature for you?",
+        "facts_shared": 2,
+        "exhibits_covered": 2,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 1,
+      "turn": 2,
+      "action": {
+        "option": 0,
+        "subaction": 0,
+        "terminate_option": false
+      },
+      "reward": 0.7688737198032793,
+      "done": false,
+      "info": {
+        "option": "Explain",
+        "subaction": "ExplainNewFact",
+        "agent_utterance": "The turban, as you might have noticed, is a traditional head covering that's widely recognized across various cultures. Intriguingly, it carries a rich history and significance in many societies. Could you tell me more about what specifically draws your attention to this particular piece?",
+        "facts_shared": 3,
+        "exhibits_covered": 2,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 1,
+      "turn": 3,
+      "action": {
+        "option": 1,
+        "subaction": 1,
+        "terminate_option": true
+      },
+      "reward": 0.7722805377421722,
+      "done": false,
+      "info": {
+        "option": "AskQuestion",
+        "subaction": "AskMemory",
+        "agent_utterance": "\"I'm glad you find the exhibit captivating! Have you noticed any specific aspect of the turban that particularly caught your attention? Perhaps we could delve deeper into it together.\"",
+        "facts_shared": 3,
+        "exhibits_covered": 2,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 1,
+      "turn": 4,
+      "action": {
+        "option": 1,
+        "subaction": 0,
+        "terminate_option": false
+      },
+      "reward": 0.47558874226762193,
+      "done": false,
+      "info": {
+        "option": "AskQuestion",
+        "subaction": "AskOpinion",
+        "agent_utterance": "\"I'm glad to see you appreciate the intricate details of the turban's adornment! Have you noticed any specific pattern or design that particularly caught your eye?\"",
+        "facts_shared": 3,
+        "exhibits_covered": 2,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 1,
+      "turn": 5,
+      "action": {
+        "option": 1,
+        "subaction": 2,
+        "terminate_option": false
+      },
+      "reward": 0.4966350917240526,
+      "done": false,
+      "info": {
+        "option": "AskQuestion",
+        "subaction": "AskClarification",
+        "agent_utterance": "\"I'm glad to hear that you find the patterns intriguing! Would you like to know more about how they were created, or perhaps if there are any special meanings behind them?\"",
+        "facts_shared": 3,
+        "exhibits_covered": 2,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 1,
+      "turn": 6,
+      "action": {
+        "option": 1,
+        "subaction": 1,
+        "terminate_option": false
+      },
+      "reward": 1.0278997943565258,
+      "done": false,
+      "info": {
+        "option": "AskQuestion",
+        "subaction": "AskMemory",
+        "agent_utterance": "\"I'm glad to see your interest in our exhibit! The intricate patterns on this turban have quite a story. Would you like to know more about their origin or perhaps how they were created?\"",
+        "facts_shared": 3,
+        "exhibits_covered": 2,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 1,
+      "turn": 7,
+      "action": {
+        "option": 0,
+        "subaction": 2,
+        "terminate_option": true
+      },
+      "reward": 1.0217203877159522,
+      "done": false,
+      "info": {
+        "option": "Explain",
+        "subaction": "ClarifyFact",
+        "agent_utterance": "The intricate patterns on the turban are indeed a testament to the artisan's skill, much like how a painter uses strokes to create a captivating portrait. This artwork is an oil painting, as delicate as the touch of a skilled artist on canvas.",
+        "facts_shared": 3,
+        "exhibits_covered": 2,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 1,
+      "turn": 8,
+      "action": {
+        "option": 3,
+        "subaction": 0,
+        "terminate_option": true
+      },
+      "reward": 0.8625822645526997,
+      "done": true,
+      "info": {
+        "option": "Conclude",
+        "subaction": "WrapUp",
+        "agent_utterance": "Thank you so much for joining us today! I do hope you've found our exhibition on the turban as fascinating as it is beautiful. Enjoy the rest of your visit!",
+        "facts_shared": 3,
+        "exhibits_covered": 2,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    }
+  ]
+}

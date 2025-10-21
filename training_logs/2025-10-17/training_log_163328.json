@@ -1,0 +1,149 @@
+{
+  "training_summary": {
+    "total_episodes": 0,
+    "total_turns": 5,
+    "average_reward_per_turn": 0.9236497307814728,
+    "average_reward_per_episode": 0.0,
+    "best_episode_reward": 0.0,
+    "most_used_option": "Explain",
+    "most_used_subaction": "ExplainNewFact",
+    "option_usage": {
+      "Explain": 5
+    },
+    "subaction_usage": {
+      "ExplainNewFact": 3,
+      "ClarifyFact": 1,
+      "RepeatFact": 1
+    }
+  },
+  "episode_rewards": [
+    4.618248653907364
+  ],
+  "training_history": [
+    {
+      "episode": 0,
+      "turn": 0,
+      "action": {
+        "option": 0,
+        "subaction": 0,
+        "terminate_option": false
+      },
+      "reward": 0.5,
+      "done": false,
+      "info": {
+        "option": "Explain",
+        "subaction": "ExplainNewFact",
+        "agent_utterance": "Visitor: Wow, this turban is truly a work of art! Can you tell me more about its origins?\n\nAssistant: [TB_001] The turban is a traditional head covering worn in many cultures, but let's take a look at the one we have here. It's made of fine silk and decorated with precious stones. Isn't it fascinating how different materials can tell such unique stories? By the way, did you know that our",
+        "facts_shared": 2,
+        "exhibits_covered": 1,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 1,
+      "action": {
+        "option": 0,
+        "subaction": 2,
+        "terminate_option": false
+      },
+      "reward": 0.7274428956985489,
+      "done": false,
+      "info": {
+        "option": "Explain",
+        "subaction": "ClarifyFact",
+        "agent_utterance": "[TB_002] The turban you're admiring is adorned with precious stones much like a necklace dotted with diamonds and rubies. It's made of fine silk, so delicate it could be compared to a luxurious doublet worn by the Cavalier in our collection.",
+        "facts_shared": 2,
+        "exhibits_covered": 1,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "King_Caspar",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 2,
+      "action": {
+        "option": 0,
+        "subaction": 2,
+        "terminate_option": false
+      },
+      "reward": 1.044360762364014,
+      "done": false,
+      "info": {
+        "option": "Explain",
+        "subaction": "ExplainNewFact",
+        "agent_utterance": "\"Did you know that King Caspar, the wise man who brought gold in the biblical story, is depicted here as an African king? [KC_001] The African King Caspar, as he's often called, was painted by Hendrick Heerschop in 1654. Can you imagine how different this art piece would have looked if it were created today?\"",
+        "facts_shared": 4,
+        "exhibits_covered": 2,
+        "current_focus": 1,
+        "current_exhibit": "King_Caspar"
+      },
+      "simulator_data": {
+        "aoi": "King_Caspar",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 3,
+      "action": {
+        "option": 0,
+        "subaction": 1,
+        "terminate_option": true
+      },
+      "reward": 0.9084504910206801,
+      "done": false,
+      "info": {
+        "option": "Explain",
+        "subaction": "RepeatFact",
+        "agent_utterance": "Visitor's Question: What does the King Caspar signify?\n\nMy Response: [KC_001] The African King Caspar is one of the Three Wise Men from the biblical story, traditionally depicted as the king who brought gold as a gift to the baby Jesus. This artwork by Hendrick Heerschop, created in 1654, beautifully captures this historical and cultural significance.",
+        "facts_shared": 4,
+        "exhibits_covered": 2,
+        "current_focus": 1,
+        "current_exhibit": "King_Caspar"
+      },
+      "simulator_data": {
+        "aoi": "King_Caspar",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 4,
+      "action": {
+        "option": 0,
+        "subaction": 0,
+        "terminate_option": false
+      },
+      "reward": 1.437994504824121,
+      "done": false,
+      "info": {
+        "option": "Explain",
+        "subaction": "ExplainNewFact",
+        "agent_utterance": "[KC_014] You're curious about the materials used for the King Caspar's attire. Interestingly, it is made of fine fabrics like silk, velvet, or brocade - a luxurious touch that adds to his regal appearance. What do you think about other traditional attires from different cultures and their significance?",
+        "facts_shared": 5,
+        "exhibits_covered": 2,
+        "current_focus": 1,
+        "current_exhibit": "King_Caspar"
+      },
+      "simulator_data": {
+        "aoi": "King_Caspar",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    }
+  ]
+}

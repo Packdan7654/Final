@@ -1,0 +1,280 @@
+{
+  "training_summary": {
+    "total_episodes": 0,
+    "total_turns": 10,
+    "average_reward_per_turn": 0.3886637458113958,
+    "average_reward_per_episode": 0.0,
+    "best_episode_reward": 0.0,
+    "most_used_option": "OfferTransition",
+    "most_used_subaction": "SuggestMove",
+    "option_usage": {
+      "Explain": 3,
+      "OfferTransition": 6,
+      "AskQuestion": 1
+    },
+    "subaction_usage": {
+      "ClarifyFact": 2,
+      "RepeatFact": 1,
+      "SuggestMove": 3,
+      "CheckReadiness": 1,
+      "AskMemory": 1,
+      "LinkToOtherExhibit": 2
+    }
+  },
+  "episode_rewards": [
+    2.571701579123037,
+    1.3149358789909207
+  ],
+  "training_history": [
+    {
+      "episode": 0,
+      "turn": 0,
+      "action": {
+        "option": 0,
+        "subaction": 2,
+        "terminate_option": false
+      },
+      "reward": 0.0,
+      "done": false,
+      "info": {
+        "option": "Explain",
+        "subaction": "ClarifyFact",
+        "agent_utterance": "Welcome to our current exhibition! Today, we're showcasing a diverse collection of artifacts that span centuries and continents. As you wander through the gallery, take a moment to appreciate the intricate details and stories each piece holds.\n\nFor instance, the artwork in front of us is a stunning example of ancient Egyptian craftsmanship. Dating back over 3,500 years, it showcases the skill and artistry of their time. The vibrant colors, delicate carvings, and intricate designs are truly awe-inspiring.\n\nIf you have any questions or would like to know more about specific pieces, please don't hesitate to ask! I'm here to help bring this exhibition to life for you. Enjoy your visit!",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 0,
+        "current_exhibit": "Unknown"
+      },
+      "simulator_data": {
+        "aoi": null,
+        "persona": "Agreeable",
+        "utterance": null
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 1,
+      "action": {
+        "option": 0,
+        "subaction": 1,
+        "terminate_option": false
+      },
+      "reward": 0.8582443830121912,
+      "done": false,
+      "info": {
+        "option": "Explain",
+        "subaction": "RepeatFact",
+        "agent_utterance": "It's great to hear you appreciated the insights we shared earlier! Let me delve a bit deeper into our current exhibit, 'The Unknown'. This collection is intriguing because it comprises artifacts whose origins and creators remain a mystery.\n\nOne of the pieces here, for instance, is an ancient Egyptian sarcophagus. Despite countless attempts to decipher its hieroglyphics, we still don't know who it belonged to. Can you imagine the stories this piece could tell if only we knew?\n\nWhat catches your eye within this exhibit? Perhaps there's something that resonates with you or sparks your curiosity even further.",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 0,
+        "current_exhibit": "Unknown"
+      },
+      "simulator_data": {
+        "aoi": null,
+        "persona": "Agreeable",
+        "utterance": null
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 2,
+      "action": {
+        "option": 0,
+        "subaction": 2,
+        "terminate_option": true
+      },
+      "reward": 0.7502445602034497,
+      "done": false,
+      "info": {
+        "option": "Explain",
+        "subaction": "ClarifyFact",
+        "agent_utterance": "Absolutely! I'm thrilled that you find our current exhibit intriguing. The Unknown is an intricate piece that dates back to the 16th century. It's a testament to the artistic prowess of its time, showcasing a unique blend of various cultural influences.\n\nThe Unknown is primarily made from a rare wood known for its rich, deep hue. The artisans have skillfully carved intricate patterns onto the surface, creating an almost mesmerizing effect. Can you tell me what specifically captivates your attention about this piece?",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 0,
+        "current_exhibit": "Unknown"
+      },
+      "simulator_data": {
+        "aoi": null,
+        "persona": "Agreeable",
+        "utterance": null
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 3,
+      "action": {
+        "option": 2,
+        "subaction": 0,
+        "terminate_option": true
+      },
+      "reward": 0.31295377076201386,
+      "done": false,
+      "info": {
+        "option": "OfferTransition",
+        "subaction": "SuggestMove",
+        "agent_utterance": "\"I'd be happy to delve deeper into the 'Unknown'. If you're interested, there are other exhibits in the same category that might provide some context or connections. Would you like me to suggest a few?\"",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 0,
+        "current_exhibit": "Unknown"
+      },
+      "simulator_data": {
+        "aoi": null,
+        "persona": "Agreeable",
+        "utterance": null
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 4,
+      "action": {
+        "option": 2,
+        "subaction": 2,
+        "terminate_option": false
+      },
+      "reward": 0.6502588651453823,
+      "done": false,
+      "info": {
+        "option": "OfferTransition",
+        "subaction": "CheckReadiness",
+        "agent_utterance": "\"I'm glad you find it fascinating! The object we're currently discussing might actually provide some intriguing insights into our exhibit, 'Unknown.' Would you like to learn more about how they could be connected?\"",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 0,
+        "current_exhibit": "Unknown"
+      },
+      "simulator_data": {
+        "aoi": null,
+        "persona": "Agreeable",
+        "utterance": null
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 5,
+      "action": {
+        "option": 1,
+        "subaction": 1,
+        "terminate_option": false
+      },
+      "reward": 0.0,
+      "done": false,
+      "info": {
+        "option": "AskQuestion",
+        "subaction": "AskMemory",
+        "agent_utterance": "Let's embark on a fascinating journey through this exhibit together! I'd love to know what piece in particular caught your attention or if there's something specific you'd like to learn more about?",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 0,
+        "current_exhibit": "Unknown"
+      },
+      "simulator_data": {
+        "aoi": null,
+        "persona": "Agreeable",
+        "utterance": null
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 6,
+      "action": {
+        "option": 2,
+        "subaction": 1,
+        "terminate_option": true
+      },
+      "reward": 0.2953172608610164,
+      "done": false,
+      "info": {
+        "option": "OfferTransition",
+        "subaction": "LinkToOtherExhibit",
+        "agent_utterance": "\"I hope you're enjoying our exhibit so far! If you have a moment, I'd love to show you another piece from our collection that might interest you. Shall we head over together?\"",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 0,
+        "current_exhibit": "Unknown"
+      },
+      "simulator_data": {
+        "aoi": null,
+        "persona": "Agreeable",
+        "utterance": null
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 7,
+      "action": {
+        "option": 2,
+        "subaction": 0,
+        "terminate_option": false
+      },
+      "reward": 0.4136594112655453,
+      "done": false,
+      "info": {
+        "option": "OfferTransition",
+        "subaction": "SuggestMove",
+        "agent_utterance": "\"Thank you for your kind words! As you continue to explore, there are several other pieces in this exhibit that might interest you. Would you like some suggestions on where to go next?\"",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 0,
+        "current_exhibit": "Unknown"
+      },
+      "simulator_data": {
+        "aoi": null,
+        "persona": "Agreeable",
+        "utterance": null
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 8,
+      "action": {
+        "option": 2,
+        "subaction": 0,
+        "terminate_option": true
+      },
+      "reward": 0.31534869458305814,
+      "done": false,
+      "info": {
+        "option": "OfferTransition",
+        "subaction": "SuggestMove",
+        "agent_utterance": "\"There's more to discover in our exhibit! Would you be interested in exploring some related artifacts nearby?\"",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 0,
+        "current_exhibit": "Unknown"
+      },
+      "simulator_data": {
+        "aoi": null,
+        "persona": "Agreeable",
+        "utterance": null
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 9,
+      "action": {
+        "option": 2,
+        "subaction": 1,
+        "terminate_option": false
+      },
+      "reward": 0.29061051228130097,
+      "done": false,
+      "info": {
+        "option": "OfferTransition",
+        "subaction": "LinkToOtherExhibit",
+        "agent_utterance": "\"Thank you for your interest! If you'd like to explore more about similar artifacts, I'd recommend visiting our exhibit on 'Artistic Evolution Through Ages'. It delves deeper into various artworks from different periods that share themes with this piece.\"",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 0,
+        "current_exhibit": "Unknown"
+      },
+      "simulator_data": {
+        "aoi": null,
+        "persona": "Agreeable",
+        "utterance": null
+      }
+    }
+  ]
+}

@@ -1,5 +1,0 @@
-GAMMA = 0.95
-W_ENG = 1.0
-W_FACT = 0.3
-MAX_TURNS = 20
-STATE_DIM = 768 + 100 + 1 + 2  # = 871

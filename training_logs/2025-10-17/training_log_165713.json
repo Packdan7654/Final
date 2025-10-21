@@ -1,0 +1,98 @@
+{
+  "training_summary": {
+    "total_episodes": 0,
+    "total_turns": 3,
+    "average_reward_per_turn": 0.6727496689074517,
+    "average_reward_per_episode": 0.0,
+    "best_episode_reward": 0.0,
+    "most_used_option": "Transition",
+    "most_used_subaction": "CheckReadiness",
+    "option_usage": {
+      "Transition": 3
+    },
+    "subaction_usage": {
+      "CheckReadiness": 2,
+      "LinkToOtherExhibit": 1
+    }
+  },
+  "episode_rewards": [
+    2.018249006722355
+  ],
+  "training_history": [
+    {
+      "episode": 0,
+      "turn": 0,
+      "action": {
+        "option": 2,
+        "subaction": 2,
+        "terminate_option": false
+      },
+      "reward": 0.2,
+      "done": false,
+      "info": {
+        "option": "Transition",
+        "subaction": "CheckReadiness",
+        "agent_utterance": "Are you ready to explore more about the fascinating world of turbans, or would you like to move on to another exhibit? I have some engaging stories and insights that might pique your interest further.",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 1,
+      "action": {
+        "option": 2,
+        "subaction": 2,
+        "terminate_option": false
+      },
+      "reward": 0.927442895698549,
+      "done": false,
+      "info": {
+        "option": "Transition",
+        "subaction": "CheckReadiness",
+        "agent_utterance": "\"Absolutely, the turban is a fascinating piece of cultural history! Are you interested in seeing more about its significance across different regions and periods, or would you prefer to move on to another exhibit? I'm here to guide you according to your interests.\"",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 2,
+      "action": {
+        "option": 2,
+        "subaction": 1,
+        "terminate_option": false
+      },
+      "reward": 0.8908061110238064,
+      "done": false,
+      "info": {
+        "option": "Transition",
+        "subaction": "LinkToOtherExhibit",
+        "agent_utterance": "I'm glad you're finding the Turban exhibit fascinating! Have you ever considered visiting our exhibit on Indian textiles? There, you can learn about the intricate patterns and materials used in traditional Indian turbans, which tell their own captivating stories.",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    }
+  ]
+}

@@ -1,0 +1,152 @@
+{
+  "training_summary": {
+    "total_episodes": 0,
+    "total_turns": 5,
+    "average_reward_per_turn": 0.8613948728947698,
+    "average_reward_per_episode": 0.0,
+    "best_episode_reward": 0.0,
+    "most_used_option": "OfferTransition",
+    "most_used_subaction": "TransitionToExhibit",
+    "option_usage": {
+      "OfferTransition": 2,
+      "AskQuestion": 1,
+      "Explain": 2
+    },
+    "subaction_usage": {
+      "TransitionToExhibit": 2,
+      "AskClarification": 1,
+      "ExplainNewFact": 1,
+      "RepeatFact": 1
+    }
+  },
+  "episode_rewards": [
+    4.306974364473849
+  ],
+  "training_history": [
+    {
+      "episode": 0,
+      "turn": 0,
+      "action": {
+        "option": 2,
+        "subaction": 0,
+        "terminate_option": false
+      },
+      "reward": 0.0,
+      "done": false,
+      "info": {
+        "option": "OfferTransition",
+        "subaction": "TransitionToExhibit",
+        "agent_utterance": "Let's continue exploring our exhibit, shall we? If you'd like to learn more about the history and cultural significance of turbans, I can guide you through some interactive displays nearby. Or perhaps you might be interested in trying on a replica turban yourself? It's an enriching experience that helps understand their appeal better.",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 1,
+      "action": {
+        "option": 2,
+        "subaction": 0,
+        "terminate_option": false
+      },
+      "reward": 0.9030098462268734,
+      "done": false,
+      "info": {
+        "option": "OfferTransition",
+        "subaction": "TransitionToExhibit",
+        "agent_utterance": "\"I'm glad you find the turban fascinating! If you're interested in learning more about its history, we have a variety of artifacts that showcase different styles and origins. Shall we move to the next exhibit where you can explore further?\"",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 2,
+      "action": {
+        "option": 1,
+        "subaction": 2,
+        "terminate_option": true
+      },
+      "reward": 0.8281085719584778,
+      "done": false,
+      "info": {
+        "option": "AskQuestion",
+        "subaction": "AskClarification",
+        "agent_utterance": "\"I'm glad to hear you're interested in learning more about our turban exhibit! To help you get started, would you prefer to explore its historical evolution [HU_001], cultural symbolism [CS_002], materials and craftsmanship [MC_003], regional variations [RV_004], or famous turbans in art and literature [FA_005]?\"",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 3,
+      "action": {
+        "option": 0,
+        "subaction": 0,
+        "terminate_option": true
+      },
+      "reward": 1.2758559462884975,
+      "done": false,
+      "info": {
+        "option": "Explain",
+        "subaction": "ExplainNewFact",
+        "agent_utterance": "\"The turban [TU_001] is a traditional head covering worn in many cultures. This particular example is made of fine silk and adorned with precious stones [TU_002]. It's an interesting piece, created by Gerrit Dou in 1635 [TU_003].\"",
+        "facts_shared": 3,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 4,
+      "action": {
+        "option": 0,
+        "subaction": 1,
+        "terminate_option": false
+      },
+      "reward": 1.3,
+      "done": false,
+      "info": {
+        "option": "Explain",
+        "subaction": "RepeatFact",
+        "agent_utterance": "I'm glad you're finding our Turban exhibit captivating! Did you know that this masterpiece is not just a part of our museum but also resides in Hannover, at the Landesmuseum [TU_004]? It's fascinating how art can travel and still retain its charm.\n\nAs for the technique used, it's an oil on panel style painting [TU_005], which allows for a level of detail that truly brings this intricate turban to life. The artist has managed to capture every fold and texture, making it a must-see for anyone interested in art history or textile culture. Enjoy exploring!",
+        "facts_shared": 2,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    }
+  ]
+}

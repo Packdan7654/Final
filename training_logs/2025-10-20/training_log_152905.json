@@ -1,0 +1,147 @@
+{
+  "training_summary": {
+    "total_episodes": 0,
+    "total_turns": 5,
+    "average_reward_per_turn": 1.0403724626320086,
+    "average_reward_per_episode": 0.0,
+    "best_episode_reward": 0.0,
+    "most_used_option": "Explain",
+    "most_used_subaction": "ExplainNewFact",
+    "option_usage": {
+      "Explain": 5
+    },
+    "subaction_usage": {
+      "ExplainNewFact": 5
+    }
+  },
+  "episode_rewards": [
+    5.201862313160043
+  ],
+  "training_history": [
+    {
+      "episode": 0,
+      "turn": 0,
+      "action": {
+        "option": 0,
+        "subaction": 0,
+        "terminate_option": false
+      },
+      "reward": 0.15,
+      "done": false,
+      "info": {
+        "option": "Explain",
+        "subaction": "ExplainNewFact",
+        "agent_utterance": "This artwork you're admiring is a masterpiece, indeed. It was created by the renowned artist Gerrit Dou in 1635 [TB_003]. The turban [TB_002] that adorns the subject is not just a head covering but a traditional piece worn in many cultures [Tu_001]. This painting also showcases the artist's exceptional skill and attention to detail.",
+        "facts_shared": 2,
+        "exhibits_covered": 1,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 1,
+      "action": {
+        "option": 0,
+        "subaction": 0,
+        "terminate_option": false
+      },
+      "reward": 1.45,
+      "done": false,
+      "info": {
+        "option": "Explain",
+        "subaction": "ExplainNewFact",
+        "agent_utterance": "This beautiful work is a traditional head covering worn in many cultures, known as a turban [Tu_001]. It's intriguing to see such an iconic symbol depicted here. Also, you may be interested to know that this artwork is currently located at Hannover, Landesmuseum [Tu_004]. Enjoy exploring more!",
+        "facts_shared": 2,
+        "exhibits_covered": 1,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 2,
+      "action": {
+        "option": 0,
+        "subaction": 0,
+        "terminate_option": false
+      },
+      "reward": 0.9781085719584778,
+      "done": false,
+      "info": {
+        "option": "Explain",
+        "subaction": "ExplainNewFact",
+        "agent_utterance": "This beautiful work was created by Gerrit Dou in 1635 [TB_003], and it showcases a young boy [TB_001] dressed in a turban [TB_002]. The intricate design of the turban is truly remarkable, adorned with precious stones that add an exquisite touch.",
+        "facts_shared": 3,
+        "exhibits_covered": 1,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 3,
+      "action": {
+        "option": 0,
+        "subaction": 0,
+        "terminate_option": false
+      },
+      "reward": 1.4258559462884977,
+      "done": false,
+      "info": {
+        "option": "Explain",
+        "subaction": "ExplainNewFact",
+        "agent_utterance": "This intricate piece, a testament to the artistic prowess of Gerrit Dou [TB_006], is indeed a beauty. It's not just the exquisite silk and precious stones that catch the eye [TB_002], but also its current location at Hannover, Landesmuseum [Tu_001]. The oil on panel style [Tu_001] further enhances its appeal, providing a unique texture to this captivating artwork.",
+        "facts_shared": 4,
+        "exhibits_covered": 1,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Cavalier_hat",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 4,
+      "action": {
+        "option": 0,
+        "subaction": 0,
+        "terminate_option": false
+      },
+      "reward": 1.197897794913067,
+      "done": false,
+      "info": {
+        "option": "Explain",
+        "subaction": "ExplainNewFact",
+        "agent_utterance": "The captivating piece you're admiring is not by Gerrit Dou, as some might think, but rather by Jeronimus Beckx [Ca_001]. This artwork was created in 1643, and it showcases a unique style with an elaborate decoration [Ca_001], featuring ostrich feathers and gold trim [Ca_002]. Isn't it fascinating to see such exquisite craftsmanship from different artists during this period?",
+        "facts_shared": 4,
+        "exhibits_covered": 2,
+        "current_focus": 5,
+        "current_exhibit": "Cavalier_hat"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    }
+  ]
+}

@@ -1,0 +1,660 @@
+\documentclass[12pt]{article}
+
+% --- Core math & layout
+\usepackage{amsmath,amssymb}
+\usepackage{geometry}
+\geometry{a4paper, margin=1in}
+
+% --- Figures & tables
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{array}        % for \newcolumntype
+\usepackage{makecell}
+\usepackage{float}        % [H] placement
+\usepackage{adjustbox}    % fit tables to width
+\usepackage{pdflscape}    % landscape pages (rotates in PDF viewer)
+
+% --- Text handling & lists
+\usepackage[protrusion=true,expansion=true]{microtype}
+\usepackage{enumitem}
+
+% --- URLs & references
+\usepackage[hyphens]{url}
+\usepackage{natbib}
+\usepackage{hyperref}     
+\hypersetup{
+  colorlinks=true,
+  linkcolor=black,
+  citecolor=black,
+  urlcolor=blue
+}
+
+% --- House style tweaks
+\setlength{\emergencystretch}{1.8em}
+\hyphenpenalty=500 \exhyphenpenalty=500
+
+% TabularX helper: ragged-right X col
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+
+% --- Optional headers/footers (keep if you want them)
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{HRL Formalization}
+\lhead{Daniel Bourdon}
+\rfoot{\thepage}
+
+
+\begin{document}
+
+\title{Research Topics: Hierarchical Reinforcement Learning for Conversational Museum Agents: Structured Engagement via Gaze and Language Models}
+\author{Daniel Bourdon \\ University of Twente}
+\date{\today}
+\maketitle\section{Introduction}
+Museums are still working to rebuild steady, frequent visitation after the pandemic, and the fight for attention—on-site and online—has only grown. Recent surveys show the share of U.S. adults who visited a museum in the past year is back to roughly pre-pandemic levels (about 28\%), yet overall recovery remains uneven, largely because repeat visits have dipped rather than interest itself \citep{aam2023survey,aam2023gaps}. In the UK, national figures likewise report a sharp rise in both physical and digital engagement through 2023/24, pointing to strong demand for richer, more tailored experiences \citep{dcms2024engagement}. The practical challenge follows: deliver interactions that flex to a visitor’s goals, time, and prior knowledge—without scaling staff one-to-one.\\
+
+Conversational agents (CAs) become genuinely useful once they move past scripted menus and sustain real dialogue. Early deployments in museums—such as the embodied guide Max \citep{kopp2005conversational} and the twin agents Ada and Grace \citep{traum2012ada}—showed how small talk and naturalistic guidance can enliven galleries. But many first-generation systems leaned on rules and brittle flows: they were expensive to update and struggled when visitors wandered off script or wanted deeper context. Cross-domain reviews echo these limits for rule-based and narrowly scoped chatbots: they’re sensitive to out-of-distribution queries, prone to escalation under ambiguity, and incur rising maintenance costs as trees grow \citep{laymouna2024jmir,gruenhagen2024education}. In short, museums need agents that can reason over long, multi-turn exchanges while staying grounded in curatorial knowledge and audience needs.\\
+
+Reinforcement learning (RL) is a natural fit for sequential decision-making of this kind. An RL agent learns through interaction to maximize cumulative reward \citep{sutton2018reinforcement}, which maps well onto selecting dialogue policies under uncertainty. Still, a single flat policy can falter in open-ended conversation: it must juggle near-term coherence with longer-horizon goals like learning outcomes and sustained engagement. Hierarchical reinforcement learning (HRL) addresses this by breaking behavior into temporally extended sub-policies (options), supporting decisions at multiple levels of abstraction and improving credit assignment across long spans \citep{sutton1999between,dietterich2000maxq}. In dialogue terms, that means high-level choices (e.g., \emph{explain}, \emph{ask}, \emph{transition}) with low-level realizations that adapt in the moment—an approach backed by recent work on hierarchical policies in both task-oriented and open-domain settings \citep{saleh2020hierarchical,wang2021hdno}.\\
+
+In museums, agents must do two things at once: deliver accurate, situationally relevant content and keep people engaged. Measuring engagement in a robust, ethical way on the floor is non-trivial. Multimodal work suggests that simple, observable gaze signals—such as dwell time on an object of interest—track attention and cognitive effort in interactive learning contexts, including VR and situated experiences \citep{adhanom2023vrreview,moreno2024vrsurvey}. These measures are appealing in practice: they can be captured passively (e.g., via VR/AR or instrumented exhibits) and distilled into compact features that correlate with on-task behavior.\\
+
+Against this backdrop, the thesis examines HRL for museum dialogue with the goal of structuring policy decisions across short, medium, and long conversational horizons. Engagement and learning support are treated as co-equal objectives, with gaze-derived attention features serving as a principled, low-intrusion proxy for engagement. We outline the intended direction as: (i) define high-level dialogue options aligned with curatorial aims; (ii) ground actions in institution-specific knowledge; and (iii) test whether hierarchical policies improve persistence, topic coverage, and visitor-reported usefulness relative to rule-based baselines and non-hierarchical policies. Earlier embodied and virtual guides \citep{kopp2005conversational,traum2012ada} motivate the setting; recent progress on adaptive agents supports real-time responsiveness to user state \citep{woo2024adaptive}.\\
+
+In sum, we recast museum conversational guidance as a hierarchical control problem with measurable engagement signals—linking longstanding interpretive goals to modern policy learning while staying mindful of museum operations.
+
+\section{Related Works}
+
+Museums are dynamic environments where visitors engage with exhibits in diverse and unpredictable ways. Conversational agents deployed in such settings must navigate a range of challenges to provide meaningful and engaging interactions.
+
+\subsubsection*{Diverse Visitor Profiles, Engagement Balance, and Context Awareness}
+
+Museum visitors vary widely in background, prior knowledge, motivations, and interests; as a result, conversational agents must personalize both content and pacing to sustain relevance and learning. Decades of museum-learning research highlight that visitors’ experiences are shaped by personal, sociocultural, and physical contexts, reinforcing the need for adaptive dialogue rather than one-size-fits-all scripts \citep{falk-dierking-2016-museum}. Recent sector-wide surveys similarly show heterogeneous expectations around “community connection” and interaction styles across audience segments, underlining the value of personalization in digital mediation \citep{aam-2024-data-story,aam-2024-staff}. In practice, museum chatbots too often under-measure visitor experience—revealing a gap between deployment and rigorous evaluation of how different audiences engage—so systems should incorporate continuous UX assessment and user modeling \citep{stekerova-2022-chatbots}.\\
+
+Balancing educational depth with enjoyable, conversational flow remains a core challenge. Empirical deployments in museums and cultural spaces show that thoughtfully designed conversational/interactive systems can lift engagement and satisfaction when they adapt the level of detail and the interaction style to the visitor (e.g., task-oriented vs.\ exploratory) \citep{robinson-etal-2008-ask,chai-arayalert-2024-chatbot,chin-2024-wearableMR}. Emerging work on human-centric AI in museums echoes this, advocating visitor-centered adaptivity and participatory design to avoid over-standardized narratives and to better serve both casual and expert visitors \citep{derda-2025-human-centric}.\\
+
+Doing this well requires strong context awareness—tracking where the visitor is, what they have already seen/asked, and immediate behavioral cues (e.g., dwell, movement), then using that state to time interventions and choose the right granularity. The museum-tech literature (from mobile guides to AR) shows that location and behavior signals enable timely, relevant guidance, while contemporary HCI surveys argue for richer, multimodal context models that combine spatial, historical, and interaction data for adaptive interfaces \citep{raptis-2005-context,wang-2022-museum-AR-survey,hu-2025-context-aware}. Together, these findings establish three intertwined design problems for museum conversational agents: (1) personalization for diverse visitor profiles, (2) a principled balance between education and enjoyment, and (3) robust context awareness to deliver the right content at the right moment.
+
+\subsection{Limitations of Traditional Dialogue Systems}
+
+Building on the need to serve diverse visitor profiles while balancing engagement with learning and responding to context, early museum conversational agents (CAs) demonstrated the value of social dialogue, small talk, and timely guidance but were predominantly rule-based and brittle under visitor variability. Systems like the embodied guide \emph{Max} \citep{kopp2005conversational} and the virtual twins \emph{Ada} and \emph{Grace} \citep{traum2012ada} showed that naturalistic language and social behaviors can enrich the gallery experience. Cross-domain reviews echo the limitations of such scripted or menu-driven systems: sensitivity to out-of-distribution queries, escalating fallback behavior under ambiguity, compounding maintenance as decision trees expand, and difficulty incorporating continuous evaluation of visitor experience \citep{laymouna2024jmir,reimann2024dm}. In dialogue-system research more broadly, policy control based on fixed rules is known to degrade with noise and ambiguity, motivating probabilistic decision-making and learned policies \citep{williams2007pomdp,young2013pomdp}. These observations motivate moving beyond static flows to policies that adapt over multi-turn interactions, remain grounded in curatorial content, and can trade off engagement with coverage of educational goals.\\
+
+As mentioned just above, dialogue systems that rely on predefined scripts or rule-based frameworks limit their flexibility and adaptability in dynamic environments like museums. These systems struggle with:
+\begin{itemize}
+\item \textbf{Scalability}: Difficulty in scaling to the large combinatorial space of visitor intents, exhibit contexts, and follow-up questions; maintaining trees/menu flows becomes costly and brittle \citep{reimann2024dm}.
+\item \textbf{Personalization}: Limited capacity to adjust content depth and style to individuals or segments, compared with learned policies that condition actions on user state/history \citep{kwan2023dplsurvey}.
+\item \textbf{Contextual Integration}: Challenges in fusing real-time signals (location, dwell/engagement, prior turns) into action selection; robust context use typically requires probabilistic state tracking and policy optimization \citep{williams2007pomdp,reimann2024dm}.
+\end{itemize}\\
+
+These limitations highlight the need for more adaptive and intelligent dialogue management approaches capable of operating effectively in complex, variable museum settings. In practice, architectures for social CAs often grow into multi-component pipelines (speech/vision, user and domain models, affect, timing/heuristics) as shown in Figure~\ref{fig:complex-architecture}, where layered emotion models and cognitive components coordinate action selection \citep{opdenakker2012computational}. While such architectures capture necessary facets of social interaction, their breadth underscores a core challenge: hand-authoring rules and heuristics at each layer does not scale to the variability and uncertainty of live museum floors.\\
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.7\linewidth]{Images/Introduction/complex.png}
+\caption{Conceptual architecture for social CAs: hand-crafted rules/heuristics govern dialogue and reasoning; perception uses recognition modules (speech, vision, emotion) with context and affect layers feeding action selection. Adapted from \citet{opdenakker2012computational}.}
+\label{fig:complex-architecture}
+\end{figure}
+
+The complexity depicted in this architecture emphasizes the challenges faced when attempting to model human-like conversational behaviors. Consequently, exploring alternative approaches grounded in \emph{learning} rather than scripting becomes natural. In dialogue research, Reinforcement Learning (RL) has been used to optimize dialogue policies under uncertainty—framing the user as the environment and the system as the agent—improving robustness to ambiguity and enabling principled trade-offs (e.g., engagement vs.\ coverage) \citep{williams2007pomdp,kwan2023dplsurvey}. Moreover, \emph{hierarchical} RL (HRL) decomposes policy decisions across levels (high-level options vs.\ low-level actions), addressing large action/state spaces and enabling adaptivity over longer horizons; feudal/option-based managers have shown scalability gains in multi-domain dialogues \citep{casanueva2018feudal,weisz2018sample,su2017sample}. This motivates our turn to RL/HRL for museum CAs in the following parts.\\
+
+\subsection{Markov Decision Processes}
+
+Reinforcement Learning (RL) provides a framework for agents to learn optimal behaviors through interactions with an environment. This interaction is commonly modeled as a Markov Decision Process (MDP), defined by the tuple $(\mathcal{S}, \mathcal{A}, P, R, \gamma)$, where:
+
+\begin{itemize}
+    \item $\mathcal{S}$: a finite set of states,
+    \item $\mathcal{A}$: a finite set of actions,
+    \item $P(s'|s,a)$: the probability of transitioning to state $s'$ from state $s$ after taking action $a$,
+    \item $R(s,a)$: the immediate reward received after taking action $a$ in state $s$,
+    \item $\gamma \in [0,1]$: the discount factor that prioritizes immediate rewards over distant future rewards.
+\end{itemize}
+
+To better illustrate the agent-environment interaction underlying Markov Decision Processes, Figure~\ref{fig:mdp-loop} provides a high-level schematic adapted from \citet{sutton2018reinforcement}. It highlights how the agent observes the current state $s_t$, selects an action $a_t$, and receives both a new state $s_{t+1}$ and a scalar reward $R(s_t, a_t)$ from the environment in response.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.75\linewidth]{Images/Introduction/BASIC.png}
+    \caption{Basic agent-environment interaction loop in reinforcement learning. Adapted from \citet{sutton2018reinforcement}.}
+    \label{fig:mdp-loop}
+\end{figure}
+
+The agent's objective is to learn a policy $\pi(a|s)$ that maximizes the expected cumulative reward:
+
+\[
+J(\pi) = \mathbb{E}_\pi \left[ \sum_{t=0}^{\infty} \gamma^t R(s_t, a_t) \right]
+\]
+
+\subsection{Value-Based and Policy-Based Methods}
+
+RL algorithms are broadly categorized into:
+
+\begin{itemize}
+    \item \textbf{Value-Based Methods}: These focus on estimating the value function $V(s)$ or the action-value function $Q(s,a)$, which represent the expected return from a state or state-action pair, respectively. An example is Q-learning, where the update rule is:
+
+    \[
+    Q(s,a) \leftarrow Q(s,a) + \alpha \left[ r + \gamma \max_{a'} Q(s',a') - Q(s,a) \right]
+    \]
+
+    \item \textbf{Policy-Based Methods}: These directly optimize the policy $\pi(a|s)$ without relying on value functions. Techniques like policy gradients adjust the policy parameters in the direction that increases expected rewards.
+
+\end{itemize}
+
+Despite its suitability, applying RL to dialogue systems presents several challenges:\\
+
+Several challenges consistently arise when using reinforcement learning for dialogue systems. First, there is the \textbf{credit assignment problem}: it is often unclear which parts of a conversation actually contributed to a good outcome, especially when feedback is sparse or only available at the end of the interaction. This ties closely to the issue of \textbf{sparse and delayed rewards}, where meaningful signals like user satisfaction may only be known after a full dialogue has ended, making it difficult for the system to learn which actions were effective \citep{peng2017composite}. Another practical challenge is \textbf{data efficiency}. Reinforcement learning typically requires many interactions to learn good policies, which can be impractical to collect in real-world conversational settings. Finally, as the complexity of conversations grows, the \textbf{state and action spaces expand rapidly}, making it hard for an agent to learn effective policies without techniques like abstraction or hierarchical decomposition to keep learning tractable.\\
+
+
+These challenges are particularly pronounced in museum settings, where dialogues are expected to be informative, engaging, and contextually aware. Visitors may have diverse interests, and the system must adapt its responses accordingly, often with limited explicit feedback.\\
+
+To address these challenges, Hierarchical Reinforcement Learning (HRL) has been shown to be able to compensate for these problems through structures that allow for temporal abstraction and modular policy learning \cite{cuayahuitl2010evaluation}. 
+
+\subsection{Hierarchal Reinforcement Learning}
+
+The scalability issues outlined above arise because a flat agent must decide at
+every time step which \emph{primitive} action to take.  As tasks become longer
+and rewards sparser, learning such fine-grained control quickly becomes
+sample-inefficient and prone to myopic exploration.  
+\emph{Hierarchical Reinforcement Learning} (HRL) tackles this
+problem by endowing the agent with \emph{temporal abstraction}: beside
+elementary actions it may select \emph{macro–actions} (or
+\textit{options})—closed-loop policies that unfold over multiple steps
+\citep{dayan1993feudal,dietterich2000maxq,sutton1999between}.  
+An HRL agent therefore learns a policy \(\pi\) that operates on several
+time-scales, delegating short-horizon control to lower layers while higher
+layers concentrate on long-term strategy.\\
+
+When actions can last more than one step we
+model the environment as a \emph{semi-Markov decision process} (SMDP).  The
+one-step transition kernel \(P(s' \mid s,a)\) is replaced by a joint
+distribution over next state and duration,
+\[
+P(s',\tau \mid s,a), \quad \tau\in\mathbb{N}_{+},
+\]
+so that planning and learning algorithms generalise naturally while accounting
+for the elapsed time \(\tau\).
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.7\linewidth]{Images/Introduction/HRLintro.png}
+    \caption{Hierarchical learning dynamics.  
+    A high-level policy \(\pi\) selects a macro-action
+    \(\sigma\) (black arrow) spanning several primitive
+    actions \(a\); the low-level policy \(\pi_{\sigma}\) controls those
+    primitives.  Value estimates at both levels (\(V_{\pi}\) in green and
+    \(V_{\sigma}\) in grey) propagate credit over different temporal
+    horizons.  Adapted from \citet{ribas2011neural}.}
+    \label{fig:hrl_dynamics}
+\end{figure}
+
+Figure~\ref{fig:hrl_dynamics} illustrates how hierarchical control
+factors credit assignment: the green returns \(V_{\pi}\) bridge long
+gaps between decisive moments, while grey returns \(V_{\sigma}\) guide
+the execution of the macro-action itself.\\
+
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.4\linewidth]{Images/Introduction/Hiearach.jpg}
+    \caption{Conceptual illustration of Hierarchical Reinforcement Learning. The diagram showcases the interaction between high-level policies (options) and low-level actions, emphasizing temporal abstraction and modular decision-making. Adapted from \citet{bougie2022hierarchical}.}
+    \label{fig:hierarchal}
+\end{figure}
+
+Since the 1990s a series of foundational algorithms—Feudal RL
+\citep{dayan1993feudal}, MAXQ decomposition \citep{dietterich2000maxq},
+and the Options framework \citep{sutton1999between}—have shown that
+temporal abstraction affords three principal advantages:
+
+\begin{itemize}
+    \item \textbf{Long-term credit assignment:} extended actions collapse
+          delayed rewards onto higher-level decisions, accelerating learning.
+    \item \textbf{Structured exploration:} sampling entire sub-policies, rather
+          than isolated primitives, enables coherent exploration over sparse
+          reward landscapes.
+    \item \textbf{Knowledge transfer:} reusable options capture task
+          sub-structure and can be ported across domains or fine-tuned
+          with little additional data.
+\end{itemize}
+
+These properties make HRL a natural candidate for complex, open-ended dialogue—where an agent must juggle immediate conversational moves with overarching curatorial or pedagogical goals. Before surveying contemporary systems, we briefly recap the \emph{Options} framework that operationalizes temporal abstraction in our setting and fixes notation for the remainder.
+
+\subsubsection{Options Framework}
+
+The most well known HRL method is known as the options framework by \cite{sutton1999between}. In the HRL options framework, an agent selects high-level actions (options), each of which encapsulates a policy $\pi_o$, an initiation set $\mathcal{I}_o$, and a termination condition $\beta_o$. An \textit{option} $o$ is defined as a tuple:
+\[
+o = (\mathcal{I}_o, \pi_o, \beta_o)
+\]
+- $\mathcal{I}_o \subseteq \mathcal{S}$: the set of states where the option can be initiated,
+- $\pi_o(a|s)$: the intra-option policy,
+- $\beta_o(s) \in [0,1]$: the probability the option terminates in state $s$.\\
+
+The value function for a policy over options $\pi$ becomes:
+\[
+V^\pi(s) = \mathbb{E} \left[ \sum_{k=0}^{\infty} \gamma^{\tau_k} r_k \mid s_0 = s, \pi \right]
+\]
+where $\tau_k$ is the duration of the $k$-th option execution.\\
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.6\linewidth]{Images/Introduction/OPTIONS.png}
+    \caption{Visualization of different temporal granularities: primitive actions in MDPs (top), temporally abstract transitions in SMDPs (middle), and options over MDPs (bottom). Adapted from \citet{sutton1999between}.}
+    \label{fig:options}
+\end{figure}
+
+Figure~\ref{fig:options} illustrates the conceptual advantage of HRL, and specifically the options framework. HRL with options enables structured transitions between these levels: the agent selects an option, which then executes a sequence of low-level actions internally until a termination condition is met.\\
+
+The options framework adds helpful modularity to the system. By structuring decisions into higher-level options and lower-level actions, the agent can explore more effectively over longer stretches of the conversation while reusing sub-policies, which makes learning more efficient. These learned options can often transfer to new tasks or domains without starting from scratch, and the clear structure of the hierarchy also makes it easier to understand and analyze what the agent is trying to achieve at each step.\\
+
+In dialogue systems, these advantages materialize as high-level conversational strategies (e.g., \emph{introduce exhibit}, \emph{answer question}, \emph{guide user}) realized by lower-level utterance choices. With this foundation in place, we now turn to an up-to-date review of four strands that shape our design: (i) hierarchical control for extended dialogues, (ii) gaze-based engagement sensing, (iii) intent features as compact state, and (iv) structure-aware language generation.
+
+\subsubsection{Hierarchical control and learning for long, coherent conversations}
+
+
+Hierarchy in dialogue means the agent separates \emph{when} to change strategy from \emph{how} to realize utterances while a strategy is active. Concretely, we model four strategic options (Explain, AskQuestion, OfferTransition, Conclude) and let a high-level policy over options decide which one to start in state $s_t$, while a low-level policy executes utterances until the option stops. This is precisely the setting of options over SMDPs \citep{sutton1999between}: a manager samples $o_t \sim \mu(o\mid s_t)$, the active option follows an intra-option policy $a_{t+k}\sim \pi_{o_t}(\cdot\mid s_{t+k})$ for $k=0,\ldots,\tau-1$, and a termination function $\beta_{o_t}(s_{t+k})\in[0,1]$ decides—at each intermediate state—whether control returns to the manager. If $\tau$ is the (stochastic) duration until termination, the option-value is:
+\[
+Q_U(s_t,o_t)=\mathbb{E}\!\left[\;\sum_{k=0}^{\tau-1}\gamma^{k}r_{t+k} \;+\; \gamma^{\tau} V(s_{t+\tau}) \;\middle|\; s_t,o_t\right],
+\]
+which collapses the rewards accrued over several turns onto a single strategic commitment and then backs off to the continuation value $V(s_{t+\tau})$ when the option ends. This SMDP return is what improves long-horizon credit assignment in conversation: delayed signals (engagement, learning, novelty) attach to a few decisive option choices rather than to every primitive turn.\\
+
+For completeness, we will also refer to two values used in the Option--Critic literature: the value of \emph{starting} option $o$ in $s$,
+\[
+Q_O(s,o)\;=\;\mathbb{E}\!\left[\sum_{k=0}^{\tau-1}\gamma^{k}r_{t+k}+\gamma^\tau V(s_{t+\tau})\;\middle|\;s_t=s,o_t=o\right],
+\]
+and the value of taking a primitive action $a$ \emph{while} option $o$ is active,
+\[
+Q_U(s,o,a)\;=\;\mathbb{E}\!\left[r(s,a)+\gamma\,\bigl((1-\beta_o(s'))\,Q_O(s',o)+\beta_o(s')\,V(s')\bigr)\right].
+\]
+These are consistent with the SMDP return above and let us write clean learning signals (advantages) later on.\\
+
+Two coupled learning problems follow directly from this structure. \emph{Between-option learning} fits the manager $\mu(o\mid s)$ that selects the next strategic move; in the case of Conversational Agent in a museum, $s$ can include user intent cues and user interest metrics, so the manager can prefer options that relate to user focus and what they specfiically say allowing the agent to pivot to more appropriate options when metrics like attention or intent shift. \emph{Within-option learning} fits each option’s intra-option policy $\pi_o(a\mid s)$—how to realize turns while $o$ is active—and its termination $\beta_o(s)$—when to stop and hand control back. Termination governs pacing. A good option encompassing a conversational strategy like explaining should continue across multiple turns while dwell remains high and end quickly when dwell drops or the visitor asks a question. Option--Critic \citep{bacon2017option} is designed for this: it provides SMDP-consistent gradients to learn both $\pi_o$ and $\beta_o$ from interaction, rather than fixing option length by hand.\\
+
+Formally, the duration $\tau$ is induced by the state-dependent stopping hazard:
+\[
+\Pr(\tau=n\mid s_t,o_t)\;=\;\Biggl[\prod_{k=0}^{n-1}\bigl(1-\beta_{o_t}(s_{t+k})\bigr)\Biggr]\;\beta_{o_t}(s_{t+n}),
+\]
+so learning $\beta_o$ is tantamount to learning the distribution of option lengths. Using option-level and intra-option advantages
+\[
+A_O(s,o)=Q_O(s,o)-V(s),\qquad A_U(s,o,a)=Q_U(s,o,a)-Q_O(s,o),
+\]
+the Option--Critic updates take the standard policy-gradient form:
+\[
+\nabla_{\theta_\mu} J \;\approx\; \mathbb{E}\!\left[\nabla_{\theta_\mu}\log \mu(o_t\!\mid s_t)\;A_O(s_t,o_t)\right],\qquad
+\nabla_{\theta_o} J \;\approx\; \mathbb{E}\!\left[\nabla_{\theta_o}\log \pi_o(a_t\!\mid s_t)\;A_U(s_t,o_t,a_t)\right],
+\]
+and the termination gradient controls pacing:
+\[
+\nabla_{\vartheta_o} J \;\approx\; \mathbb{E}\!\left[-\,\nabla_{\vartheta_o}\beta_o(s_t)\;A_O(s_t,o)\right].
+\]
+When $A_O>0$ (staying in the option beats handing control back), this pushes $\beta_o(s)$ down (longer runs); when $A_O<0$, it raises $\beta_o(s)$.\\
+
+This formal split mirrors the practical needs of a museum guide. The manager chooses a strategy at a cadence that matches the visitor’s focus and goals; the option then handles utterance-level realization and decides when that strategy has run its course. In symbols, the continuation probability inside an option is $1-\beta_o(s_{t+k})$, so the termination time $\tau$ has a state-dependent hazard; longer $\tau$ under sustained attention increases $\sum_{k<\tau}\gamma^k r_{t+k}$, while early termination shortens exposition and frees the manager to switch strategy. Because $\gamma^\tau$ scales the bootstrap to $V(s_{t+\tau})$, choosing \emph{appropriate} $\tau$ is an integral part of credit control rather than an afterthought.\\
+
+Empirically, hierarchical control has delivered consistent gains in dialogue. Feudal decompositions route decisions through a manager--worker split, reducing the branching factor per decision and scaling multi-domain managers \citep{dayan1993feudal,casanueva2018feudal}. MAXQ shows that decomposing tasks into sub-tasks yields reusable structure and better exploration \citep{dietterich2000maxq}. For end-to-end task systems, HDNO couples a high-level controller over latent dialogue acts with a low-level surface realizer under the options view and improves task success and human ratings on MultiWOZ compared to flat baselines \citep{wang2021hdno}. In composite task completion, learning around sub-goals simplifies exploration and improves sample efficiency when rewards are sparse or delayed \citep{peng2017composite}, and subgoal discovery can further automate the hierarchy for large action spaces \citep{tang2018subgoal}. Open-domain settings also benefit: hierarchical policies improve coherence and goal completion by letting a high-level controller steer local generation \citep{saleh2020hierarchical}. More recently, guidance signals and offline structure have been used to stabilize or pre-shape hierarchical policies at scale—human-in-the-loop pruning and evaluation to regularize option choices across domains \citep{rohmatillah2023hrl_guidance}, and simulation-free latent policy planning that discovers fine-grained skills from logs before online finetuning \citep{he2025ldpp}.\\
+
+Taken together, these results can help us motivate a pattern to adopt: an interpretable option set whose manager $\mu$ is trained to read engagement and intent, with each option learning both when to engage a conversational strategy ($\pi_o$) and when to stop ($\beta_o$). In our setting, that means a conversational strategy like explaining persists while engagement metrics are strong; termination increases when attention plateaus or the visitor’s intent shifts; and a strategy associated with boosting engagement like asking a question can then take over. This is the mechanism by which hierarchy delivers long-horizon coherence without sacrificing local responsiveness.\\
+
+\subsubsection{Engagement sensing with gaze: signals, robustness, and use}
+
+In-gallery engagement must be inferred as the interaction unfolds and without intrusive probes. Eye tracking is well suited to this requirement because it delivers a continuous, unobtrusive record of visual attention that has been repeatedly associated with on-task focus and cognitive–affective involvement in immersive learning settings \citep{Bozkir2021,Dubovi2022,Mikhailenko2022}. Among available gaze measures, dwell time on the currently relevant Area of Interest (AOI) stands out as a dependable approximation to engagement for object-centered experiences. Conceptually, dwell aggregates micro-movements (fixations and interleaved small saccades) into a single proportion of time that the gaze remains within the AOI for a short analysis window aligned to conversational turns. Formally, with $W_t$ a rolling window and $\mathcal{T}_{\text{AOI}}$ the set of timestamps fixated within the exhibit AOI, the online dwell ratio is\\
+\[
+\text{dwell}_t \;=\; \frac{\lvert \mathcal{T}_{\text{AOI}} \cap W_t \rvert}{\lvert W_t \rvert}\in[0,1],
+\]
+
+optionally smoothed across adjacent windows to dampen transient saccades. Methodological syntheses emphasize that AOI-based dwell is comparatively robust to small calibration drift and sampling noise, provided AOIs are defined consistently and windowing is reported \citep{holmqvist2011eyetracking,orquin2018}. In classroom-scale VR, dwell tied to object-of-interest has shown face validity and convergent validity as a marker of on-task attention, tracking when learners remain focused on the pedagogically relevant target \citep{Bozkir2021}; multimodal studies of VR learning likewise report that sustained looking relates to cognitive and emotional engagement \citep{Dubovi2022,Mikhailenko2022}. Together, these findings support dwell as a stable, turn-grained indicator of whether the current exhibit retains attention.\\
+
+Fixation-based summaries offer a complementary but more method-sensitive view of engagement. Metrics such as fixation rate and mean fixation duration have been linked to levels of cognitive processing and load in immersive tasks \citep{Kim2023,Wang2023}, yet their reliability depends on algorithmic choices in fixation detection (velocity/dispersion thresholds) and on eye tracker characteristics, which can introduce between-study variability \citep{holmqvist2011eyetracking}. As a result, fixation dynamics are informative for characterizing the \emph{quality} of looking—sustained scrutiny vs.\ fleeting glances—but warrant careful reporting of detection parameters and sampling rates to ensure interpretability across deployments.\\
+
+A further dimension is the spatial distribution of gaze, often summarized by entropy or dispersion indices. Gaze entropy quantifies how concentrated or scattered visual attention is across competing AOIs; higher entropy typically reflects scanning, divided attention, or exploratory search, whereas lower entropy accompanies focused scrutiny \citep{Gugerty2017}. Recent interactive- and VR-based studies extend this interpretation, showing that entropy tracks attentional shifts and elements of cognitive load, albeit with sensitivity to window size and AOI granularity \citep{Nguyen2024,Lee2024}. This sensitivity underscores a measurement caution: dispersion measures are powerful for describing attentional organization and longer-run trends, but they are noisier at very short horizons and must be interpreted in light of the underlying segmentation.\\
+
+Finally, there is support for the validity of these measures in museum-adjacent contexts. Mobile eye-tracking studies that pair guidance with on-the-move viewing demonstrate that gaze can be captured and aligned with content outside of laboratory conditions \citep{mokatren2016listen}, and broader HRI reviews highlight social gaze as a reliable channel through which attention and interest are manifested in interactions with artificial agents \citep{admoni2017social}. Taken together, the literature positions AOI dwell as a primary, robust indicator of moment-to-moment engagement in object-centered experiences, with fixation dynamics and dispersion as complementary descriptors that enrich—but do not supplant—the core attentional signal provided by dwell.
+
+\subsubsection{Intent features as compact, turn-aligned signals}
+
+Effective turn-by-turn decision making requires distilling raw utterances into a small set of features that say what the visitor is doing \emph{now} and how certain that reading is. Classic pipelines used dialogue acts or domain-specific intent labels to turn open text into policy-ready observations, improving downstream control in noisy, real-time settings \citep{williams2007pomdp,young2013pomdp}. Two shifts make these signals far more reliable in multi-turn museum conversations: (i) contextual encoders that interpret an utterance in light of speaker role and local history, and (ii) pretrained language models with light task heads that learn robust intent cues with modest supervision. DialogueBERT exemplifies the first trend, encoding turn order and roles to lift multi-turn intent recognition over non-contextual baselines, while few-shot variants such as IntentBERT show strong transfer across intent sets with limited labeled data \citep{zhang2021dialoguebert,zhang2021intentbert}. Figure~\ref{fig:dialoguebert-compact-intent} sketches this idea: DialogueBERT encodes each utterance with token, position, speaker-role, and turn-order signals, then uses lightweight task heads to output compact intent features with calibrated confidence. This makes the ‘now’ state explicit and policy-ready without relying on long, brittle text histories.\\
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=0.5\linewidth]{Images/LitReview/DialogueBERTArchitecture.png}
+  \caption{Turn- and role-aware intent encoding. DialogueBERT augments a pretrained encoder with token, position, \textbf{role}, and \textbf{turn} embeddings and lightweight task heads, producing compact, calibrated features suitable for turn-by-turn control \citep{zhang2021dialoguebert}.}
+  \label{fig:dialoguebert-compact-intent}
+\end{figure}
+
+
+Tools like DialogueBERT typically have a few outputs, usually a coarse act/intent \emph{with calibrated confidence}; a cue to question type (e.g., \emph{why} vs.\ \emph{what}) that predicts explanatory shape; a short-history embedding that tracks unresolved topics; and light entity grounding so references could be aligned to the exhibit knowledge base rather than surface strings. These features could map to policy choices and conversational strategies such as \emph{explain}, \emph{probe}, \emph{clarify}, or \emph{transition}. Evidence from task-oriented dialogue confirms that small, well-chosen state summaries improve response selection, error recovery, and turn-taking compared with text-only policies and rule trees \citep{kwan2023dplsurvey,casanueva2018feudal,wang2021hdno}.\\
+
+Empirical results support both effectiveness and efficiency. On fine-grained single-domain data (e.g., BANKING77), intent models built on pretrained encoders achieve strong accuracy with compact representations \citep{casanueva2020banking77}. In multi-turn settings, explicitly encoding role and turn structure yields consistent gains over single-turn baselines \citep{zhang2021dialoguebert}. Industry-facing studies report further improvements when lightweight retrieval or context fusion is added on top of a compact state (average multi-point lifts without heavy supervision), reinforcing the value of concise, context-aware features over raw text alone \citep{liu2024lara}.\\
+
+ Given this, Intent classifiers degrade under domain shift and when users produce unseen or overlapping intents; long-tailed labels and multi-intent utterances amplify this \citep{larson2019evaluating,casanueva2020banking77}. Multi-turn OOD detectors that leverage short dialogue history outperform single-turn detectors, suggesting that even a thin slice of context helps separate unfamiliar intents from in-scope variants \citep{lang2024caro}. The practical takeaway is to treat intent features as \emph{descriptive inputs with uncertainty}, not rigid gates: pair compact, turn-aligned signals with confidence or entropy and let the policy decide when to trust them or defer to other cues \citep{zhang2021intentbert}.
+
+
+\subsubsection{Dialogue action tokens, fluent realization, and hierarchical control}
+\label{sec:dat-templates}
+
+The controller’s job is long-range: commit to a conversational strategy and decide when to switch. Realization is short-range: say the next thing naturally, on style, and in line with the strategy. Prompt-engineered dialogue action tokens sit right on that boundary. Each option in a conversational strategy set ( such as \textsc{Explain}, \textsc{AskQuestion}, \textsc{Transition}, \textsc{Conclude}) could have a compact prompt header—a short, human-readable template with slots—that frames the next turn. The prompt would be paired with a context vector, and a few turn-aligned state bits from intent features. The LLM then realizes the turn freely under that header.\\
+
+This is a pragmatic variant of plan-aware prompting that takes advtangae of the fluency and flexibility of an LLM and long horizon decision making of HRL. Two strands of evidence support this. First, Conversation Routines show that reusable, option-like prompt schema with slots for context and constraints can keep generation “on plan” while preserving fluent surface language \citep{robino2025conversation}. Second, planning tokens show that small, prefixed step cues can improve the structure and reliability of reasoning, yielding stronger performance and analyses consistent with greater controllability; although these cues are learned rather than hand-templated, the control effect is analogous in spirit to our headers \citep{wang2024planning}. Taken together, these results motivate using lightweight, structured headers to shape the next turn while keeping the text natural.\\
+
+The limitation is temporal: prompt headers decide what to say \emph{now}, not \emph{when} to change tactics. That decision sits with the strategic layer. As formalized earlier in the options/SMDP view \citep{sutton1999between}, a manager samples a strategy (option), an intra-option policy realizes utterances for several turns, and a termination function hands control back when the evidence says to switch. Under this split, the header is the realization-time contract for the active option; the termination function—not an arbitrary token budget—governs when the header should change.\\
+
+Training follows the same division of labor. On the control side, actor–critic with semi-MDP returns puts credit on option choice and termination; Option–Critic supplies gradients for both the intra-option policy and the stopping rule \citep{bacon2017option}. Policy-gradient variants like PPO work well when on-policy interaction is available \citep{schulman2017ppo-openreview}; maximum-entropy off-policy methods such as SAC capture multi-modal behavior and improve sample efficiency \citep{haarnoja2018sac}; conservative Q-learning stabilizes offline learning from logs \citep{kumar2020conservative}. Dialogue studies report gains even from modest RL at the decision layer \citep{su2017sample,weisz2018sample}. In short: the controller delivers long-horizon coherence; the header keeps the generator locally faithful and fluent.\\
+
+Signals feeding the controller come from the earlier pieces. Turn-aligned intent cues summarize what the visitor is doing now and how confident that reading is; gaze dwell over the current object offers a robust, online proxy for attention. When intent shifts or dwell drops, termination should rise; when attention is steady and the intent calls for elaboration, the currently active option should persist and its header should continue to frame realization. This keeps multi-turn structure without sacrificing the flexibility that makes LLMs effective at the utterance level.\\
+
+\subsubsection{Synthesis and open gap}
+\label{sec:synthesis-gap}
+
+The earlier pieces fit together cleanly. Hierarchical control supplies the long-range backbone for conversation: a manager selects a strategy (an option) that can persist across several turns, while an intra-option policy realizes the utterances until a learned termination returns control \citep{sutton1999between,bacon2017option}. Prompt-engineered headers then sit at the realization boundary: each option (\textsc{Explain}, \textsc{AskQuestion}, \textsc{OfferTransition}, \textsc{Conclude}) owns a short, human-readable template with slots, paired with a compact context vector, so the language model can speak naturally but stay aligned with the active strategy \citep{robino2025conversation,wang2024planning}. The manager’s state is small and actionable: turn-aligned intent cues (role- and history-aware encoders) indicate what the visitor is doing now and with what confidence, and gaze dwell over the relevant object acts as a robust online proxy for attention in object-centered settings \citep{zhang2021dialoguebert,zhang2021intentbert,holmqvist2011eyetracking,orquin2018,Bozkir2021,Dubovi2022}. Together, these signals decide when to persist with a strategy and when to switch, while the header keeps surface language fluent and on-style.\\
+
+This pattern is consistent with results in dialogue and planning: decompositions reduce branching and improve multi-domain control; coupling a high-level controller over latent acts with a low-level realizer improves task success and human ratings on MultiWOZ; open-domain variants report better global coherence when a controller steers local generation \citep{dietterich2000maxq,casanueva2018feudal,wang2021hdno,saleh2020hierarchical}. It also mirrors grounded hybrids where an external controller keeps a fluent generator on task without strangling expressiveness \citep{ahn2022saycan}. Training methods map directly: actor--critic with semi-MDP returns focuses credit on option choice and termination (Option--Critic), while SAC, or conservative Q-learning cover on-policy, off-policy regimes; even modest RL on the decision layer improves multi-turn robustness \citep{bacon2017option,schulman2017ppo-openreview,haarnoja2018sac,kumar2020conservative,su2017sample,weisz2018sample}.\\
+
+Prior museum agents established the value of guidance but relied heavily on hand-authored rules and fixed pacing \citep{kopp2005conversational,traum2012ada}. Contemporary work demonstrates each ingredient in isolation—hierarchy, intent features, prompt schemas, or gaze-driven engagement—but there is little evidence for a \emph{unified, option-based controller that (i) learns when to switch strategies from online engagement (dwell) and intent cues, and (ii) realizes each strategy with a slot-filled prompt header so surface language remains flexible and natural}. In short: \emph{learned timing, compact state, and prompt-level realization have not been evaluated together in situated, educational dialogue.}\\
+
+This thesis will implement and test that integration. The manager will read a compact state (intent features with calibrated confidence; AOI dwell and simple gaze diagnostics; short history) and choose among a small, interpretable option set. Each option will expose a prompt header with slots (goal sketch, constraints such as time budget/reading level, KB entities), which the LLM fills to produce the next turn. Termination will be learned, not fixed, so pacing adapts to attention and intent shifts in real time. Evaluation will compare against strong non-hierarchical baselines and ablations (no gaze; no intent; fixed-duration options; header-only without a manager), with outcomes on multi-turn coherence and content coverage, engagement (dwell trajectories), and task success. If successful, the result would show that strategic planning and learned timing deliver the long-horizon structure, while prompt headers let large language models do what they do best locally: produce high-quality, flexible language that stays on plan.
+
+\section{Research Questions}
+\label{sec:research-questions}
+
+This thesis examines whether a compact hierarchy can keep museum conversations on a long-range plan while an LLM realizes each turn naturally. We adopt reinforcement learning—specifically options over SMDPs with learned termination—because museums require sequential decisions under uncertainty (when to persist, when to switch, what to say next) that rule-based flows and one-shot prompting handle poorly at scale. The agent uses options for strategic control, learned termination to time strategy switches, and slot-filled prompt headers that align generation with the active option. Against this backdrop, the work is guided by an \emph{umbrella question} and three core research questions:\\
+
+\noindent\textbf{Umbrella Research Question:} To what extent is (hierarchical) reinforcement learning a justified design choice for museum conversational agents—that is, can a proof-of-concept system demonstrate principled, measurable control of long-horizon engagement, content coverage, and adaptive pacing while remaining operationally maintainable in a museum setting?\\
+
+\noindent\textbf{Research Question 1:} Does an option-based manager maintain long-horizon coherence and keep turns aligned with the intended strategy more reliably than a flat policy under the same prompts and rewards?\\
+
+This question asks whether a small set of high-level strategies (options like \emph{Explain}, \emph{Ask}, \emph{Transition}, \emph{Conclude}) helps the agent stay on plan better than a flat policy that chooses a move every turn with no structure. This asks if the agent keeps a chosen strategy going for several turns when that makes sense, switches when signals say it should, and avoids drifting or repeating itself.\\
+
+\noindent\textbf{Research Question 2:} Do learned option terminations respond to changes in engagement and intent in the intended direction—switching sooner when attention drops or the user’s goal shifts, and persisting during stable, high-engagement spans?\\
+
+Here we test whether the learned \emph{termination} signals behave sensibly: do options continue when attention is strong and the user’s intent matches the strategy, and do they end quickly when attention drops or the user’s goal changes? In practice, we expect longer explain spans during steady dwell, and faster switches to questions or transitions when dwell falls or a new intent appears.\\
+
+\textbf{Research Question 3:} Do compact, slot-filled prompt headers tied to the active option improve local realization—faithfulness to the chosen move, grounding to the exhibit KB, and non-redundant phrasing—relative to unconstrained generation?\\
+
+This question is about local wording quality. Do small, slot-filled headers (that state the current option, subaction, focus, last user utterance, and allowed facts) help the model say the next thing clearly and on-topic compared with unconstrained generation? 
+
+\medskip
+Together, these questions separate the contributions of strategic structure (what to do and when to switch) from local realization (how to say it now), and assess whether the combination yields conversations that stay on plan, remain responsive to user signals, and deliver fresh, well-grounded content over time.
+
+
+\section{Formal Problem Definition}
+\label{sec:problem-definition}
+
+Here we formalize the conversational museum agent as a hierarchical decision process: a high-level policy selects conversational strategies (options) such as \textsc{Explain}, \textsc{AskQuestion}, \textsc{OfferTransition}, and \textsc{Conclude}, while a low-level policy realizes each turn with an LLM guided by compact, slot-filled prompt headers. The hierarchy follows the options framework \citep{sutton1999between} to handle long-range credit assignment, and the state blends gaze-based engagement (AOI dwell), lightweight dialogue history, and turn-aligned intent/context cues. Rewards balance immediate attention with non-redundant content coverage, and training uses an actor–critic approach with SMDP returns—learning both option selection and termination—so pacing and strategy changes are driven by evidence in the state rather than fixed turn limits.
+
+\subsection{Hierarchical Framing}
+
+We model the agent as a two-level \textbf{hierarchical semi-Markov decision process (SMDP)}, where the high-level policy selects communicative strategies (options) such as \textsc{Explain} or \textsc{AskQuestion}, while the low-level policy selects utterances within these strategies, using structured templates to maintain clarity and safety during generation. This structure directly addresses the challenges of long-term credit assignment and exploration in sparse-reward, multi-turn settings noted in HRL literature \citep{bacon2017option, peng2017composite}.
+
+\subsection{State Representation}
+\label{sec:state-representation}
+
+We design the agent's state space as a structured vector that captures both what the visitor is looking at and how they're communicating. At each dialogue turn $t$, the state is defined as:
+
+\[
+s_t = [\mathbf{f}_t, \mathbf{h}_t, \mathbf{i}_t, \mathbf{c}_t]
+\]
+
+Where each component captures a different aspect of the interaction:
+
+\begin{itemize}
+  \item \textbf{Focus Vector $\mathbf{f}_t$:} Tells us which exhibit the visitor is currently looking at. For 8 exhibits, we define:
+  \[
+  \mathbf{f}_t = [f_{t,1}, f_{t,2}, \ldots, f_{t,8}, f_{t,\emptyset}]
+  \]
+  where exactly one $f_{t,i} = 1$ (the exhibit they're focused on) and all others $= 0$. The dimension is $9$.
+  
+  \item \textbf{Dialogue History Vector $\mathbf{h}_t$:} Keeps track of what we've already discussed:
+  \[
+  \mathbf{h}_t = [\mathbf{h}_t^{exh}, \mathbf{h}_t^{act}]
+  \]
+  where $\mathbf{h}_t^{exh}$ records which exhibits we've explained (1 = explained, 0 = not yet), and $\mathbf{h}_t^{act}$ tracks how often we've used each dialogue strategy (Explain, AskQuestion, etc.). For 8 exhibits and 4 strategies, the dimension is $12$.
+
+  \item \textbf{Intent Embedding $\mathbf{i}_t$:} Understands what the visitor is trying to communicate using DialogueBERT \citep{zhang2021dialoguebert} specifically in the last turn. For each visitor utterance in the last turn $u_t$, we compute the 768-d pooled representation and keep the state compact by projecting it with a fixed, offline-trained linear map $\mathbf{P}\in\mathbb{R}^{64\times 768}$:
+  \[
+  \mathbf{e}_t = \text{DialogueBERT}(u_t,\text{role}=\text{"user"})\in\mathbb{R}^{768},\qquad
+  \mathbf{i}_t = \mathbf{P}\mathbf{e}_t \in \mathbb{R}^{64}.
+  \]
+  DialogueBERT encodes turn and speaker-role context and reports strong performance on multi-turn understanding, aligning with our use case \citep{zhang2021dialoguebert}.
+
+  \item \textbf{Dialogue Context $\mathbf{c}_t$:} Remembers the recent conversation to avoid repeating ourselves or contradicting what we just said. We encode the last 3 exchanges by averaging their pooled vectors and applying the same projection $\mathbf{P}$:
+  \[
+  \mathbf{c}_t = \mathbf{P}\cdot \tfrac{1}{3}\sum_{k\in\{t-2,t-1,t\}}\text{DialogueBERT}_{\text{[CLS]}}(u_k) \in \mathbb{R}^{64}.
+  \]
+\end{itemize}
+
+\noindent\textbf{Total state dimension (8 exhibits):} $9$ (focus) $+\,12$ (history) $+\,64$ (last-turn semantics) $+\,64$ (short context) $= \mathbf{149}$.\\
+
+The last-turn vector $\mathbf{i}_t$ is a compact “semantic coordinate” for $u_t$ (64 numbers that preserve the main meaning cues from the original 768-d space), while $\mathbf{c}_t$ carries a small, separate summary of very recent dialogue (another 64 numbers). Keeping these as two small pieces lets the policy read both “what’s happening now” and “what just happened” without handling the full high-dimensional encoder output. Reducing 768$\rightarrow$64 is a standard move: compact sentence embeddings (e.g., SBERT/MiniLM at 384-d) retain strong task performance \citep{reimers2019sbert,wang2020minilm}, and distance-preserving projections are known to maintain the geometry policies depend on for decision boundaries in much lower dimensions (e.g., random/PCA projections under Johnson–Lindenstrauss–type guarantees).\\
+
+The DialogueBERT integration solves several key problems in museum dialogue systems: (1) \textbf{Better understanding} of diverse visitor communication styles, from direct questions to contemplative observations; (2) \textbf{Conversation memory} that prevents repetitive explanations and maintains coherent narrative flow; (3) \textbf{Adaptive responses} that work across different visitor demographics and communication patterns; and (4) \textbf{Interpretable behavior} through semantically meaningful representations that help us understand and improve the system.\\
+
+This state design enables the agent to learn sophisticated dialogue strategies that feel natural and engaging while efficiently covering educational content.
+
+\subsubsection{Dialogue action tokens, fluent realization, and hierarchical control}
+\label{sec:dat-templates}
+
+We use a small, fixed vocabulary of \emph{dialogue action tokens} to steer realization while keeping generation fluent. Each turn begins with a compact header that encodes: the current \texttt{OPTION} (\textsc{Explain}, \textsc{AskQuestion}, \textsc{OfferTransition}, \textsc{Conclude}), a \texttt{Subaction} (granular move under that option), the current \texttt{FOCUS} exhibit ID, and the \texttt{LAST\_UTT} (visitor’s most recent utterance). The header is paired with a lightweight \emph{context block} summarizing (i) facts already used vs.\ available from the KB (and their IDs), and (ii) simple guardrails (e.g., “only speak from listed fact IDs”). The planner then routes to a subaction-specific template which frames the next turn; the LLM realizes the surface text freely under that frame.\\
+
+Concretely, the planner’s \texttt{build\_prompt(option, subaction, \dots)} function constructs the shared context once and then dispatches to subaction handlers (e.g., \texttt{build\_explain\_new\_fact\_prompt}, \texttt{build\_ask\_opinion\_prompt}). This makes the tokens \emph{state-aware}: the same option/subaction is always grounded in the current exhibit, last user utterance, knowledge-coverage progress, and the short dialogue history. Because the header is small and human-readable, it is easy to audit and adjust; because realization is delegated to the LLM, phrasing remains natural.\\
+
+Tokens declare \emph{intent} and \emph{constraints} for the next turn within the build prompt sent by the manager to the LLM:\\
+
+\begin{itemize}[nosep,leftmargin=1.2em]
+  \item \texttt{OPTION} tells the generator \emph{why} it is speaking (teach, elicit, move, close).
+  \item \texttt{Subaction} fixes \emph{how} to carry it out (e.g., introduce a new fact vs.\ clarify a prior one).
+  \item \texttt{FOCUS} pins content to the current exhibit/entity.
+  \item \texttt{LAST\_UTT} forces a direct reply to what the visitor just said (local coherence).
+  \item The context block provides the small, structured memory the generator must respect (KB IDs, “facts used,” progression).
+\end{itemize}
+
+This split mirrors the HRL control layer: the manager selects the option (strategy) and termination decides when to switch; the planner takes the HRL decision to choose the appropriate option and subaction from there and builds the appropriate prompt and context. 
+
+\subsection{Action Space}
+\label{sec:action-space}
+
+We model actions as options over subactions. The high-level policy chooses one of four options; within an option, the intra-option policy selects a subaction. Each subaction has a clear behavioral contract and typical effects on the state (e.g., knowledge coverage, engagement). Table~\ref{tab:actions} summarizes the subactions we implement in code.
+
+\begin{landscape}
+\begin{table}[H]
+\centering
+\small
+\begin{adjustbox}{max width=\linewidth}
+\begin{tabularx}{\linewidth}{l l Y Y}
+\toprule
+\textbf{Option} & \textbf{Subaction (token)} & \textbf{What it does (contract)} & \textbf{Primary effect} \\
+\midrule
+\textsc{Explain} & \textit{ExplainNewFact} 
+& Introduce a \emph{new}, KB-backed fact about the focused exhibit; directly tie to \texttt{LAST\_UTT}; cite fact ID. 
+& Increases content coverage; may raise dwell if matched to interest. \\
+& \textit{RepeatFact} 
+& Restate a previously shared fact using simpler/different wording; connect to current question. 
+& Reinforcement; reduces confusion after missed points. \\
+& \textit{ClarifyFact} 
+& Explain a recently used fact more clearly (definitions, examples, analogies). 
+& Lowers uncertainty; prepares for progression. \\
+\midrule
+\textsc{AskQuestion} & \textit{AskOpinion} 
+& Solicit the visitor’s view (e.g., style, symbolism) grounded in focus and \texttt{LAST\_UTT}. 
+& Elicits engagement signal; surfaces preferences. \\
+& \textit{AskMemory} 
+& Gentle recall of one–two recent facts to consolidate learning. 
+& Checks retention; informs pacing. \\
+& \textit{AskClarification} 
+& Ask the visitor to clarify an ambiguous request or comment. 
+& Reduces misalignment; avoids wrong-depth explanations. \\
+\midrule
+\textsc{OfferTransition} & \textit{SuggestMove} 
+& Propose moving to a specific related exhibit with a concrete reason. 
+& Changes focus; prevents stagnation. \\
+& \textit{LinkToOtherExhibit} 
+& Verbally connect current exhibit to another (theme/material/period). 
+& Builds narrative continuity; primes next focus. \\
+& \textit{CheckReadiness} 
+& Ask if the visitor wants to continue here or move on. 
+& Aligns pacing to engagement signal. \\
+\midrule
+\textsc{Conclude} & \textit{WrapUp} 
+& Warm closing; thank the visitor 
+& Ends session gracefully. \\
+\bottomrule
+\end{tabularx}
+\end{adjustbox}
+\caption{Action space semantics used by the planner (rotated for readability).}
+\label{tab:actions}
+\end{table}
+\end{landscape}
+
+
+The planner takes the chosen \texttt{option} and \texttt{subaction} from the manager, builds a small shared context (focus exhibit, \texttt{LAST\_UTT}, brief history, facts used/available, KB ID guardrails), and then hands off to the matching subaction builder. Each builder has a simple job contract: \textit{ExplainNewFact} must pick a new fact ID; \textit{RepeatFact} and \textit{ClarifyFact} work only with facts we’ve already used; \textit{AskOpinion}, \textit{AskMemory}, and \textit{AskClarification} ask questions that respond directly to \texttt{LAST\_UTT}; \textit{SuggestMove}, \textit{LinkToOtherExhibit}, and \textit{CheckReadiness} manage pacing and focus; \textit{WrapUp} closes the session. The short header makes the generator aware of the intended move before decoding, while the HRL layer decides when to keep or switch that header through its learned termination rule.
+
+\subsection{Reward Function Design}
+\label{sec:reward-design}
+
+The reward function is designed to align the agent's behavior with the goals of maintaining visitor engagement while efficiently delivering diverse, relevant information about the exhibits.
+
+\paragraph{Engagement Reward $r^{\text{eng}}_t$:}  
+We use the visitor's gaze dwell time on the currently focused exhibit as a direct engagement signal:
+\[
+r^{\text{eng}}_t = \text{dwell}_t
+\]
+where $\text{dwell}_t \in [0, 1]$ measures the proportion of the previous turn the visitor spent looking at the exhibit, leveraging its robustness as an engagement metric in VR learning contexts \citep{Bozkir2021, Dubovi2022, Mikhailenko2022}.
+
+\paragraph{Knowledge Novelty Reward $r^{\text{nov}}_t$:}  
+To encourage the agent to progressively introduce new information, we define the novelty reward as:
+\[
+r^{\text{nov}}_t = \frac{|\mathcal{F}_{\text{used}}|}{|\mathcal{F}_{\text{total}}|}
+\]
+where:
+\begin{itemize}
+    \item $\mathcal{F}_{\text{used}}$ is the set of unique knowledge graph facts (triples) that the agent has presented so far during the session.
+    \item $\mathcal{F}_{\text{total}}$ is the total number of available relevant facts for the current exhibit or tour.
+\end{itemize}
+This formulation provides a smooth, interpretable measure of content coverage, with the reward increasing as the agent introduces a higher proportion of the available facts, encouraging structured coverage without redundancy.
+
+\paragraph{Combined Reward:}  
+The overall reward at each turn is:
+\[
+R_t = w_e \cdot r^{\text{eng}}_t + w_n \cdot r^{\text{nov}}_t
+\]
+where $w_e$ and $w_n$ are weights tuned to balance maintaining visitor attention with delivering diverse content.\\
+
+This design ensures that the agent is rewarded for keeping the visitor engaged in real time while progressing through the exhibit content systematically, aligning closely with the pedagogical and interaction goals of the conversational museum agent.
+
+
+\subsection{Learning Objective}
+
+The agent's objective is to learn a hierarchical policy \(\pi\) that maximizes the expected cumulative reward across a visitor tour:
+
+\[
+J(\pi) = \mathbb{E}_{\pi} \left[ \sum_{t=0}^{T} \gamma^t R_t \right]
+\]
+
+\subsection{Simulated Environment for Online Training}
+
+For training, we use a lightweight simulator instead of live visitors. Each step unfolds as follows: the agent chooses a high-level strategy (an \emph{option}), builds a compact prompt, and a pretrained language model realizes it as a natural sentence. A persona-conditioned user model then replies and also produces a synthetic gaze trace that indicates how much the visitor attended to the current exhibit. When the agent’s turn fails to reference anything on display, the simulator yields little or no gaze on the focal object, which we treat as disengagement. This closed loop gives immediate feedback on the two outcomes we care about—moment-to-moment attention (dwell) and progressive coverage of new facts—so the policy can improve.\\
+
+We adopt an \emph{actor--critic} scheme tailored to options and semi-Markov timing \citep{sutton1999between,bacon2017option}. Intuitively, the actor decides which strategy to run and how to realize turns within it; the critic scores those decisions over the entire span of the option, not just the next turn. That alignment with temporally extended behavior is exactly what dialogue needs: strategies like \textsc{Explain} or \textsc{AskQuestion} often pay off a few turns later, and actor--critic naturally attributes credit across that window. It also supports learning \emph{when to stop} via a parameterized termination function, so pacing adapts to attention and intent rather than a fixed turn budget.\\
+
+Other optimizers are defensible, but add overhead we don’t need. PPO is widely used and steady \citep{schulman2017ppo-openreview}, yet it doesn't intrinsically learn option termination conditions and requires extra work to make functional with SMDPs. SAC is very robust for continuous control \citep{haarnoja2018sac}, but our action space is small and discrete (strategies and subactions). In short, plain actor–critic is a well-cited, stable choice for HRL with options that lets us train the manager, the within-option behavior, and the learned stopping rule under one roof \citep{sutton1999between,bacon2017option}.\\
+
+Training proceeds in short segments. At each cycle, the manager selects an option; the agent then speaks for several turns under that option; and the critic scores the entire chunk with SMDP returns, summing rewards collected during the option and bootstrapping at its boundary with \(\gamma^{\tau}V(s_{t+\tau})\). The manager updates from these segment-level advantages so it learns which strategic choices pay off. While an option is active, its intra-option policy updates from per-turn advantages to improve local realization, and the termination function learns pacing—tending to persist when dwell and topical relevance remain high, and to hand control back sooner when attention drops or the visitor’s intent shifts.\\
+
+To keep training steady, we rely on light, well-known stabilizers: normalize advantages, add a small entropy bonus to avoid early collapse, clip gradient norms, and monitor a gentle KL to flag overly large policy moves. In practice this yields smooth learning curves (low variance), sensible option durations, and fewer oscillations between strategies.\\
+
+Beyond cumulative reward, we report training stability (monotone trend, lower variance), sensible pacing (longer options when dwell is high, earlier switches when it falls), knowledge coverage (higher fraction of novel facts with fewer repeats), and conversation smoothness (fewer thrashy strategy flips, longer coherent stretches). These HRL-relevant diagnostics show the hierarchy is doing useful work, not just overfitting to the simulator.\\
+
+We compare against a \emph{flat} actor--critic policy with no options (decides every turn independently) and a ``fixed one-turn option'' variant that forces immediate termination (no temporal abstraction). We also include a PPO manager to test whether clipping yields extra stability in our setup. All models use the same simulator, rewards, and prompts to keep the comparison apples-to-apples.\\
+
+Overall, actor--critic provides a simple, well-grounded path to train \emph{all} moving parts---strategy choice, within-strategy realization, and timing---under the options framework. It is widely used, stable for semi-Markov decisions, and matches how conversational strategies actually unfold over multiple turns \citep{sutton1999between,bacon2017option,schulman2017ppo-openreview,haarnoja2018sac,kumar2020conservative}.
+
+\subsection{Summary}
+
+In summary, this formalization aligns the agent’s architecture with the goals of engagement, adaptability, and informative interaction as outlined in our research questions. It leverages HRL to manage dialogue strategy, uses gaze-based metrics for real-time engagement measurement, and employs structured prompting with LLMs to maintain fluency while adhering to pedagogical and conversational goals. This design provides a clear, modular framework for building and evaluating conversational museum agents grounded in the literature while allowing for flexible experimentation in training and evaluation settings.
+
+\section{Hypotheses} 
+The system couples an option-based controller with actor–critic learning and compact prompt headers. The hypotheses below mirror that design: strategy and timing at the top; wording and grounding at the surface.
+
+\paragraph{Hypothesis 1}
+
+An option-based manager will outperform a flat policy on long-horizon objectives. Concretely, we expect higher episodic return with lower variance, longer coherent stretches under a chosen strategy, and fewer needless switches between strategies when both are trained under the same rewards and prompts. 
+
+\paragraph{Hypothesis 2}
+
+Learned terminations for Explain will track engagement and intent: when dwell is high and the visitor’s intent supports explanation, Explain should persist; when dwell falls or intent shifts, it should end sooner. We expect a positive correlation between dwell and Explain duration, and earlier terminations following detected intent changes.
+
+\paragraph{Hypothesis 3}
+
+Slot-filled prompt headers tied to the active option will improve the next turn’s realization: higher faithfulness to the intended move, tighter grounding to the exhibit KB, and less repetition. Concretely, we expect higher novel-fact coverage, a lower repetition ratio, a higher KB-citation/grounding rate with fewer off-KB claims, and better on-plan consistency with the chosen option/subaction.
+
+\paragraph{Hypothesis 4}
+
+With semi-Markov returns, actor–critic will train the hierarchy smoothly. Relative to a flat actor–critic (no options) and a fixed-duration hierarchy (one-turn options), we expect steadier learning curves (fewer spikes), smaller update magnitudes, and faster time-to-target reward, while preserving sensible option lengths.
+
+
+\section{Evaluation Strategy}
+
+We evaluate entirely in the simulator so comparisons are clean and repeatable. Each run fixes the exhibit itinerary, persona seed, and knowledge-base snapshot; only the model variant changes. For every condition we generate \(N\) tours (e.g., \(N{=}\)T.B.Discussed) across multiple random seeds and report means, standard errors, and paired statistics wherever possible (same seed, different model). Unless noted, all models share the same prompts, rewards, and decoding settings.\\
+
+
+\textbf{H1: option structure and long-horizon behavior.}
+For each tour we log episodic return and the strategy timeline. We report mean return with variance, average coherent-span length (consecutive turns under the same option), and switch rate (switches per 100 turns). Improvements over the flat baseline support H1. We use paired \(t\)-tests or Wilcoxon signed-rank tests (per-seed pairing) and report effect sizes.\\
+
+\textbf{H2: learned pacing for \textsc{Explain}.}
+We align \textsc{Explain} segments with dwell and intent. Two checks: (i) correlation between segment length \(\tau\) and mean dwell within the segment (expect \(\rho{>}0\)); (ii) time-to-termination after a detected intent change away from “explain,” compared to matched no-shift periods. We plot duration vs.\ dwell with confidence bands, report correlations with CIs, and use simple pre/post windows around intent changes to quantify earlier endings.\\
+
+\textbf{H3: headers and local realization}
+We test whether headers do what they claim by checking outcomes against their constraints. Metrics: novel-fact coverage \(|\mathcal{F}_{\text{used}}|/|\mathcal{F}_{\text{total}}|\); repetition ratio (re-mentions beyond first / total fact mentions); grounding precision/recall via a KB aligner; hallucination rate (claims with no KB match); and on-plan compliance (e.g., \textit{ExplainNewFact} introduces a new fact ID; \textit{Clarify/Repeat} avoid new IDs; \textit{Ask*} ends with a question). A lightweight act classifier (text-only) provides an independent check that realized acts match the header; high agreement indicates reliable steering. As a predictive check, we correlate “header completeness” (share of slots filled: \texttt{FOCUS}, \texttt{LAST\_UTT}, fact IDs) with violations and hallucinations; negative correlations support the claim that richer headers reduce errors.\\
+
+\textbf{H4: training stability with actor–critic.}
+We track learning curves (smoothed return vs.\ updates), update magnitudes (\(\ell_2\)-norm of parameter steps, KL per update), time-to-target (episodes to reach a fixed return), and option duration sanity (median \(\tau\) per option). The hierarchical actor–critic should show smoother curves (fewer large spikes), smaller average update norms, and faster time-to-target than the flat actor–critic, while keeping sensible option lengths.\\
+
+
+\section{Timeline}
+
+\begin{description}[leftmargin=1.8cm, labelindent=0cm, itemsep=0.6em]
+    \item[August]%
+      \begin{itemize}[noitemsep]
+        \item Implement the simulated visitor environment and gaze generator.
+        \item Integrate the two‑level HRL agent with structured prompting and simulator.
+      \end{itemize}
+
+    \item[September]%
+      \begin{itemize}[noitemsep]
+        \item Configure reward shaping (dwell ratio and knowledge novelty).
+        \item Launch preliminary training runs; refine hyper‑parameters.
+      \end{itemize}
+
+    \item[October]%
+      \begin{itemize}[noitemsep]
+        \item Conduct full training experiments and ablations (flat vs.\ hierarchical).
+      \end{itemize}
+
+    \item[November]%
+      \begin{itemize}[noitemsep]
+        \item Consolidate quantitative results
+        \item Draft and revise remaining thesis chapters (Evaluation, Discussion, Conclusion).
+        \item Submit the final manuscript.
+        \end{itemize}
+        
+    \item[December]%
+      \begin{itemize}[noitemsep]
+        \item Prepare and do Thesis Defense 
+      \end{itemize}
+\end{description}
+
+\bibliographystyle{apalike}
+\bibliography{References}
+\end{document}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

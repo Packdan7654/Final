@@ -1,0 +1,283 @@
+{
+  "training_summary": {
+    "total_episodes": 1,
+    "total_turns": 10,
+    "average_reward_per_turn": 0.9110173092220146,
+    "average_reward_per_episode": 4.517257784185571,
+    "best_episode_reward": 4.517257784185571,
+    "most_used_option": "Explain",
+    "most_used_subaction": "ExplainNewFact",
+    "option_usage": {
+      "Explain": 5,
+      "AskQuestion": 2,
+      "OfferTransition": 2,
+      "Conclude": 1
+    },
+    "subaction_usage": {
+      "ExplainNewFact": 3,
+      "AskClarification": 1,
+      "ClarifyFact": 1,
+      "CheckReadiness": 1,
+      "WrapUp": 1,
+      "SuggestMove": 1,
+      "RepeatFact": 1,
+      "AskMemory": 1
+    }
+  },
+  "episode_rewards": [
+    4.517257784185571,
+    4.592915308034574
+  ],
+  "training_history": [
+    {
+      "episode": 0,
+      "turn": 0,
+      "action": {
+        "option": 0,
+        "subaction": 0,
+        "terminate_option": false
+      },
+      "reward": 0.5,
+      "done": false,
+      "info": {
+        "option": "Explain",
+        "subaction": "ExplainNewFact",
+        "agent_utterance": "[TB_001] The turban is a traditional head covering worn in many cultures. It holds deep cultural significance and varies in style and design across different regions. How does learning about the diversity of cultural head coverings resonate with you?",
+        "facts_shared": 2,
+        "exhibits_covered": 1,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 1,
+      "action": {
+        "option": 1,
+        "subaction": 2,
+        "terminate_option": false
+      },
+      "reward": 0.927442895698549,
+      "done": false,
+      "info": {
+        "option": "AskQuestion",
+        "subaction": "AskClarification",
+        "agent_utterance": "[TB_002] It is made of fine silk and decorated with precious stones. Could you tell me more about what aspect of the turban's design or significance interests you the most? I'd love to share more details that connect with your curiosity.",
+        "facts_shared": 3,
+        "exhibits_covered": 1,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 2,
+      "action": {
+        "option": 0,
+        "subaction": 2,
+        "terminate_option": false
+      },
+      "reward": 0.6908061110238064,
+      "done": false,
+      "info": {
+        "option": "Explain",
+        "subaction": "ClarifyFact",
+        "agent_utterance": "[TB_006] Artist: Gerrit Dou\n\nGerrit Dou, the artist behind the Turban artwork, was a Dutch Golden Age painter known for his precise and detailed style. He was a master of light and shadow, which you can see in the intricate folds of the fabric and the play of light on the gemstones in the painting. His attention to detail and skillful technique made him highly respected during his time.",
+        "facts_shared": 4,
+        "exhibits_covered": 1,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "King_Caspar",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 3,
+      "action": {
+        "option": 2,
+        "subaction": 2,
+        "terminate_option": false
+      },
+      "reward": 1.123446668393617,
+      "done": false,
+      "info": {
+        "option": "OfferTransition",
+        "subaction": "CheckReadiness",
+        "agent_utterance": "[KC_001] King Caspar is one of the Three Wise Men from the biblical story. Are you ready to explore another exhibit, or would you like to learn more about King Caspar and his significance as one of the gift-bearing kings?",
+        "facts_shared": 5,
+        "exhibits_covered": 1,
+        "current_focus": 1,
+        "current_exhibit": "King_Caspar"
+      },
+      "simulator_data": {
+        "aoi": "King_Caspar",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 4,
+      "action": {
+        "option": 3,
+        "subaction": 0,
+        "terminate_option": false
+      },
+      "reward": 1.2755621090695974,
+      "done": true,
+      "info": {
+        "option": "Conclude",
+        "subaction": "WrapUp",
+        "agent_utterance": "[KC_002] King Caspar is traditionally depicted as the king who brought gold as a gift. Thank you for exploring the museum with me and delving into the symbolism behind King Caspar's gifts. Your thoughtful questions made our journey through the exhibit even more enriching. I've truly enjoyed our conversation today. Have a wonderful day!",
+        "facts_shared": 6,
+        "exhibits_covered": 2,
+        "current_focus": 1,
+        "current_exhibit": "King_Caspar"
+      },
+      "simulator_data": {
+        "aoi": "King_Caspar",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 1,
+      "turn": 0,
+      "action": {
+        "option": 2,
+        "subaction": 0,
+        "terminate_option": false
+      },
+      "reward": 0.2,
+      "done": false,
+      "info": {
+        "option": "OfferTransition",
+        "subaction": "SuggestMove",
+        "agent_utterance": "[KC_013] The doublet is a fitted jacket worn by men in the Renaissance. If you're intrigued by Renaissance fashion, you might enjoy exploring the Turban exhibit next. It offers a unique perspective on cultural attire and ties into the theme of luxurious materials seen in the doublet. Would you like to learn more about the exquisite turbans on display?",
+        "facts_shared": 1,
+        "exhibits_covered": 0,
+        "current_focus": 7,
+        "current_exhibit": "Doublet"
+      },
+      "simulator_data": {
+        "aoi": "King_Caspar",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 1,
+      "turn": 1,
+      "action": {
+        "option": 0,
+        "subaction": 1,
+        "terminate_option": false
+      },
+      "reward": 0.7699370948554844,
+      "done": false,
+      "info": {
+        "option": "Explain",
+        "subaction": "RepeatFact",
+        "agent_utterance": "[KC_013] The doublet, a fitted jacket worn by men during the Renaissance, was a symbol of status and fashion. It showcased intricate tailoring and luxurious fabrics, reflecting the wearer's social standing and wealth. This garment was a staple in noble wardrobes, emphasizing their elegance and sophistication.",
+        "facts_shared": 1,
+        "exhibits_covered": 1,
+        "current_focus": 1,
+        "current_exhibit": "King_Caspar"
+      },
+      "simulator_data": {
+        "aoi": "King_Caspar",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 1,
+      "turn": 2,
+      "action": {
+        "option": 0,
+        "subaction": 0,
+        "terminate_option": false
+      },
+      "reward": 1.2067920673466759,
+      "done": false,
+      "info": {
+        "option": "Explain",
+        "subaction": "ExplainNewFact",
+        "agent_utterance": "Great question! The doublet worn by King Caspar signifies his status and fashion sense in the Renaissance era. It's fascinating to note that doublets like the one King Caspar wears are typically made of metal with decorative elements. Isn't it intriguing how fashion choices conveyed social standing and personal style back then? What aspect of historical fashion interests you the most?",
+        "facts_shared": 2,
+        "exhibits_covered": 2,
+        "current_focus": 1,
+        "current_exhibit": "King_Caspar"
+      },
+      "simulator_data": {
+        "aoi": "King_Caspar",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 1,
+      "turn": 3,
+      "action": {
+        "option": 0,
+        "subaction": 0,
+        "terminate_option": false
+      },
+      "reward": 1.2453781206872643,
+      "done": false,
+      "info": {
+        "option": "Explain",
+        "subaction": "ExplainNewFact",
+        "agent_utterance": "[KK_002] King Caspar is traditionally depicted as the king who brought gold as a gift. This symbolizes wealth, power, and generosity in the biblical story of the Three Wise Men. Isn't it fascinating how each gift had symbolic significance? What aspect of this story interests you the most?",
+        "facts_shared": 3,
+        "exhibits_covered": 2,
+        "current_focus": 1,
+        "current_exhibit": "King_Caspar"
+      },
+      "simulator_data": {
+        "aoi": "King_Caspar",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 1,
+      "turn": 4,
+      "action": {
+        "option": 1,
+        "subaction": 1,
+        "terminate_option": false
+      },
+      "reward": 1.17080802514515,
+      "done": false,
+      "info": {
+        "option": "AskQuestion",
+        "subaction": "AskMemory",
+        "agent_utterance": "Do you remember when we talked about King Caspar being one of the Three Wise Men from the biblical story and how the artwork is typically made of metal with decorative elements? It's fascinating to see how different artists interpret these historical figures in their own unique styles. Would you like to explore more about the symbolism behind King Caspar's traditional depiction as the king who brought gold as a gift?",
+        "facts_shared": 3,
+        "exhibits_covered": 2,
+        "current_focus": 1,
+        "current_exhibit": "King_Caspar"
+      },
+      "simulator_data": {
+        "aoi": "King_Caspar",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    }
+  ]
+}

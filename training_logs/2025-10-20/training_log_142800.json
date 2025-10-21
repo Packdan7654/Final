@@ -1,0 +1,433 @@
+{
+  "training_summary": {
+    "total_episodes": 0,
+    "total_turns": 16,
+    "average_reward_per_turn": 0.7988671989036114,
+    "average_reward_per_episode": 0.0,
+    "best_episode_reward": 0.0,
+    "most_used_option": "OfferTransition",
+    "most_used_subaction": "LinkToOtherExhibit",
+    "option_usage": {
+      "Explain": 5,
+      "OfferTransition": 7,
+      "AskQuestion": 4
+    },
+    "subaction_usage": {
+      "ExplainNewFact": 2,
+      "ClarifyFact": 1,
+      "SuggestMove": 2,
+      "RepeatFact": 2,
+      "AskMemory": 1,
+      "AskClarification": 2,
+      "LinkToOtherExhibit": 4,
+      "CheckReadiness": 1,
+      "AskOpinion": 1
+    }
+  },
+  "episode_rewards": [
+    6.067300208692604,
+    6.714574973765178
+  ],
+  "training_history": [
+    {
+      "episode": 0,
+      "turn": 0,
+      "action": {
+        "option": 0,
+        "subaction": 2,
+        "terminate_option": false
+      },
+      "reward": 0.017241379310344827,
+      "done": false,
+      "info": {
+        "option": "Explain",
+        "subaction": "ExplainNewFact",
+        "agent_utterance": "Delightful to see you taking interest in our current exhibit. This intricate turban is indeed a masterpiece, isn't it? Interestingly, it was created by none other than Gerrit Dou back in 1635. And where might one find this artwork today? Why, at Hannover, Landesmuseum! Have you visited before or are you planning to explore further during your stay?",
+        "facts_shared": 1,
+        "exhibits_covered": 1,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 1,
+      "action": {
+        "option": 0,
+        "subaction": 2,
+        "terminate_option": false
+      },
+      "reward": 0.8102512255372183,
+      "done": false,
+      "info": {
+        "option": "Explain",
+        "subaction": "ClarifyFact",
+        "agent_utterance": "It's indeed a pleasure to share such intriguing pieces with you. The artwork we have here, much like a book in a library, has its own unique home. In this case, it resides at Hannover, Landesmuseum \u2013 a literary haven for art enthusiasts.",
+        "facts_shared": 1,
+        "exhibits_covered": 1,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 2,
+      "action": {
+        "option": 2,
+        "subaction": 0,
+        "terminate_option": true
+      },
+      "reward": 0.243817925215926,
+      "done": false,
+      "info": {
+        "option": "OfferTransition",
+        "subaction": "SuggestMove",
+        "agent_utterance": "\"I'm glad to see you find our exhibits engaging! If you're interested, there are a few more artifacts related to turbans in the adjacent room that might catch your eye as well.\"",
+        "facts_shared": 1,
+        "exhibits_covered": 1,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 3,
+      "action": {
+        "option": 0,
+        "subaction": 0,
+        "terminate_option": true
+      },
+      "reward": 1.0247477533387368,
+      "done": false,
+      "info": {
+        "option": "Explain",
+        "subaction": "ExplainNewFact",
+        "agent_utterance": "The intricate details of this turban certainly catch the eye, don't they? It's crafted from fine silk and adorned with precious stones, showcasing both its beauty and historical significance. Could you tell me more about what specifically draws your attention to it?",
+        "facts_shared": 2,
+        "exhibits_covered": 1,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 4,
+      "action": {
+        "option": 0,
+        "subaction": 1,
+        "terminate_option": false
+      },
+      "reward": 0.9862285341705319,
+      "done": false,
+      "info": {
+        "option": "Explain",
+        "subaction": "RepeatFact",
+        "agent_utterance": "This turban, indeed, is a marvel that beckons our admiration. The delicate silk fabric and the shimmering precious stones certainly add to its charm. It's quite a testament to the artist's skill and craftsmanship.",
+        "facts_shared": 2,
+        "exhibits_covered": 1,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 5,
+      "action": {
+        "option": 0,
+        "subaction": 1,
+        "terminate_option": true
+      },
+      "reward": 0.980468218748157,
+      "done": false,
+      "info": {
+        "option": "Explain",
+        "subaction": "RepeatFact",
+        "agent_utterance": "This turban indeed showcases an impressive level of craftsmanship, doesn't it? I'm particularly drawn to its intricate patterns myself. By the way, you may be interested to know that this artwork resides in Hannover at the Landesmuseum.",
+        "facts_shared": 2,
+        "exhibits_covered": 1,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 6,
+      "action": {
+        "option": 1,
+        "subaction": 1,
+        "terminate_option": true
+      },
+      "reward": 1.0344827586206897,
+      "done": false,
+      "info": {
+        "option": "AskQuestion",
+        "subaction": "AskMemory",
+        "agent_utterance": "\"Were you curious to learn more about the origins or perhaps the materials used in crafting this stunning turban? I'd be happy to share any insights we have on those topics.\"",
+        "facts_shared": 2,
+        "exhibits_covered": 1,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 7,
+      "action": {
+        "option": 1,
+        "subaction": 2,
+        "terminate_option": false
+      },
+      "reward": 0.970062413750999,
+      "done": false,
+      "info": {
+        "option": "AskQuestion",
+        "subaction": "AskClarification",
+        "agent_utterance": "\"I'm glad to hear you're interested in learning more about our turban exhibit! I noticed you were curious about its history. Shall we delve deeper into the origins and significance of this magnificent piece, or perhaps you'd like to know more about the materials used?\"",
+        "facts_shared": 2,
+        "exhibits_covered": 1,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 8,
+      "action": {
+        "option": 2,
+        "subaction": 1,
+        "terminate_option": false
+      },
+      "reward": 0.0,
+      "done": false,
+      "info": {
+        "option": "OfferTransition",
+        "subaction": "LinkToOtherExhibit",
+        "agent_utterance": "\"After admiring the Cavalier hat, have you considered visiting our nearby exhibit featuring the Three-Cornered Hat? It's a fascinating piece that showcases the evolution of headgear through different eras.\"",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 5,
+        "current_exhibit": "Cavalier_hat"
+      },
+      "simulator_data": {
+        "aoi": "Cavalier_hat",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 9,
+      "action": {
+        "option": 2,
+        "subaction": 2,
+        "terminate_option": true
+      },
+      "reward": 1.0,
+      "done": false,
+      "info": {
+        "option": "OfferTransition",
+        "subaction": "CheckReadiness",
+        "agent_utterance": "\"Welcome back! Ready to delve deeper into our exhibit of the Cavalier Hat? Let's explore its history, craftsmanship, and symbolism together.\"",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 5,
+        "current_exhibit": "Cavalier_hat"
+      },
+      "simulator_data": {
+        "aoi": "Cavalier_hat",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 10,
+      "action": {
+        "option": 2,
+        "subaction": 1,
+        "terminate_option": false
+      },
+      "reward": 1.0,
+      "done": false,
+      "info": {
+        "option": "OfferTransition",
+        "subaction": "LinkToOtherExhibit",
+        "agent_utterance": "\"After exploring the Cavalier hat, would you be interested in learning about another intriguing piece from our collection? The Three-Cornered Hat exhibit might catch your eye as well.\"",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 5,
+        "current_exhibit": "Cavalier_hat"
+      },
+      "simulator_data": {
+        "aoi": "Cavalier_hat",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 11,
+      "action": {
+        "option": 2,
+        "subaction": 1,
+        "terminate_option": false
+      },
+      "reward": 0.7387144215892314,
+      "done": false,
+      "info": {
+        "option": "OfferTransition",
+        "subaction": "LinkToOtherExhibit",
+        "agent_utterance": "\"I'm glad to see you're interested in our Cavalier Hat exhibit! Have you also considered checking out the Three-Cornered Hat, another fascinating piece of historical headgear? You might find it intriguing as well!\"",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 5,
+        "current_exhibit": "Cavalier_hat"
+      },
+      "simulator_data": {
+        "aoi": "Cavalier_hat",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 12,
+      "action": {
+        "option": 1,
+        "subaction": 0,
+        "terminate_option": true
+      },
+      "reward": 1.0,
+      "done": false,
+      "info": {
+        "option": "AskQuestion",
+        "subaction": "AskOpinion",
+        "agent_utterance": "\"I'm glad you find our exhibits interesting! The Cavalier hat we have here is a rare piece. Have you noticed any unique features about it that catch your eye?\"",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 5,
+        "current_exhibit": "Cavalier_hat"
+      },
+      "simulator_data": {
+        "aoi": "Cavalier_hat",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 13,
+      "action": {
+        "option": 1,
+        "subaction": 2,
+        "terminate_option": true
+      },
+      "reward": 1.0,
+      "done": false,
+      "info": {
+        "option": "AskQuestion",
+        "subaction": "AskClarification",
+        "agent_utterance": "\"I'm glad to see your interest in our exhibit! To help you get the most out of your visit, I was wondering if you could tell me what specifically about the Cavalier hat catches your attention?\"",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 5,
+        "current_exhibit": "Cavalier_hat"
+      },
+      "simulator_data": {
+        "aoi": "Cavalier_hat",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 14,
+      "action": {
+        "option": 2,
+        "subaction": 1,
+        "terminate_option": true
+      },
+      "reward": 0.9938641518314566,
+      "done": false,
+      "info": {
+        "option": "OfferTransition",
+        "subaction": "LinkToOtherExhibit",
+        "agent_utterance": "\"I'm glad you find our Cavalier hat exhibit fascinating! If you're interested in learning more about historical artifacts, I'd highly recommend checking out our collection of armor from the same era. It offers a unique insight into the style and craftsmanship of that time period.\"",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 5,
+        "current_exhibit": "Cavalier_hat"
+      },
+      "simulator_data": {
+        "aoi": "Cavalier_hat",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 15,
+      "action": {
+        "option": 2,
+        "subaction": 0,
+        "terminate_option": false
+      },
+      "reward": 0.9819964003444901,
+      "done": false,
+      "info": {
+        "option": "OfferTransition",
+        "subaction": "SuggestMove",
+        "agent_utterance": "\"Would you like to explore more about the Cavalier hat? I can guide you to where we have additional pieces showcasing the intricate designs and historical significance of these hats.\"",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 5,
+        "current_exhibit": "Cavalier_hat"
+      },
+      "simulator_data": {
+        "aoi": "Cavalier_hat",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    }
+  ]
+}

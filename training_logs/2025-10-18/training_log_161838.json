@@ -1,0 +1,150 @@
+{
+  "training_summary": {
+    "total_episodes": 0,
+    "total_turns": 5,
+    "average_reward_per_turn": 0.501996776841905,
+    "average_reward_per_episode": 0.0,
+    "best_episode_reward": 0.0,
+    "most_used_option": "Ask",
+    "most_used_subaction": "CheckReadiness",
+    "option_usage": {
+      "Transition": 2,
+      "Ask": 3
+    },
+    "subaction_usage": {
+      "CheckReadiness": 2,
+      "AskMemory": 1,
+      "AskClarification": 2
+    }
+  },
+  "episode_rewards": [
+    2.5099838842095252
+  ],
+  "training_history": [
+    {
+      "episode": 0,
+      "turn": 0,
+      "action": {
+        "option": 2,
+        "subaction": 2,
+        "terminate_option": false
+      },
+      "reward": 0.15,
+      "done": false,
+      "info": {
+        "option": "Transition",
+        "subaction": "CheckReadiness",
+        "agent_utterance": "\"I'm glad you find the turban captivating. Shall we delve deeper into its intricate details or are you ready to explore other exhibits?\"",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 1,
+      "action": {
+        "option": 2,
+        "subaction": 2,
+        "terminate_option": false
+      },
+      "reward": 0.15,
+      "done": false,
+      "info": {
+        "option": "Transition",
+        "subaction": "CheckReadiness",
+        "agent_utterance": "The turban you're admiring is quite intriguing, isn't it? Shall we explore more about this exhibit, or would you like to move on to another section of the museum?",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 2,
+      "action": {
+        "option": 1,
+        "subaction": 1,
+        "terminate_option": true
+      },
+      "reward": 1.0430098462268733,
+      "done": false,
+      "info": {
+        "option": "Ask",
+        "subaction": "AskMemory",
+        "agent_utterance": "\"I'm glad to see your interest in our turban exhibit! Have you remembered anything we discussed earlier about this piece that particularly caught your eye?\"",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 3,
+      "action": {
+        "option": 1,
+        "subaction": 2,
+        "terminate_option": true
+      },
+      "reward": 0.36657654590558114,
+      "done": false,
+      "info": {
+        "option": "Ask",
+        "subaction": "AskClarification",
+        "agent_utterance": "Delighted to see your interest in our turban exhibit! The intricate patterns have always been a topic of fascination. Which aspect, specifically, would you like to delve deeper into?",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 4,
+      "action": {
+        "option": 1,
+        "subaction": 2,
+        "terminate_option": false
+      },
+      "reward": 0.8003974920770708,
+      "done": false,
+      "info": {
+        "option": "Ask",
+        "subaction": "AskClarification",
+        "agent_utterance": "It's wonderful to see your interest in the turban! What specific aspects of the intricate patterns catch your attention? Perhaps we could find some examples that showcase these details more clearly.",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    }
+  ]
+}

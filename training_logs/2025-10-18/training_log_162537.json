@@ -1,0 +1,150 @@
+{
+  "training_summary": {
+    "total_episodes": 0,
+    "total_turns": 5,
+    "average_reward_per_turn": 0.563996776841905,
+    "average_reward_per_episode": 0.0,
+    "best_episode_reward": 0.0,
+    "most_used_option": "Ask",
+    "most_used_subaction": "AskOpinion",
+    "option_usage": {
+      "Ask": 4,
+      "Transition": 1
+    },
+    "subaction_usage": {
+      "AskClarification": 1,
+      "AskOpinion": 3,
+      "CheckReadiness": 1
+    }
+  },
+  "episode_rewards": [
+    2.819983884209525
+  ],
+  "training_history": [
+    {
+      "episode": 0,
+      "turn": 0,
+      "action": {
+        "option": 1,
+        "subaction": 2,
+        "terminate_option": false
+      },
+      "reward": 0.2,
+      "done": false,
+      "info": {
+        "option": "Ask",
+        "subaction": "AskClarification",
+        "agent_utterance": "\"I'm glad you found the turban intriguing! Can I help you explore a specific aspect of it that caught your eye?\"",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 1,
+      "action": {
+        "option": 1,
+        "subaction": 0,
+        "terminate_option": false
+      },
+      "reward": 0.15,
+      "done": false,
+      "info": {
+        "option": "Ask",
+        "subaction": "AskOpinion",
+        "agent_utterance": "\"I'm glad to hear you're interested in learning more about our turban exhibit! What do you find particularly intriguing about it?\"",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 2,
+      "action": {
+        "option": 2,
+        "subaction": 2,
+        "terminate_option": true
+      },
+      "reward": 1.0430098462268733,
+      "done": false,
+      "info": {
+        "option": "Transition",
+        "subaction": "CheckReadiness",
+        "agent_utterance": "Are you interested in learning more about the history of this turban? Or shall we move on to another exhibit?",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 3,
+      "action": {
+        "option": 1,
+        "subaction": 0,
+        "terminate_option": true
+      },
+      "reward": 0.36657654590558114,
+      "done": false,
+      "info": {
+        "option": "Ask",
+        "subaction": "AskOpinion",
+        "agent_utterance": "\"I'm glad to see you share my enthusiasm for the turban. What do you find most intriguing about it?\"",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    },
+    {
+      "episode": 0,
+      "turn": 4,
+      "action": {
+        "option": 1,
+        "subaction": 0,
+        "terminate_option": false
+      },
+      "reward": 1.0603974920770707,
+      "done": false,
+      "info": {
+        "option": "Ask",
+        "subaction": "AskOpinion",
+        "agent_utterance": "\"I'm glad you find the turban fascinating! Have you noticed any specific aspects that particularly catch your eye?\"",
+        "facts_shared": 0,
+        "exhibits_covered": 0,
+        "current_focus": 2,
+        "current_exhibit": "Turban"
+      },
+      "simulator_data": {
+        "aoi": "Turban",
+        "persona": "Agreeable",
+        "utterance": ""
+      }
+    }
+  ]
+}
