@@ -48,8 +48,6 @@ def build_prompt(option: str, subaction: str, ex_id: Optional[str],
             return build_offer_transition_prompt(ex_id, context_section, facts_all, facts_used, exhibit_names, knowledge_graph, target_exhibit, coverage_dict)
         elif subaction == "LinkToOtherExhibit":
             return build_link_to_other_exhibit_prompt(ex_id, context_section, facts_all, facts_used, exhibit_names, knowledge_graph, target_exhibit, coverage_dict, current_completion)
-        elif subaction == "CheckReadiness":
-            return build_check_readiness_prompt(ex_id, context_section, facts_all, facts_used, exhibit_names, knowledge_graph, target_exhibit, coverage_dict, current_completion)
 
     elif option == "Conclude":
         if subaction == "WrapUp":
@@ -433,28 +431,6 @@ YOUR TASK:
 - Explain the artistic/historical/cultural connection
 - Keep it natural and informative (2-3 sentences)
 - Show how they complement each other
-
-Response:"""
-
-
-def build_check_readiness_prompt(ex_id: Optional[str], context_section: str,
-                               facts_all: List[str], facts_used: List[str],
-                               exhibit_names: List[str] = None, knowledge_graph = None,
-                               target_exhibit: str = None, coverage_dict: dict = None,
-                               current_completion: float = 0.0) -> str:
-    """Build prompt for checking if visitor is ready to move on"""
-
-    current_name = ex_id.replace('_', ' ') if ex_id else 'current exhibit'
-
-    return f"""Museum guide. Current exhibit: {current_name} (completion: {current_completion:.1%}).
-
-{context_section}
-
-YOUR TASK:
-- Acknowledge what we've covered so far
-- Ask if they want to continue here or move on
-- Be conversational and attentive (1-2 sentences)
-- Offer clear options based on their engagement
 
 Response:"""
 

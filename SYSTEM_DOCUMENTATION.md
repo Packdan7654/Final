@@ -50,7 +50,7 @@ All components verified:
 |--------|------------|
 | Explain | ExplainNewFact, RepeatFact, ClarifyFact |
 | AskQuestion | AskOpinion, AskMemory, AskClarification |
-| OfferTransition | SuggestMove, LinkToOtherExhibit, CheckReadiness |
+| OfferTransition | SuggestMove, LinkToOtherExhibit |
 | Conclude | WrapUp |
 
 ### 3. Reward Function
@@ -194,7 +194,7 @@ Dwell: 0.45
 **AGENT DECISION:**
 ```
 Option: OfferTransition
-Subaction: CheckReadiness
+Subaction: LinkToOtherExhibit
 ```
 
 **OUTPUT:**

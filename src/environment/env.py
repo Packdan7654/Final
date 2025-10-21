@@ -62,7 +62,7 @@ class MuseumDialogueEnv(gym.Env):
         self.subactions = {
             "Explain": ["ExplainNewFact", "RepeatFact", "ClarifyFact"],
             "AskQuestion": ["AskOpinion", "AskMemory", "AskClarification"],
-            "OfferTransition": ["SuggestMove", "LinkToOtherExhibit", "CheckReadiness"],
+            "OfferTransition": ["SuggestMove", "LinkToOtherExhibit"],
             "Conclude": ["WrapUp"]
         }
         
