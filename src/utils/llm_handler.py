@@ -1,58 +1,66 @@
 """
-Free LLM Handler for Museum Dialogue Generation
+LLM Handler for Museum Dialogue Generation
 
-This module provides a flexible interface for using free/open-source LLMs
-instead of paid APIs. It supports multiple backends:
+This module provides a flexible interface for using LLMs. It supports multiple backends:
 
-1. Ollama (recommended): Fast local inference with Phi-2 (default, faster & smaller than Mistral)
+1. Groq API (recommended): Fast inference with Llama models
 2. Hugging Face: Local models (Phi-2, TinyLLaMA, Mistral, FLAN-T5, GPT-2)
 3. Mistral API: Free tier available
 
-Default: Ollama with Phi-2 (2.7B parameters - much faster than Mistral-7B)
+Default: Groq API with Llama 3.1 8B (fast and efficient)
 """
 
 import os
 import json
+from pathlib import Path
 from typing import Optional, List, Dict, Any
 from enum import Enum
 
 
 class LLMBackend(Enum):
     """Available LLM backends."""
-    OLLAMA = "ollama"
+    GROQ = "groq"
     HUGGINGFACE = "huggingface"
     MISTRAL_API = "mistral_api"
 
 
+class LLMCriticalError(Exception):
+    """Raised when LLM encounters a critical, unrecoverable error (e.g., spend limit, auth failure)."""
+    pass
+
+
 class FreeLLMHandler:
     """
-    Handler for free/open-source LLM inference.
+    Handler for LLM inference.
     
     This provides a unified interface for different LLM backends.
-    Default: Phi-2 (2.7B) for fast, efficient inference.
+    Default: Groq API with Llama 3.1 8B for fast, efficient inference.
     
-    Available fast models:
-    - phi2 (2.7B): Default, good quality and speed
-    - tinyllama (1.1B): Faster but lower quality  
-    - neural-chat (7B): Slightly larger, better quality
-    - mistral (7B): Larger, slower but highest quality
+    Available Groq models:
+    - llama-3.1-8b: Default, fast and cost-effective (8B)
+    - llama-3.1: Higher quality (70B)
+    - llama-3.3: Latest high quality (70B)
+    
+    For HuggingFace (local models):
+    - phi2, tinyllama, neural-chat, mistral
     """
     
     def __init__(
         self,
-        backend: str = "ollama",
-        model_name: str = "phi2",
+        backend: str = "groq",
+        model_name: str = "llama-3.1-8b",
         temperature: float = 0.7,
         max_tokens: int = 250,
         device: Optional[str] = None
     ):
         """
-        Initialize free LLM handler.
+        Initialize LLM handler.
         
         Args:
-            backend: LLM backend ('ollama', 'huggingface', 'mistral_api')
-            model_name: Model name (default: 'phi2' for fast inference)
-                       Options: phi2, tinyllama, neural-chat, mistral
+            backend: LLM backend ('groq', 'huggingface', 'mistral_api')
+            model_name: Model name (default: 'llama-3.1-8b' for Groq)
+                       Options: llama-3.1-8b, llama-3.3, llama-3.1 (Groq)
+                       Or local models: phi2, tinyllama, neural-chat, mistral (HuggingFace)
             temperature: Sampling temperature
             max_tokens: Maximum tokens to generate
             device: Device for local models ('cpu', 'cuda')
@@ -66,6 +74,11 @@ class FreeLLMHandler:
         # Check for fast mode
         import os
         self.fast_mode = os.environ.get('HRL_FAST_MODE') == '1'
+        
+        # Critical error tracking
+        self.critical_error_count = 0
+        self.max_critical_errors = 3  # Allow a few errors before failing
+        self.last_critical_error = None
         
         if not self.fast_mode:
             # Initialize backend normally
@@ -83,37 +96,12 @@ class FreeLLMHandler:
     
     def _initialize_backend(self):
         """Initialize the selected LLM backend."""
-        if self.backend == LLMBackend.OLLAMA:
-            self._initialize_ollama()
+        if self.backend == LLMBackend.GROQ:
+            self._initialize_groq()
         elif self.backend == LLMBackend.HUGGINGFACE:
             self._initialize_huggingface()
         elif self.backend == LLMBackend.MISTRAL_API:
             self._initialize_mistral_api()
-    
-    def _initialize_ollama(self):
-        """Initialize Ollama backend."""
-        try:
-            import requests
-            self.ollama_available = True
-            self.ollama_url = os.environ.get("OLLAMA_HOST", "http://localhost:11434")
-            
-            # Test connection
-            try:
-                response = requests.get(f"{self.ollama_url}/api/tags", timeout=2)
-                if response.status_code == 200:
-                    print(f"[OK] Ollama connected at {self.ollama_url}")
-                    print(f"  Using model: {self.model_name}")
-                else:
-                    print(f"[WARN] Ollama connection issue: {response.status_code}")
-                    self.ollama_available = False
-            except requests.exceptions.RequestException:
-                print(f"[WARN] Ollama not running at {self.ollama_url}")
-                print("  Install: https://ollama.ai")
-                print(f"  Run: ollama pull {self.model_name}")
-                self.ollama_available = False
-        except ImportError:
-            print("[WARN] requests not installed: pip install requests")
-            self.ollama_available = False
     
     def _initialize_huggingface(self):
         """Initialize Hugging Face backend."""
@@ -173,6 +161,43 @@ class FreeLLMHandler:
         except ImportError:
             print("[WARN] mistralai not installed: pip install mistralai")
     
+    def _initialize_groq(self):
+        """Initialize Groq API backend."""
+        try:
+            # Try to get API key from environment first
+            api_key = os.environ.get("GROQ_API_KEY")
+            
+            # If not in environment, try to read from key.txt
+            if not api_key:
+                key_file = Path(__file__).parent.parent.parent / "key.txt"
+                if key_file.exists():
+                    try:
+                        api_key = key_file.read_text().strip()
+                        print(f"[OK] Loaded Groq API key from key.txt")
+                        # Set it in environment for future use
+                        os.environ["GROQ_API_KEY"] = api_key
+                    except Exception as e:
+                        print(f"[WARN] Failed to read key.txt: {e}")
+                        api_key = None
+            
+            if not api_key:
+                print("[WARN] GROQ_API_KEY not set in environment and key.txt not found")
+                print("  Get free API key: https://console.groq.com/")
+                print("  Or create key.txt in project root with your API key")
+                self.groq_available = False
+            else:
+                from groq import Groq
+                self.groq_client = Groq(api_key=api_key)
+                print(f"[OK] Groq API client initialized")
+                print(f"  Using model: {self.model_name}")
+                self.groq_available = True
+        except ImportError:
+            print("[WARN] groq not installed: pip install groq")
+            self.groq_available = False
+        except Exception as e:
+            print(f"[WARN] Error initializing Groq: {e}")
+            self.groq_available = False
+    
     def generate(
         self,
         prompt: str,
@@ -192,53 +217,13 @@ class FreeLLMHandler:
         if self.fast_mode:
             return self._fallback_response(prompt)
         
-        if self.backend == LLMBackend.OLLAMA:
-            return self._generate_ollama(prompt, system_prompt)
+        if self.backend == LLMBackend.GROQ:
+            return self._generate_groq(prompt, system_prompt)
         elif self.backend == LLMBackend.HUGGINGFACE:
             return self._generate_huggingface(prompt, system_prompt)
         elif self.backend == LLMBackend.MISTRAL_API:
             return self._generate_mistral_api(prompt, system_prompt)
         else:
-            return self._fallback_response(prompt)
-    
-    def _generate_ollama(self, prompt: str, system_prompt: Optional[str]) -> str:
-        """Generate using Ollama."""
-        if not self.ollama_available:
-            return self._fallback_response(prompt)
-        
-        try:
-            import requests
-            
-            messages = []
-            if system_prompt:
-                messages.append({"role": "system", "content": system_prompt})
-            messages.append({"role": "user", "content": prompt})
-            
-            payload = {
-                "model": self.model_name,
-                "messages": messages,
-                "stream": False,
-                "options": {
-                    "temperature": self.temperature,
-                    "num_predict": self.max_tokens
-                }
-            }
-            
-            response = requests.post(
-                f"{self.ollama_url}/api/chat",
-                json=payload,
-                timeout=30
-            )
-            
-            if response.status_code == 200:
-                result = response.json()
-                return result['message']['content'].strip()
-            else:
-                print(f"[WARN] Ollama error: {response.status_code}")
-                return self._fallback_response(prompt)
-                
-        except Exception as e:
-            print(f"[WARN] Ollama generation error: {e}")
             return self._fallback_response(prompt)
     
     def _generate_huggingface(self, prompt: str, system_prompt: Optional[str]) -> str:
@@ -304,6 +289,75 @@ class FreeLLMHandler:
             print(f"[WARN] Mistral API error: {e}")
             return self._fallback_response(prompt)
     
+    def _generate_groq(self, prompt: str, system_prompt: Optional[str]) -> str:
+        """Generate using Groq API with critical error detection."""
+        if not self.groq_available:
+            return self._fallback_response(prompt)
+        
+        try:
+            messages = []
+            if system_prompt:
+                messages.append({"role": "system", "content": system_prompt})
+            messages.append({"role": "user", "content": prompt})
+            
+            # Map common model names to Groq model IDs (updated for current models)
+            model_map = {
+                "mistral": "llama-3.3-70b-versatile",  # Use Llama 3.3 as replacement
+                "mixtral": "llama-3.3-70b-versatile",
+                "llama": "llama-3.3-70b-versatile",
+                "llama2": "llama-3.1-70b-versatile",
+                "llama3": "llama-3.3-70b-versatile",
+                "llama-3.3": "llama-3.3-70b-versatile",
+                "llama-3.1": "llama-3.1-70b-versatile",
+                "llama-3.1-8b": "llama-3.1-8b-instant",  # Cheaper 8B model!
+            }
+            groq_model = model_map.get(self.model_name.lower(), self.model_name)
+            
+            response = self.groq_client.chat.completions.create(
+                model=groq_model,
+                messages=messages,
+                temperature=self.temperature,
+                max_tokens=self.max_tokens
+            )
+            
+            # Reset error count on success
+            self.critical_error_count = 0
+            return response.choices[0].message.content.strip()
+            
+        except Exception as e:
+            error_str = str(e)
+            print(f"[WARN] Groq API error: {e}")
+            
+            # Detect CRITICAL errors that should stop training
+            critical_error_keywords = [
+                'spend_limit_reached',
+                'spend alert threshold',
+                'insufficient_quota',
+                'rate_limit_exceeded',
+                'authentication_error',
+                'invalid_api_key',
+                'account_deactivated'
+            ]
+            
+            is_critical = any(keyword in error_str.lower() for keyword in critical_error_keywords)
+            
+            if is_critical:
+                self.critical_error_count += 1
+                self.last_critical_error = error_str
+                
+                print(f"\n{'='*80}")
+                print(f"CRITICAL LLM ERROR DETECTED ({self.critical_error_count}/{self.max_critical_errors})")
+                print(f"{'='*80}")
+                print(f"Error: {error_str[:200]}")
+                
+                if self.critical_error_count >= self.max_critical_errors:
+                    print(f"\nCritical error threshold reached!")
+                    print(f"Training will be stopped to save the model.")
+                    print(f"{'='*80}\n")
+                    raise LLMCriticalError(f"Groq API critical error: {error_str}")
+            
+            return self._fallback_response(prompt)
+    
     def _fallback_response(self, prompt: str) -> str:
         """
         Fallback template-based response when LLM is unavailable.
@@ -357,7 +411,7 @@ def get_llm_handler(
     Get global LLM handler instance (singleton).
     
     Args:
-        backend: Override backend ('ollama', 'huggingface', 'mistral_api')
+        backend: Override backend ('groq', 'huggingface', 'mistral_api')
         model_name: Override model name
         **kwargs: Additional arguments for FreeLLMHandler
         
@@ -368,9 +422,9 @@ def get_llm_handler(
     
     # Check environment variables for configuration
     if backend is None:
-        backend = os.environ.get("HRL_LLM_BACKEND", "ollama")
+        backend = os.environ.get("HRL_LLM_BACKEND", "groq")
     if model_name is None:
-        model_name = os.environ.get("HRL_LLM_MODEL", "phi2")
+        model_name = os.environ.get("HRL_LLM_MODEL", "llama-3.1-8b")
     
     if _llm_handler is None:
         _llm_handler = FreeLLMHandler(

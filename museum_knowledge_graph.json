@@ -2,13 +2,13 @@
   "exhibits": {
     "King_Caspar": {
       "object_name": "C6",
-      "description": "King Caspar is one of the Three Wise Men from the biblical story.",
-      "more_info": "He is traditionally depicted as the king who brought gold as a gift.",
-      "style": "Oil on panel",
-      "location": "Gemäldegalerie, Berlin",
-      "artist": "Hendrick Heerschop",
+      "painting_name": "The African King Caspar",
       "year": "1654",
-      "image_url": "",
+      "artist": "Hendrick Heerschop",
+      "location": "Gemäldegalerie, Berlin",
+      "style": "Oil on panel",
+      "description": "The painting represents one of the three magi who came to worship the Christ child.",
+      "more_info": "King Caspar depicts the Biblical King from the Adoration of the Magi holding his gift of frankincense in a precious vessel.",
       "aois": [
         "King Caspar",
         "Incense Pot",
@@ -21,13 +21,13 @@
     },
     "Turban": {
       "object_name": "C5",
-      "description": "The turban is a traditional head covering worn in many cultures.",
-      "more_info": "It is made of fine silk and decorated with precious stones.",
-      "style": "Oil on panel",
-      "location": "Hannover, Landesmuseum",
-      "artist": "Gerrit Dou",
+      "painting_name": "Head of a Boy in a Turban",
       "year": "1635",
-      "image_url": "",
+      "artist": "Gerrit Dou",
+      "location": "Hannover, Landesmuseum",
+      "style": "Oil on panel",
+      "description": "The painting depicts an endearing tronie of a young boy dressed in a fantasy costume, who looks at us over his shoulder.",
+      "more_info": "Dou was Rembrandt's first pupil and took up his master's idea of studying black people.",
       "aois": [
         "Turban",
         "White ostrich feather",
@@ -35,199 +35,138 @@
         "Young boy"
       ]
     },
-    "Gemstones": {
-      "object_name": "C6",
-      "description": "The gemstones in the jewelry are precious stones of various colors.",
-      "more_info": "They include rubies, emeralds, sapphires, and diamonds.",
-      "style": "Oil on panel",
-      "location": "Gemäldegalerie, Berlin",
-      "artist": "Hendrick Heerschop",
-      "year": "1654",
-      "image_url": "",
-      "aois": [
-        "Gemstones"
-      ]
-    },
-    "Necklace": {
-      "object_name": "C6",
-      "description": "The necklace is made of gold and adorned with precious gemstones.",
-      "more_info": "It features an intricate design with multiple layers.",
-      "style": "Oil on panel",
-      "location": "Gemäldegalerie, Berlin",
-      "artist": "Hendrick Heerschop",
-      "year": "1654",
-      "image_url": "",
-      "aois": [
-        "Necklace"
-      ]
-    },
-    "Cavalier_hat": {
+    "Dom_Miguel": {
       "object_name": "B2",
-      "description": "The cavalier hat is a wide-brimmed hat with elaborate decoration.",
-      "more_info": "It features ostrich feathers and gold trim.",
-      "style": "Oil on panel",
-      "location": "Statensmuseum for Kunst, Copenhagen",
-      "artist": "Jeronimus Beckx",
+      "painting_name": "Portrait of Dom Miguel de Castro",
       "year": "1643",
-      "image_url": "",
+      "artist": "Jeronimus Beckx",
+      "location": "Statensmuseum for Kunst, Copenhagen",
+      "style": "Oil on panel",
+      "description": "Dom Miguel de Castro makes here a powerful, serious expression. He was a member of the Congolese elite.",
+      "more_info": "This portrait was commissioned by the Dutch West India Company during his two week stay in Middelburg.",
       "aois": [
-        "Cavalier hat",
         "Red ostrich feather",
+        "Cavalier hat",
         "Gilt garment",
         "Dom Miguel"
       ]
     },
-    "Ring": {
-      "object_name": "C6",
-      "description": "The ring is a piece of jewelry worn on the finger.",
-      "more_info": "It is crafted from precious metals like gold or silver.",
+    "Pedro_Sunda": {
+      "object_name": "B3",
+      "painting_name": "Portrait of Pedro Sunda",
+      "year": "1643",
+      "artist": "Jeronimus Beckx",
+      "location": "Statensmuseum for Kunst, Copenhagen",
       "style": "Oil on panel",
-      "location": "Gemäldegalerie, Berlin",
-      "artist": "Hendrick Heerschop",
-      "year": "1654",
-      "image_url": "",
+      "description": "Pedro Sunda holds an elephant's tusk. Ivory was one of the Congo's major export products.",
+      "more_info": "The status of these young men is unclear. Were they assistants of the noble Dom Miguel or were they enslaved?",
       "aois": [
-        "Ring"
+        "Ivory tusk",
+        "Pedro Sunda",
+        "Cloth"
       ]
     },
-    "Doublet": {
-      "object_name": "C6",
-      "description": "The doublet is a fitted jacket worn by men in the Renaissance.",
-      "more_info": "It is made of fine fabrics like silk, velvet, or brocade.",
+    "Diego_Bemba": {
+      "object_name": "B1",
+      "painting_name": "Portrait of Diego Bemba",
+      "year": "1643",
+      "artist": "Jeronimus Beckx",
+      "location": "Statensmuseum for Kunst, Copenhagen",
       "style": "Oil on panel",
-      "location": "Gemäldegalerie, Berlin",
-      "artist": "Hendrick Heerschop",
-      "year": "1654",
-      "image_url": "",
+      "description": "Diego Bemba holds a small casket, probably a diplomatic gift. He was one of Don Miguel de Castro's servants.",
+      "more_info": "His eyes are turned upwards as if he were addressing or giving thanks to God, suggesting the box contains something holy.",
       "aois": [
-        "Doublet"
-      ]
-    },
-    "Incense_Pot": {
-      "object_name": "C6",
-      "description": "The incense pot is used for burning aromatic substances.",
-      "more_info": "It is typically made of metal with decorative elements.",
-      "style": "Oil on panel",
-      "location": "Gemäldegalerie, Berlin",
-      "artist": "Hendrick Heerschop",
-      "year": "1654",
-      "image_url": "",
-      "aois": [
-        "Incense Pot"
+        "Box",
+        "Diego Bemba",
+        "Clothes"
       ]
     }
   },
   "aois": {
     "King Caspar": {
-      "description": "One of the three magi who came to worship the Christ child.",
-      "name": "King Caspar"
+      "name": "King Caspar",
+      "description": "One of the three magi who came to worship the Christ child. The three magi visited Jesus bearing precious gifts."
     },
     "Incense Pot": {
-      "description": "The golden pot represents an incense pot, a gift for Jesus.",
-      "name": "Incense Pot"
+      "name": "Incense Pot",
+      "description": "The golden pot represents an incense pot, a gift for Jesus. Frankincense embodied Jesus' deity."
     },
     "Necklace": {
-      "description": "Made of gold and adorned with precious gemstones.",
-      "name": "Necklace"
+      "name": "Necklace",
+      "description": "Golden necklace representing high power and status. The 17th century was the age of elegance for accessories."
     },
     "Earring": {
-      "description": "Golden accessory representing high power and status.",
-      "name": "Earring"
+      "name": "Earring",
+      "description": "Golden earring representing high power and status of the wearer."
     },
     "Ring": {
-      "description": "Finely crafted jewelry worn by nobles.",
-      "name": "Ring"
+      "name": "Ring",
+      "description": "Finely carved ring worn by nobles. Carefully selected statement pieces showed taste in the 17th century."
     },
     "Doublet": {
-      "description": "A fitted jacket worn by men in the Renaissance.",
-      "name": "Doublet"
+      "name": "Doublet",
+      "description": "Yellow doublet paired with an intricately detailed and jewelled cloak. A form-fitted waist length jacket."
     },
     "Gemstones": {
-      "description": "Precious stones including rubies, emeralds, and sapphires.",
-      "name": "Gemstones"
+      "name": "Gemstones",
+      "description": "Due to expanding global trade in the 17th century, gemstones became more available and were used extensively."
     },
     "Turban": {
-      "description": "Traditional head covering made of fine silk.",
-      "name": "Turban"
+      "name": "Turban",
+      "description": "A type of headwear constructed by winding cloth, made from strong fabrics like cotton."
     },
     "White ostrich feather": {
-      "description": "Decoration on the turban, symbol of hope and peace.",
-      "name": "White ostrich feather"
+      "name": "White ostrich feather",
+      "description": "Decoration on the turban. A white feather is seen as a sign of hope or peace in many cultures."
     },
     "Blue garment": {
-      "description": "Fantasy costume with elements from 17th century clothing.",
-      "name": "Blue garment"
+      "name": "Blue garment",
+      "description": "Fantasy costume with 17th century elements. Blue was the most lavish pigment, representing power and royalty."
     },
     "Young boy": {
-      "description": "Endearing tronie of a young boy in fantasy costume.",
-      "name": "Young boy"
-    },
-    "Cavalier hat": {
-      "description": "Wide-brimmed hat with elaborate decoration.",
-      "name": "Cavalier hat"
+      "name": "Young boy",
+      "description": "An endearing tronie of a young boy in fantasy costume looking over his shoulder at the viewer."
     },
     "Red ostrich feather": {
-      "description": "Symbol of elegance and luxurious extravagance.",
-      "name": "Red ostrich feather"
+      "name": "Red ostrich feather",
+      "description": "Symbol of elegance and luxurious extravagance. Red was associated with wealth and power."
+    },
+    "Cavalier hat": {
+      "name": "Cavalier hat",
+      "description": "Wide-brimmed hat from the 17th century, often made from felt and accentuated with ostrich feathers."
     },
     "Gilt garment": {
-      "description": "Ornately decorated with silver gilt embroidery.",
-      "name": "Gilt garment"
+      "name": "Gilt garment",
+      "description": "Ornately decorated with silver gilt embroidery using metal threads, symbolizing wealth and elegance."
     },
     "Dom Miguel": {
-      "description": "Member of the Congolese elite with powerful expression.",
-      "name": "Dom Miguel"
+      "name": "Dom Miguel",
+      "description": "Dom Miguel de Castro, a member of the Congolese elite with a powerful, serious expression."
+    },
+    "Ivory tusk": {
+      "name": "Ivory tusk",
+      "description": "Elephant tusk held by Pedro Sunda. Ivory was valuable due to its beauty and durability, representing strength and power."
+    },
+    "Pedro Sunda": {
+      "name": "Pedro Sunda",
+      "description": "Servant of the Congolese envoy Don Miguel de Castro. Portraits of named servants from Africa are rare."
+    },
+    "Cloth": {
+      "name": "Cloth",
+      "description": "Green velvet suit with golden ribbons and buttons. Dressed according to European fashion of the 1640s."
+    },
+    "Box": {
+      "name": "Box",
+      "description": "Small decorative casket assumed to be a diplomatic gift, more than functional packaging with artistic elements."
+    },
+    "Diego Bemba": {
+      "name": "Diego Bemba",
+      "description": "One of Don Miguel de Castro's servants, pointing at the box with his eyes turned upward."
+    },
+    "Clothes": {
+      "name": "Clothes",
+      "description": "Same type of European fashion as Pedro Sunda, body turned slightly to the right in framing shadows."
     }
-  },
-  "facts": {
-    "King_Caspar": [
-      "King Caspar is one of the Three Wise Men from the biblical story.",
-      "He is traditionally depicted as the king who brought gold as a gift.",
-      "Style: Oil on panel",
-      "Artist: Hendrick Heerschop"
-    ],
-    "Turban": [
-      "The turban is a traditional head covering worn in many cultures.",
-      "It is made of fine silk and decorated with precious stones.",
-      "Style: Oil on panel",
-      "Artist: Gerrit Dou"
-    ],
-    "Gemstones": [
-      "The gemstones in the jewelry are precious stones of various colors.",
-      "They include rubies, emeralds, sapphires, and diamonds.",
-      "Style: Oil on panel",
-      "Artist: Hendrick Heerschop"
-    ],
-    "Necklace": [
-      "The necklace is made of gold and adorned with precious gemstones.",
-      "It features an intricate design with multiple layers.",
-      "Style: Oil on panel",
-      "Artist: Hendrick Heerschop"
-    ],
-    "Cavalier_hat": [
-      "The cavalier hat is a wide-brimmed hat with elaborate decoration.",
-      "It features ostrich feathers and gold trim.",
-      "Style: Oil on panel",
-      "Artist: Jeronimus Beckx"
-    ],
-    "Ring": [
-      "The ring is a piece of jewelry worn on the finger.",
-      "It is crafted from precious metals like gold or silver.",
-      "Style: Oil on panel",
-      "Artist: Hendrick Heerschop"
-    ],
-    "Doublet": [
-      "The doublet is a fitted jacket worn by men in the Renaissance.",
-      "It is made of fine fabrics like silk, velvet, or brocade.",
-      "Style: Oil on panel",
-      "Artist: Hendrick Heerschop"
-    ],
-    "Incense_Pot": [
-      "The incense pot is used for burning aromatic substances.",
-      "It is typically made of metal with decorative elements.",
-      "Style: Oil on panel",
-      "Artist: Hendrick Heerschop"
-    ]
   },
   "exhibit_aoi_mapping": {
     "King_Caspar": [
@@ -245,41 +184,32 @@
       "Blue garment",
       "Young boy"
     ],
-    "Gemstones": [
-      "Gemstones"
-    ],
-    "Necklace": [
-      "Necklace"
-    ],
-    "Cavalier_hat": [
-      "Cavalier hat",
+    "Dom_Miguel": [
       "Red ostrich feather",
+      "Cavalier hat",
       "Gilt garment",
       "Dom Miguel"
     ],
-    "Ring": [
-      "Ring"
+    "Pedro_Sunda": [
+      "Ivory tusk",
+      "Pedro Sunda",
+      "Cloth"
     ],
-    "Doublet": [
-      "Doublet"
-    ],
-    "Incense_Pot": [
-      "Incense Pot"
+    "Diego_Bemba": [
+      "Box",
+      "Diego Bemba",
+      "Clothes"
     ]
   },
   "summary": {
-    "total_exhibits": 8,
-    "total_aois": 15,
-    "total_facts": 32,
+    "total_exhibits": 5,
+    "total_aois": 21,
     "exhibit_names": [
       "King_Caspar",
       "Turban",
-      "Gemstones",
-      "Necklace",
-      "Cavalier_hat",
-      "Ring",
-      "Doublet",
-      "Incense_Pot"
+      "Dom_Miguel",
+      "Pedro_Sunda",
+      "Diego_Bemba"
     ],
     "aoi_names": [
       "King Caspar",
@@ -293,11 +223,17 @@
       "White ostrich feather",
       "Blue garment",
       "Young boy",
-      "Cavalier hat",
       "Red ostrich feather",
+      "Cavalier hat",
       "Gilt garment",
-      "Dom Miguel"
+      "Dom Miguel",
+      "Ivory tusk",
+      "Pedro Sunda",
+      "Cloth",
+      "Box",
+      "Diego Bemba",
+      "Clothes"
     ],
-    "source": "Fallback"
+    "source": "Original Museum Structure"
   }
 }

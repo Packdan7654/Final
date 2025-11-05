@@ -49,10 +49,12 @@ class TrainingMonitor:
         
         self.training_history.append(step_data)
         
-        # Update usage statistics
+        # Update usage statistics - convert to names if indices
         option = info.get('option', 'Unknown')
         subaction = info.get('subaction', 'Unknown')
         
+        # If option is a string name, use it; otherwise keep as Unknown for now
+        # (will be converted during analysis if indices are present)
         self.option_usage[option] = self.option_usage.get(option, 0) + 1
         self.subaction_usage[subaction] = self.subaction_usage.get(subaction, 0) + 1
         

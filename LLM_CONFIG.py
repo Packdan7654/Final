@@ -5,11 +5,10 @@ This module provides a single place to configure which LLM models to use
 for the agent and the user simulator. Easy switching between models for
 testing and evaluation.
 
-Available Models:
-- orca-mini (3.3B): Fastest, good quality
-- mistral:small (7B): Fast Mistral variant
-- mistral:latest (7B): Standard Mistral
-- neural-chat (7B): Good for dialogue
+Available Models (Groq API):
+- llama-3.1-8b: Fast and cost-effective (8B) - recommended
+- llama-3.1: Higher quality (70B)
+- llama-3.3: Latest high quality (70B)
 """
 
 import os
@@ -25,13 +24,12 @@ class LLMConfig:
     # ========================================================================
     # AGENT LLM (Used for museum guide dialogue generation in training)
     # ========================================================================
-    AGENT_LLM_MODEL = "mistral"  # High quality for comparison
+    AGENT_LLM_MODEL = "llama-3.1-8b"  # Groq: Fast and cost-effective (8B model)
     
-    # Model options:
-    # - "orca-mini"        : Ultra-fast (3.3B), lower quality
-    # - "mistral-small3.1:latest quality
-    # - "mistral:latest"   : Balanced (7B), high quality
-    # - "neural-chat"      : Good for dialogue (7B)
+    # Model options (Groq):
+    # - "llama-3.1-8b"     : Fast and cheap (8B) - recommended for training
+    # - "llama-3.1"        : Higher quality (70B) - more expensive
+    # - "llama-3.3"        : Latest high quality (70B) - most expensive
     
     # Temperature for agent (lower = more deterministic)
     AGENT_TEMPERATURE = 0.3  # Low for consistent, factual responses
@@ -40,10 +38,10 @@ class LLMConfig:
     # ========================================================================
     # SIMULATOR/USER LLM (Used for user response generation in simulator)
     # ========================================================================
-    SIMULATOR_LLM_MODEL = "mistral"  # High quality for comparison
+    SIMULATOR_LLM_MODEL = "llama-3.1-8b"  # Groq: Fast and cost-effective
     
     # Model options (same as above)
-    # Use a faster model here since user responses are simpler
+    # Use a faster/cheaper model here since user responses are simpler
     
     # Temperature for simulator (lower = more consistent)
     SIMULATOR_TEMPERATURE = 0.6
@@ -52,8 +50,7 @@ class LLMConfig:
     # ========================================================================
     # BACKEND CONFIGURATION
     # ========================================================================
-    LLM_BACKEND = "ollama"  # Options: "ollama", "huggingface", "mistral_api"
-    OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://localhost:11434")
+    LLM_BACKEND = "groq"  # Options: "groq", "huggingface", "mistral_api"
     
     # ========================================================================
     # PRESET CONFIGURATIONS (Copy and paste to switch)
@@ -62,30 +59,62 @@ class LLMConfig:
     @classmethod
     def preset_fast_testing(cls):
         """Fastest setup - good for quick iteration"""
-        cls.AGENT_LLM_MODEL = "orca-mini"
-        cls.SIMULATOR_LLM_MODEL = "orca-mini"
-        print("[CONFIG] Preset: FAST TESTING (both orca-mini)")
+        cls.AGENT_LLM_MODEL = "llama-3.1-8b"
+        cls.SIMULATOR_LLM_MODEL = "llama-3.1-8b"
+        print("[CONFIG] Preset: FAST TESTING (both llama-3.1-8b)")
     
     @classmethod
     def preset_balanced(cls):
         """Balanced setup - good for development"""
-        cls.AGENT_LLM_MODEL = "mistral:small"
-        cls.SIMULATOR_LLM_MODEL = "orca-mini"
-        print("[CONFIG] Preset: BALANCED (agent=mistral:small, user=orca-mini)")
+        cls.AGENT_LLM_MODEL = "llama-3.1"
+        cls.SIMULATOR_LLM_MODEL = "llama-3.1-8b"
+        print("[CONFIG] Preset: BALANCED (agent=llama-3.1, user=llama-3.1-8b)")
     
     @classmethod
     def preset_high_quality(cls):
         """High quality setup - for evaluation"""
-        cls.AGENT_LLM_MODEL = "mistral:latest"
-        cls.SIMULATOR_LLM_MODEL = "neural-chat"
-        print("[CONFIG] Preset: HIGH QUALITY (agent=mistral:latest, user=neural-chat)")
+        cls.AGENT_LLM_MODEL = "llama-3.3"
+        cls.SIMULATOR_LLM_MODEL = "llama-3.1"
+        print("[CONFIG] Preset: HIGH QUALITY (agent=llama-3.3, user=llama-3.1)")
     
     @classmethod
     def preset_neural_chat(cls):
-        """Neural chat optimized setup - good for dialogue"""
-        cls.AGENT_LLM_MODEL = "neural-chat"
-        cls.SIMULATOR_LLM_MODEL = "neural-chat"
-        print("[CONFIG] Preset: NEURAL CHAT (both neural-chat)")
+        """Balanced dialogue setup - good for dialogue"""
+        cls.AGENT_LLM_MODEL = "llama-3.1"
+        cls.SIMULATOR_LLM_MODEL = "llama-3.1"
+        print("[CONFIG] Preset: BALANCED DIALOGUE (both llama-3.1)")
+    
+    @classmethod
+    def preset_groq_fast(cls):
+        """Groq API setup - EXTREMELY FAST (10-20x faster than local)"""
+        cls.LLM_BACKEND = "groq"
+        cls.AGENT_LLM_MODEL = "llama-3.3"  # Llama 3.3 70B on Groq
+        cls.SIMULATOR_LLM_MODEL = "llama-3.3"
+        print("[CONFIG] Preset: GROQ FAST (both llama-3.3 via Groq API)")
+        print("  ⚡ Extremely fast inference!")
+        print("  📝 Set GROQ_API_KEY env variable")
+    
+    @classmethod
+    def preset_groq_llama(cls):
+        """Groq API with Llama 3.1 - Very fast and high quality"""
+        cls.LLM_BACKEND = "groq"
+        cls.AGENT_LLM_MODEL = "llama-3.1"  # Llama 3.1 70B on Groq
+        cls.SIMULATOR_LLM_MODEL = "llama-3.1"
+        print("[CONFIG] Preset: GROQ LLAMA (both llama-3.1 via Groq API)")
+        print("  ⚡ Extremely fast with excellent quality!")
+        print("  📝 Set GROQ_API_KEY env variable")
+    
+    @classmethod
+    def preset_groq_cheap(cls):
+        """Groq API with Llama 3.1 8B - CHEAPEST! 5-10x cheaper than 70B"""
+        cls.LLM_BACKEND = "groq"
+        cls.AGENT_LLM_MODEL = "llama-3.1-8b"  # Llama 3.1 8B - Much cheaper!
+        cls.SIMULATOR_LLM_MODEL = "llama-3.1-8b"
+        print("[CONFIG] Preset: GROQ CHEAP (both llama-3.1-8b via Groq API)")
+        print("  💰 5-10x CHEAPER than 70B models!")
+        print("  ⚡ Still very fast!")
+        print("  📊 500 episodes: ~$1-2 instead of ~$10")
+        print("  📝 Set GROQ_API_KEY env variable")
     
     @classmethod
     def print_config(cls):
@@ -102,7 +131,6 @@ class LLMConfig:
         print(f"  Max tokens:   {cls.SIMULATOR_MAX_TOKENS}")
         print()
         print(f"Backend:        {cls.LLM_BACKEND}")
-        print(f"Ollama Host:    {cls.OLLAMA_HOST}")
         print("=" * 70 + "\n")
 
 
@@ -119,6 +147,11 @@ if os.environ.get("HRL_SIMULATOR_LLM"):
 
 if os.environ.get("HRL_LLM_BACKEND"):
     LLMConfig.LLM_BACKEND = os.environ["HRL_LLM_BACKEND"]
+
+# Single variable to set both agent and simulator model
+if os.environ.get("HRL_LLM_MODEL"):
+    LLMConfig.AGENT_LLM_MODEL = os.environ["HRL_LLM_MODEL"]
+    LLMConfig.SIMULATOR_LLM_MODEL = os.environ["HRL_LLM_MODEL"]
 
 
 # ============================================================================
@@ -174,3 +207,5 @@ if __name__ == "__main__":
     print("  - LLMConfig.preset_balanced()")
     print("  - LLMConfig.preset_high_quality()")
     print("  - LLMConfig.preset_neural_chat()")
+    print("  - LLMConfig.preset_groq_fast()  ⚡ FASTEST!")
+    print("  - LLMConfig.preset_groq_llama() ⚡ FAST + HIGH QUALITY!")

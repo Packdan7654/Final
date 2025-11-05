@@ -26,6 +26,7 @@ from gymnasium import spaces
 import numpy as np
 import random
 import re
+import os
 from typing import Dict, Set
 from src.utils.dialogue_planner import build_prompt 
 from src.utils.knowledge_graph import SimpleKnowledgeGraph
@@ -48,11 +49,34 @@ class MuseumDialogueEnv(gym.Env):
     Reward: Engagement (dwell) + Novelty (coverage) + deliberation cost
     """
     
-    def __init__(self, deliberation_cost=0.01, knowledge_graph_path=None):
+    def __init__(self, deliberation_cost=0.01, knowledge_graph_path=None, max_turns=20):
         super().__init__()
         
         # ===== CONFIGURATION =====
         self.deliberation_cost = deliberation_cost
+        self.max_turns = max_turns  # Maximum turns per episode
+        
+        # ===== REWARD PARAMETERS (configurable via environment variables) =====
+        # Default values match paper baseline (per paper.tex Section 4.7, line 637)
+        # Note: Per paper, r^eng_t = dwell_t and r^nov_t = 0.15 × |new facts| (no weights)
+        
+        # Engagement: r^eng_t = dwell_t (no weight, just dwell time)
+        # Note: We keep w_engagement for backward compatibility but it should be 1.0
+        self.w_engagement = float(os.environ.get("HRL_W_ENGAGEMENT", "1.0"))
+        
+        # Novelty: r^nov_t = α × |new facts| where α = 0.15 (per paper.tex line 637)
+        # This is the scale factor α, not a separate weight
+        self.novelty_per_fact = float(os.environ.get("HRL_NOVELTY_PER_FACT", "0.15"))
+        
+        # Responsiveness reward scale (per paper.tex Section 4.7)
+        self.w_responsiveness = float(os.environ.get("HRL_W_RESPONSIVENESS", "0.25"))
+        
+        # Conclude bonus scale (per paper.tex Section 4.7)
+        self.w_conclude = float(os.environ.get("HRL_W_CONCLUDE", "0.2"))
+        
+        # Transition insufficiency penalty parameter (per paper.tex Section 4.7)
+        # Note: Transition spam is handled at simulator level (reduces dwell time)
+        self.w_transition_insufficiency = float(os.environ.get("HRL_W_TRANSITION_INSUFFICIENCY", "-0.20"))
         
         # ===== HIERARCHICAL ACTION SPACE =====
         # High-level options represent dialogue strategies (per paper.tex)
@@ -62,7 +86,7 @@ class MuseumDialogueEnv(gym.Env):
         self.subactions = {
             "Explain": ["ExplainNewFact", "RepeatFact", "ClarifyFact"],
             "AskQuestion": ["AskOpinion", "AskMemory", "AskClarification"],
-            "OfferTransition": ["SuggestMove", "LinkToOtherExhibit"],
+            "OfferTransition": ["SuggestMove"],
             "Conclude": ["WrapUp"]
         }
         
@@ -81,18 +105,22 @@ class MuseumDialogueEnv(gym.Env):
         # ===== OBSERVATION SPACE =====
         # State representation with DialogueBERT as per paper formalization (Section 4.6):
         # s_t = [f_t, h_t, i_t, c_t]
-        # - f_t: focus vector (9-d for 8 exhibits + no-focus)
-        # - h_t: dialogue history (20-d: 8 completion ratios + 8 visited flags + 4 actions)
+        # - f_t: focus vector (n_exhibits + 1 for no-focus)
+        # - h_t: dialogue history (n_exhibits completion ratios + 4 option usage)
         # - i_t: intent embedding (64-d projection from 768-d DialogueBERT)
         # - c_t: dialogue context (64-d projection from 768-d DialogueBERT)
-        # Total: 9 + 20 + 64 + 64 = 157-d
+        # Total dimensions calculated dynamically based on number of exhibits
+        # Example: 5 exhibits → (5+1) + (5+4) + 64 + 64 = 143-d
         
         focus_dim = self.n_exhibits + 1  # +1 for "no focus" state
-        history_dim = self.n_exhibits * 2 + len(self.options)  # completion ratios + visited flags + actions used
+        history_dim = self.n_exhibits + len(self.options)  # completion ratios + actions used
         intent_dim = 64  # Projected DialogueBERT intent embedding
         context_dim = 64  # Projected DialogueBERT dialogue context
 
         total_obs_dim = focus_dim + history_dim + intent_dim + context_dim
+        
+        print(f"[Environment] Observation space: {total_obs_dim}-d "
+              f"(focus={focus_dim}, history={history_dim}, intent={intent_dim}, context={context_dim})")
         
         self.observation_space = spaces.Box(
             low=-10.0,  # Allow negative values after projection
@@ -131,10 +159,11 @@ class MuseumDialogueEnv(gym.Env):
         self.last_user_utterance = ""
         self._previous_dwell = 0.0  # Store previous dwell for lagged rewards
         self._last_user_intent = "statement"  # Track user intent for responsiveness
+        self._last_user_response_type = "statement"  # Track simulator's response type (question, confusion, etc.)
         
         # Dialogue history for context
-        self.dialogue_history = []  # List of recent utterances
-        self.max_dialogue_history = 6  # Keep last 6 utterances
+        self.dialogue_history = []  # List of (role, utterance) tuples
+        self.max_dialogue_history = 6  # Keep last 6 utterances (3 exchanges)
         
         # SIMPLE FACT TRACKING: exhibit_name -> set of fact IDs mentioned
         self.facts_mentioned_per_exhibit: Dict[str, Set[str]] = {ex: set() for ex in self.exhibit_keys}
@@ -148,6 +177,10 @@ class MuseumDialogueEnv(gym.Env):
         self.current_option = "Explain"
         self.turns_in_option = 0
         self._previous_option = None
+        
+        # Transition insufficiency tracking (per paper.tex Section 4.7)
+        # Track successful transitions and turns since for 3-turn exemption rule
+        self.successful_transition_turns = []  # List of turn numbers when successful transitions occurred
         
         # Note: Trend tracking removed to match paper specification
         
@@ -200,11 +233,18 @@ class MuseumDialogueEnv(gym.Env):
         ex_id = self._get_current_exhibit()
         
         # Generate agent response using dialogue planner and LLM
-        agent_response = self._generate_agent_response(option, subaction)
+        agent_response, target_exhibit = self._generate_agent_response(option, subaction)
+        
+        # Store agent utterance in dialogue history
+        self._update_dialogue_history("agent", agent_response)
         
         # === SIMPLE FACT EXTRACTION WITH VALIDATION ===
         # Find [ID] patterns in agent response
         fact_ids_mentioned = re.findall(r'\[([A-Z]{2}_\d{3})\]', agent_response)
+        
+        # Check verbose mode
+        import os
+        verbose = os.environ.get('HRL_VERBOSE', '0') == '1'
         
         # Get all valid fact IDs for current exhibit
         valid_fact_ids = set()
@@ -220,7 +260,8 @@ class MuseumDialogueEnv(gym.Env):
             # Check if fact ID is valid for this exhibit
             if fact_id not in valid_fact_ids:
                 hallucinated_ids.append(fact_id)
-                print(f"HALLUCINATED: [{fact_id}] (not a real fact for {ex_id})")
+                if verbose:
+                    print(f"HALLUCINATED: [{fact_id}] (not a real fact for {ex_id})")
                 continue
             
             # Check if already mentioned
@@ -228,19 +269,94 @@ class MuseumDialogueEnv(gym.Env):
                 new_fact_ids.append(fact_id)
                 self.facts_mentioned_per_exhibit[ex_id].add(fact_id)
                 self.facts_mentioned_this_turn.add(fact_id)
-                print(f"NEW FACT: [{fact_id}]")
+                if verbose:
+                    print(f"NEW FACT: [{fact_id}]")
             else:
-                print(f"REPEAT FACT: [{fact_id}]")
+                if verbose:
+                    print(f"REPEAT FACT: [{fact_id}]")
         
-        # ===== REWARD CALCULATION =====
-        engagement_reward = max(0.0, self.dwell)
-        novelty_reward = len(new_fact_ids) * 0.15  # 0.15 per NEW VALID fact only
+        # ===== REWARD CALCULATION (per paper formalization, Section 4.7, line 637) =====
+        # Engagement reward: r^eng_t = dwell_t (per paper.tex line 637)
+        engagement_reward = max(0.0, self.dwell) * self.w_engagement
+        
+        # Novelty reward: r^nov_t = 0.15 × |new facts at t| (per paper.tex line 637)
+        # No separate weight - the 0.15 is the scale factor α itself
+        novelty_reward = len(new_fact_ids) * self.novelty_per_fact
+        
+        # Responsiveness reward: Incentivize answering visitor questions (Grice's Maxim of Quantity)
+        responsiveness_reward = 0.0
+        if self._last_user_response_type == "question":
+            # Visitor asked a question last turn
+            if len(new_fact_ids) > 0:
+                # Agent provided NEW facts this turn (answered the question) → POSITIVE REWARD
+                responsiveness_reward = +self.w_responsiveness
+                if verbose:
+                    print(f"✅ RESPONSIVENESS: +{self.w_responsiveness:.2f} (answered visitor's question with {len(new_fact_ids)} fact(s))")
+            elif option == "AskQuestion":
+                # Agent deflected with counter-question instead of answering → NEGATIVE PUNISHMENT
+                responsiveness_reward = -self.w_responsiveness * 0.6  # 60% of positive reward
+                if verbose:
+                    print(f"❌ RESPONSIVENESS: {responsiveness_reward:.2f} (deflected visitor's question with counter-question)")
+        
+        # Conclude bonus: scales with number of exhibits covered (weighted)
+        conclude_bonus = 0.0
+        if option == "Conclude":
+            # Count exhibits with at least 1 fact mentioned
+            exhibits_with_facts = sum(1 for fact_set in self.facts_mentioned_per_exhibit.values() 
+                                     if len(fact_set) > 0)
+            # Bonus scales with weight per exhibit covered
+            conclude_bonus = exhibits_with_facts * self.w_conclude
+            if verbose:
+                print(f"🎯 CONCLUDE BONUS: +{conclude_bonus:.2f} ({exhibits_with_facts} exhibits covered)")
+        
+        # Transition insufficiency penalty (per paper.tex Section 4.7: Transition Control)
+        # Note: Transition spam is handled at simulator level (reduces dwell time)
+        transition_insufficiency_penalty = 0.0
+        
+        if option == "OfferTransition":
+            current_exhibit = self._get_current_exhibit()
+            facts_shared_at_current = len(self.facts_mentioned_per_exhibit[current_exhibit])
+            
+            # Check if we're within 3 turns of a successful transition (exemption rule)
+            # Remove transitions older than 3 turns
+            self.successful_transition_turns = [t for t in self.successful_transition_turns 
+                                             if (self.turn_count + 1 - t) <= 3]
+            
+            # Check if we're exempt due to recent successful transition
+            is_exempt = len(self.successful_transition_turns) > 0
+            
+            # Transition insufficiency penalty: scales with fewer facts
+            # The fewer facts, the bigger the penalty
+            # Base penalty at 0 facts, scales down as facts increase
+            if facts_shared_at_current == 0:
+                # Maximum penalty when no facts shared
+                penalty_scale = 1.0
+            elif facts_shared_at_current == 1:
+                # Medium-high penalty for only 1 fact
+                penalty_scale = 0.8
+            else:
+                # No penalty for 2+ facts
+                penalty_scale = 0.0
+            
+            # Apply penalty only if:
+            # 1. We have insufficient facts (penalty_scale > 0)
+            # 2. We're NOT exempt due to successful transition in last 3 turns
+            if penalty_scale > 0 and not is_exempt:
+                transition_insufficiency_penalty = self.w_transition_insufficiency * penalty_scale
+                if verbose:
+                    print(f"⚠️  TRANSITION INSUFFICIENCY PENALTY: {transition_insufficiency_penalty:.2f} (only {facts_shared_at_current} fact(s) at {current_exhibit}, scale={penalty_scale:.1f})")
+            elif is_exempt and verbose:
+                print(f"✅ TRANSITION INSUFFICIENCY EXEMPT: Successful transition in last 3 turns (turns since: {[self.turn_count + 1 - t for t in self.successful_transition_turns]})")
         
         # Clear this turn's tracking for next turn
         facts_shared_count_this_turn = len(new_fact_ids)
         self.facts_mentioned_this_turn = set()
         
-        step_reward = engagement_reward + novelty_reward
+        # Total reward: R_t = r^eng + r^nov + r^resp + r^trans + r^conclude (per paper.tex line 634)
+        # Note: r^eng_t = dwell_t, r^nov_t = 0.15 × |new facts|, no weights per paper
+        # Transition insufficiency is explicit reward component (per paper.tex Section 4.7)
+        # Transition spam is handled at simulator level (reduces dwell time)
+        step_reward = engagement_reward + novelty_reward + responsiveness_reward + conclude_bonus + transition_insufficiency_penalty
         
         # Store current dwell for NEXT turn's reward
         self._previous_dwell = self.dwell
@@ -255,7 +371,10 @@ class MuseumDialogueEnv(gym.Env):
         self.turn_count += 1
         
         # Check termination conditions
-        done = (option == "Conclude" or self.turn_count >= 20)
+        done = (option == "Conclude" or self.turn_count >= self.max_turns)
+        
+        # Calculate current exhibit completion rate for transition logic
+        current_exhibit_completion = len(self.facts_mentioned_per_exhibit[ex_id]) / len(self.knowledge_graph.get_exhibit_facts(ex_id)) if len(self.knowledge_graph.get_exhibit_facts(ex_id)) > 0 else 0.0
         
         # Build info dictionary
         info = {
@@ -265,6 +384,9 @@ class MuseumDialogueEnv(gym.Env):
             "terminated_option": terminate_option,
             "reward_engagement": engagement_reward,
             "reward_novelty": novelty_reward,
+            "reward_responsiveness": responsiveness_reward,
+            "reward_conclude": conclude_bonus,
+            "reward_transition_insufficiency": transition_insufficiency_penalty,
             "dwell": self.dwell,
             "total_reward": step_reward,
             "session_reward": self.session_reward,
@@ -277,6 +399,8 @@ class MuseumDialogueEnv(gym.Env):
             "turns_in_option": self.turns_in_option,
             "current_focus": self.focus,
             "current_exhibit": ex_id,
+            "target_exhibit": target_exhibit,  # For OfferTransition: where agent wants to go
+            "current_exhibit_completion": current_exhibit_completion,  # For transition probability
             "available_options": self._get_available_options(),
             "available_subactions": self._get_available_subactions(option),
             "action_masks": self.get_action_masks(),
@@ -311,10 +435,10 @@ class MuseumDialogueEnv(gym.Env):
         else:
             focus_snapshot[-1] = 1.0  # No focus
         
-        # 2. Dialogue history vector h_t (16-d) - Updated per paper spec
+        # 2. Dialogue history vector h_t (12-d) - Updated per paper spec
         # First 8: exhibit completion ratios (0-1 for facts shared per exhibit)
-        # Next 8: exhibits visited (binary flags)
-        history = np.zeros(self.n_exhibits * 2 + len(self.options))
+        # Next 4: option usage (normalized counts)
+        history = np.zeros(self.n_exhibits + len(self.options))
 
         # Get current exhibit completion data
         coverage = self._get_museum_exhibit_coverage()
@@ -324,14 +448,10 @@ class MuseumDialogueEnv(gym.Env):
             completion_ratio = coverage.get(exhibit_name, {"coverage": 0.0})["coverage"]
             history[i] = completion_ratio
 
-        # Exhibits visited (binary flags) - positions 8-15
-        for i, exhibit_name in enumerate(self.exhibit_keys):
-            history[self.n_exhibits + i] = 1.0 if len(self.facts_mentioned_per_exhibit[exhibit_name]) > 0 else 0.0
-
-        # Actions used (normalized counts) - positions 16-19
+        # Actions used (normalized counts) - positions 8-11
         total_actions = sum(self.actions_used.values()) or 1
         for i, opt in enumerate(self.options):
-            history[self.n_exhibits * 2 + i] = self.actions_used[opt] / total_actions
+            history[self.n_exhibits + i] = self.actions_used[opt] / total_actions
         
         # 3. Intent embedding i_t (64-d projected from 768-d)
         # Get DialogueBERT embedding: e_t = DialogueBERT(u_t, role="user")
@@ -345,9 +465,9 @@ class MuseumDialogueEnv(gym.Env):
         
         # 4. Dialogue context c_t (64-d projected from 768-d)
         # Get DialogueBERT context embedding (average of last 3 turns)
-        dialogue_history_with_roles = [("user", u) for u in self.dialogue_history]
+        # dialogue_history already contains (role, utterance) tuples
         dialogue_context_768 = intent_recognizer.get_dialogue_context(
-            dialogue_history_with_roles, max_turns=3
+            self.dialogue_history, max_turns=3
         )
         
         # Apply projection: c_t = P * context_768
@@ -501,8 +621,12 @@ class MuseumDialogueEnv(gym.Env):
 
     # ===== AGENT RESPONSE GENERATION =====
     
-    def _generate_agent_response(self, option: str, subaction: str) -> str:
-        """Generate agent response using dialogue planner and LLM"""
+    def _generate_agent_response(self, option: str, subaction: str) -> tuple:
+        """Generate agent response using dialogue planner and LLM
+        
+        Returns:
+            tuple: (response_str, target_exhibit_str or None)
+        """
         try:
             # Get current exhibit ID
             ex_id = self._get_current_exhibit()
@@ -550,9 +674,12 @@ class MuseumDialogueEnv(gym.Env):
             
             # Generate response using LLM from centralized config
             import time
+            import os
+            verbose = os.environ.get('HRL_VERBOSE', '0') == '1'
             start_time = time.time()
-            print(f"[Agent LLM] Generating response for {option}/{subaction}...", flush=True)
-            print(f"[Agent LLM] PROMPT:\n{'-'*60}\n{prompt}\n{'-'*60}", flush=True)
+            if verbose:
+                print(f"[Agent LLM] Generating response for {option}/{subaction}...", flush=True)
+                print(f"[Agent LLM] PROMPT:\n{'-'*60}\n{prompt}\n{'-'*60}", flush=True)
             from LLM_CONFIG import get_agent_llm
             llm = get_agent_llm()
             
@@ -563,13 +690,15 @@ Keep responses 2-3 sentences."""
             
             response = llm.generate(prompt, system_prompt=system_prompt)
             elapsed = time.time() - start_time
-            print(f"[Agent LLM] Response received in {elapsed:.2f}s ({len(response)} chars)", flush=True)
+            if verbose:
+                print(f"[Agent LLM] Response received in {elapsed:.2f}s ({len(response)} chars)", flush=True)
             
-            # Store prompt and timing for debugging
+            # Store prompt and timing for debugging and logging
             self._last_llm_prompt = prompt
+            self._last_agent_system_prompt = system_prompt
             self._last_agent_llm_time = elapsed
             
-            return response.strip()
+            return response.strip(), target_exhibit
             
         except Exception as e:
             print(f"Error generating agent response: {e}")
@@ -583,31 +712,61 @@ Keep responses 2-3 sentences."""
         """Get current exhibit ID based on focus"""
         if self.focus > 0 and self.focus <= len(self.exhibit_keys):
             return self.exhibit_keys[self.focus - 1]
-        return "Unknown"
+        # Fallback to first exhibit if focus is invalid (should not happen in normal operation)
+        if len(self.exhibit_keys) > 0:
+            print(f"⚠️  WARNING: Invalid focus {self.focus}, falling back to {self.exhibit_keys[0]}")
+            return self.exhibit_keys[0]
+        return "Unknown"  # Should never happen if knowledge graph is loaded
 
 
-    def _update_dialogue_history(self, utterance: str):
-        """Update dialogue history with new utterance"""
+    def record_successful_transition(self):
+        """Record that a transition was successful (called from training loop after simulator responds).
+        
+        This is used for the 3-turn exemption rule: if a transition succeeds,
+        the insufficiency penalty is not applied for the next 3 turns.
+        """
+        self.successful_transition_turns.append(self.turn_count)
+    
+    def _update_dialogue_history(self, role: str, utterance: str):
+        """Update dialogue history with new utterance
+        
+        Args:
+            role: 'agent' or 'user'
+            utterance: The text utterance
+        """
         if utterance and utterance.strip():
-            self.dialogue_history.append(utterance)
+            self.dialogue_history.append((role, utterance))
             # Keep only recent utterances
             if len(self.dialogue_history) > self.max_dialogue_history:
                 self.dialogue_history = self.dialogue_history[-self.max_dialogue_history:]
 
-    def update_user_state(self, focus: int = None, dwell: float = None, utterance: str = None, simulator=None):
-        """Update user state from simulator"""
+    def update_user_state(self, focus: int = None, dwell: float = None, utterance: str = None, 
+                          response_type: str = None, simulator=None):
+        """Update user state from simulator
+        
+        Args:
+            focus: Current exhibit focus index
+            dwell: Current dwell time (engagement signal)
+            utterance: User's utterance text
+            response_type: Simulator's response type (question, statement, confusion, etc.)
+            simulator: Simulator instance for state synchronization
+        """
         if focus is not None:
             self.focus = focus
         if dwell is not None:
             self.dwell = dwell
         if utterance is not None:
             self.last_user_utterance = utterance
-            self._update_dialogue_history(utterance)
+            self._update_dialogue_history("user", utterance)
 
             # Track user intent for responsiveness checking
             if utterance.strip():
                 recognizer = get_dialoguebert_recognizer()
                 self._last_user_intent = recognizer.classify_intent_category(utterance)
+        
+        # Track response type for responsiveness reward calculation
+        if response_type is not None:
+            self._last_user_response_type = response_type
 
         # NEW: Sync simulator with state information for transitions
         if simulator and hasattr(simulator, 'update_from_state'):
@@ -642,9 +801,9 @@ Keep responses 2-3 sentences."""
             intent_embedding = recognizer.get_intent_embedding(
                 self.last_user_utterance, role="user"
             )
-            dialogue_history_with_roles = [("user", u) for u in self.dialogue_history]
+            # dialogue_history already contains (role, utterance) tuples
             dialogue_context = recognizer.get_dialogue_context(
-                dialogue_history_with_roles, max_turns=3
+                self.dialogue_history, max_turns=3
             )
             
             # Update stored embeddings

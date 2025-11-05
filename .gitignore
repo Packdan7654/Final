@@ -4,10 +4,22 @@ __pycache__/
 *$py.class
 *.so
 .Python
-env/
-venv/
-ENV/
-.venv
+*.egg-info/
+dist/
+build/
+
+# Training outputs
+training_logs/*/
+!training_logs/.gitkeep
+models/*.pt
+!models/.gitkeep
+
+# Experiment results
+experiments/results/*/
+!experiments/results/.gitkeep
+
+# Archives
+archive/
 
 # IDE
 .vscode/
@@ -16,26 +28,16 @@ ENV/
 *.swo
 *~
 
-# Environment variables
-.env
-*.env
-
-# Logs
-*.log
-
 # OS
 .DS_Store
 Thumbs.db
 
-# Jupyter
-.ipynb_checkpoints/
-
-# Training outputs (optional - comment out if you want to track these)
-# training_logs/
-# models/
-
-# Temporary files
+# Temporary
 *.tmp
+*.log
 *.bak
-.cache/
 
+# API Keys and secrets
+key.txt
+*.key
+.env

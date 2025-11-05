@@ -7,6 +7,7 @@ prompts that guide LLM generation while maintaining dialogue coherence and polic
 adherence.
 """
 
+import re
 from typing import List, Optional
 
 
@@ -46,8 +47,6 @@ def build_prompt(option: str, subaction: str, ex_id: Optional[str],
     elif option == "OfferTransition":
         if subaction == "SuggestMove":
             return build_offer_transition_prompt(ex_id, context_section, facts_all, facts_used, exhibit_names, knowledge_graph, target_exhibit, coverage_dict)
-        elif subaction == "LinkToOtherExhibit":
-            return build_link_to_other_exhibit_prompt(ex_id, context_section, facts_all, facts_used, exhibit_names, knowledge_graph, target_exhibit, coverage_dict, current_completion)
 
     elif option == "Conclude":
         if subaction == "WrapUp":
@@ -60,9 +59,14 @@ def build_prompt(option: str, subaction: str, ex_id: Optional[str],
 
 
 def _build_enhanced_context_section(ex_id: Optional[str], last_utt: str, facts_all: List[str], 
-                                  facts_used: List[str], dialogue_history: List[str] = None,
+                                  facts_used: List[str], dialogue_history: List = None,
                                   exhibit_names: List[str] = None, knowledge_graph=None, show_facts: bool = True) -> str:
-    """Build enhanced context section with rich dialogue understanding"""
+    """Build enhanced context section with rich dialogue understanding
+    
+    Args:
+        dialogue_history: List of (role, utterance) tuples where role is 'agent' or 'user'
+    """
+    import re
     context_parts = []
     
     # === EXHIBIT INFORMATION ===
@@ -77,12 +81,25 @@ def _build_enhanced_context_section(ex_id: Optional[str], last_utt: str, facts_a
         context_parts.append("=" * 60)
         context_parts.append("")
     
-    # === DIALOGUE HISTORY (brief) ===
+    # === DIALOGUE HISTORY (last 4 utterances = 2 exchanges) ===
+    fact_ids_in_context = set()  # Track fact IDs already in conversation
     if dialogue_history and len(dialogue_history) > 0:
-        recent_context = dialogue_history[-2:] if len(dialogue_history) > 2 else dialogue_history
+        # Get last 4 utterances (2 full exchanges: agent->user->agent->user)
+        recent_context = dialogue_history[-4:] if len(dialogue_history) > 4 else dialogue_history
         context_parts.append("RECENT CONVERSATION:")
-        for i, utterance in enumerate(recent_context, 1):
-            context_parts.append(f'  {i}. "{utterance[:80]}..."')
+        for i, (role, utterance) in enumerate(recent_context, 1):
+            role_label = "🤖 AGENT" if role == "agent" else "👤 VISITOR"
+            context_parts.append(f'  {i}. {role_label}: "{utterance}"')
+            
+            # Extract fact IDs from this utterance
+            fact_ids = re.findall(r'\[([A-Z]{2}_\d{3})\]', utterance)
+            fact_ids_in_context.update(fact_ids)
+        
+        # CRITICAL: Warn about fact ID reuse
+        if fact_ids_in_context:
+            context_parts.append("")
+            context_parts.append(f"⚠️  FACT IDs ALREADY USED IN RECENT CONVERSATION: {sorted(fact_ids_in_context)}")
+            context_parts.append("   DO NOT repeat these IDs - they are already shared!")
         context_parts.append("")
 
     # === SHOW FACTS ONLY IF ALLOWED (Explain or Summarize actions) ===
@@ -141,28 +158,45 @@ def build_explain_new_fact_prompt(ex_id: Optional[str], context_section: str,
     """Build prompt for explaining a new fact about current exhibit"""
 
     if not facts_all:
-        return f"""Museum guide. Current exhibit: {ex_id} (completion: {current_completion:.1%}).
+        return f"""[CONTEXT - DO NOT REPEAT]
+Museum guide at: {ex_id} | Progress: {current_completion:.1%} covered
+---
 
 {context_section}
 
 No new facts available. Ask if they'd like to explore a different aspect or move to another exhibit.
+DO NOT mention completion percentage or meta-information.
 
 Response (1-2 sentences):"""
 
     facts_list = "\n".join([f"  {fact}" for fact in facts_all])  # Show top 3 facts
 
-    return f"""Museum guide. Current exhibit: {ex_id} (completion: {current_completion:.1%}).
+    return f"""[CONTEXT - DO NOT REPEAT]
+Museum guide at: {ex_id}
+Progress: {current_completion:.1%} covered
+---
 
 {context_section}
 
-AVAILABLE FACTS (select 1 fact that best matches their interest):
+AVAILABLE FACTS (select 1-3 facts that best match their interest):
 {facts_list}
 
 RULES:
-- Choose 1 fact that directly addresses what they just said or asked
-- Include the [ID] in brackets after mentioning the fact
-- Keep response natural and conversational (2-3 sentences)
+- Choose 1-3 facts that directly address what they just said or asked
+- Include EACH fact's EXACT [ID] in its own separate brackets: [ID1] ... [ID2] ... [ID3]
+- Use the fact IDs EXACTLY as shown in the list above (e.g., [TU_001], [CA_005])
+- Keep response natural and conversational (2-4 sentences)
 - Build on their specific interest or question
+- Multiple facts should flow naturally together
+- DO NOT mention completion percentage or meta-information
+
+EXAMPLES:
+✓ "The turban is traditional [TU_001]. It's made of fine silk [TU_002]."
+✓ "Created in 1654 [KC_003], it shows King Caspar with gold [KC_002]."
+✓ "This artwork uses oil on panel [CA_005], giving it depth."
+✗ "The turban [TU_001, TU_002]" ← WRONG: Don't combine IDs
+✗ "The artwork [Style: Oil on Panel]" ← WRONG: Must use exact ID like [CA_005]
+✗ "The Turban (completion: 0.0%)..." ← WRONG: Don't mention completion
 
 Response:"""
 
@@ -175,24 +209,47 @@ def build_repeat_fact_prompt(ex_id: Optional[str], context_section: str,
     if facts_used:
         fact_to_repeat = selected_fact if selected_fact else facts_used[-1]
 
-        return f"""Museum guide. Current exhibit: {ex_id} (completion: {current_completion:.1%}).
+        # Extract fact ID from the fact string
+        fact_id_match = re.search(r'\[([A-Z]{2}_\d{3})\]', fact_to_repeat)
+        fact_id = fact_id_match.group(1) if fact_id_match else ""
+        fact_content = re.sub(r'\[([A-Z]{2}_\d{3})\]\s*', '', fact_to_repeat).strip()
+        
+        return f"""[CONTEXT - DO NOT REPEAT]
+Museum guide at: {ex_id}
+Progress: {current_completion:.1%} covered
+---
 
 {context_section}
 
 YOUR TASK:
 1. Directly address what the visitor just said or asked
-2. Rephrase this previously shared fact in NEW WORDS: "{fact_to_repeat}"
-3. Keep it brief and conversational (2-3 sentences)
-4. Make it more accessible or memorable this time
+2. Rephrase this previously shared fact in NEW WORDS: "{fact_content}"
+3. You MUST include the exact fact ID: [{fact_id}]
+4. Keep it brief and conversational (2-3 sentences)
+5. Make it more accessible or memorable this time
 
-IMPORTANT: Don't introduce NEW facts - just rephrase what was already shared.
-Be natural and responsive to their specific question or confusion!"""
+CRITICAL RULES:
+- Use the EXACT fact ID [{fact_id}] - don't modify or paraphrase it
+- Don't introduce NEW facts - just rephrase what was already shared
+- Be natural and responsive to their specific question or confusion
+- DO NOT mention completion percentage or meta-information
+
+EXAMPLES:
+✓ "This piece dates back to 1643 [{fact_id}], showing remarkable craftsmanship."
+✓ "The artist used oil on panel [{fact_id}], a technique that gives depth."
+✗ "The artwork was created [Style: Oil on Panel]" ← WRONG: Must use exact ID [{fact_id}]
+✗ "Using the style [{fact_id}]..." ← WRONG: Don't use "style" as description
+
+Response:"""
     else:
-        return f"""Museum guide. Current exhibit: {ex_id} (completion: {current_completion:.1%}).
+        return f"""[CONTEXT - DO NOT REPEAT]
+Museum guide at: {ex_id} | Progress: {current_completion:.1%} covered
+---
 
 {context_section}
 
 No facts shared yet. Share an interesting fact about this exhibit that relates to what they just said.
+DO NOT mention completion percentage or meta-information.
 
 Response (2-3 sentences):"""
 
@@ -203,7 +260,9 @@ def build_clarify_fact_prompt(ex_id: Optional[str], context_section: str,
     """Build prompt for clarifying a fact"""
     if facts_used:
         fact_to_clarify = selected_fact if selected_fact else facts_used[-1]
-        return f"""Museum guide. Current exhibit: {ex_id} (completion: {current_completion:.1%}).
+        return f"""[CONTEXT - DO NOT REPEAT]
+Museum guide at: {ex_id} | Progress: {current_completion:.1%} covered
+---
 
 {context_section}
 
@@ -213,14 +272,19 @@ YOUR TASK:
 3. Keep it conversational and brief (2-3 sentences)
 4. Use everyday language to make it clearer
 
-IMPORTANT: Don't introduce NEW information - just explain the existing fact more clearly.
-Make your response natural and directly address their specific confusion!"""
+IMPORTANT: 
+- Don't introduce NEW information - just explain the existing fact more clearly
+- Make your response natural and directly address their specific confusion
+- DO NOT mention completion percentage or meta-information"""
     else:
-        return f"""Museum guide. Current exhibit: {ex_id} (completion: {current_completion:.1%}).
+        return f"""[CONTEXT - DO NOT REPEAT]
+Museum guide at: {ex_id} | Progress: {current_completion:.1%} covered
+---
 
 {context_section}
 
 No facts shared yet. Clarify an interesting fact about this exhibit that relates to what they just said.
+DO NOT mention completion percentage or meta-information.
 
 Response (2-3 sentences):"""
 
@@ -232,7 +296,9 @@ def build_ask_opinion_prompt(ex_id: Optional[str], context_section: str,
                                current_completion: float = 0.0) -> str:
     """Build prompt for asking the visitor's opinion"""
 
-    return f"""Museum guide. Current exhibit: {ex_id} (completion: {current_completion:.1%}).
+    return f"""[CONTEXT - DO NOT REPEAT]
+Museum guide at: {ex_id} | Progress: {current_completion:.1%} covered
+---
 
 {context_section}
 
@@ -246,6 +312,7 @@ CRITICAL RULES:
 - NO facts - just respond and ask their view
 - Speak naturally and directly
 - Make it relevant to what they showed interest in
+- DO NOT mention completion percentage or meta-information
 
 Response:"""
 
@@ -255,7 +322,9 @@ def build_ask_memory_prompt(ex_id: Optional[str], context_section: str,
                           current_completion: float = 0.0) -> str:
     """Build prompt for checking the visitor's memory"""
 
-    return f"""Museum guide. Current exhibit: {ex_id} (completion: {current_completion:.1%}).
+    return f"""[CONTEXT - DO NOT REPEAT]
+Museum guide at: {ex_id} | Progress: {current_completion:.1%} covered
+---
 
 {context_section}
 
@@ -268,6 +337,7 @@ CRITICAL RULES:
 - NO [FACT_ID] tags or repeating facts
 - Make it relevant to what they've shown interest in
 - Speak naturally and directly
+- DO NOT mention completion percentage or meta-information
 
 Response:"""
 
@@ -276,7 +346,9 @@ def build_ask_clarification_prompt(ex_id: Optional[str], context_section: str,
                                  facts_all: List[str], facts_used: List[str],
                                  current_completion: float = 0.0) -> str:
     """Build prompt for asking for clarification"""
-    return f"""Museum guide. Current exhibit: {ex_id} (completion: {current_completion:.1%}).
+    return f"""[CONTEXT - DO NOT REPEAT]
+Museum guide at: {ex_id} | Progress: {current_completion:.1%} covered
+---
 
 {context_section}
 
@@ -289,6 +361,7 @@ CRITICAL RULES:
 - NO [FACT_ID] tags or sharing facts
 - Make it relevant to what they showed interest in
 - Speak naturally and directly
+- DO NOT mention completion percentage or meta-information
 
 Response:"""
 
@@ -402,45 +475,15 @@ TASK: Suggest moving to {target_name}
 
 Response:"""
 
-
-def build_link_to_other_exhibit_prompt(ex_id: Optional[str], context_section: str,
-                                     facts_all: List[str], facts_used: List[str],
-                                     exhibit_names: List[str] = None, knowledge_graph = None,
-                                     target_exhibit: str = None, coverage_dict: dict = None,
-                                     current_completion: float = 0.0) -> str:
-    """Build prompt for linking current exhibit to another exhibit thematically"""
-
-    if not target_exhibit:
-        return f"""Museum guide. Current exhibit: {ex_id} (completion: {current_completion:.1%}).
-
-{context_section}
-
-CONNECT this exhibit to others in the museum that share similar themes or historical context.
-
-Response (2-3 sentences):"""
-
-    target_name = target_exhibit.replace('_', ' ')
-    current_name = ex_id.replace('_', ' ') if ex_id else 'current exhibit'
-
-    return f"""Museum guide. Current exhibit: {current_name} (completion: {current_completion:.1%}).
-
-{context_section}
-
-YOUR TASK:
-- Connect {current_name} to {target_name} thematically
-- Explain the artistic/historical/cultural connection
-- Keep it natural and informative (2-3 sentences)
-- Show how they complement each other
-
-Response:"""
-
 # ===== CONCLUDE OPTION FUNCTIONS =====
 
 def build_wrap_up_prompt(ex_id: Optional[str], context_section: str,
                         facts_all: List[str], facts_used: List[str],
                         current_completion: float = 0.0) -> str:
     """Build prompt for wrapping up the visit"""
-    return f"""Museum guide. Current exhibit: {ex_id} (completion: {current_completion:.1%}).
+    return f"""[CONTEXT - DO NOT REPEAT]
+Museum guide at: {ex_id} | Progress: {current_completion:.1%} covered
+---
 
 {context_section}
 
@@ -453,6 +496,7 @@ CRITICAL RULES:
 - NO [FACT_ID] tags or recapping information
 - Focus on their overall experience
 - End on a positive, welcoming note
+- DO NOT mention completion percentage or meta-information
 
 Response:"""
 

@@ -29,43 +29,10 @@ except Exception:
 
 
 class Sim8Simulator:
-    """Simulator with AOI detection, persona behavior, and gaze synthesis."""
-
-    AOI_TO_PARENT = {
-        "King Caspar": "C6", "Incense Pot": "C6", "Necklace": "C6", "Earring": "C6",
-        "Ring": "C6", "Doublet": "C6", "Gemstones": "C6",
-        "Turban": "C5", "White ostrich feather": "C5", "Blue garment": "C5", "Young boy": "C5",
-        "Red ostrich feather": "B2", "Cavalier hat": "B2", "Gilt garment": "B2", "Dom Miguel": "B2",
-        "Ivory tusk": "B3", "Pedro Sunda": "B3", "Cloth": "B3",
-        "Box": "B1", "Diego Bemba": "B1", "Clothes": "B1"
-    }
-
-    PARENT_TO_EXHIBIT = {
-        "C6": "King_Caspar",
-        "C5": "Turban",
-        "B2": "Cavalier_hat",
-        "B3": "Ivory_tusk",
-        "B1": "Box",
-    }
-
-    # Additional mapping for AOIs that are treated as separate exhibits
-    AOI_TO_EXHIBIT = {
-        "Gemstones": "Gemstones",
-        "Necklace": "Necklace",
-        "Ring": "Ring",
-        "Doublet": "Doublet",
-        "Incense_Pot": "Incense_Pot",
-        "Earring": "Earring",
-        "Red_ostrich_feather": "Red_ostrich_feather",
-        "Gilt_garment": "Gilt_garment",
-        "Pedro_Sunda": "Pedro_Sunda",
-        "Diego_Bemba": "Diego_Bemba",
-        "White_ostrich_feather": "White_ostrich_feather",
-        "Blue_garment": "Blue_garment",
-        "Young_boy": "Young_boy",
-        "Cloth": "Cloth",
-        "Clothes": "Clothes",
-    }
+    """Simulator with AOI detection, persona behavior, and gaze synthesis.
+    
+    ALL exhibit and AOI mappings are derived from the knowledge graph - no hardcoded values.
+    """
 
     PERSONAS = ["Agreeable", "Conscientious", "Neurotic"]
 
@@ -86,23 +53,32 @@ class Sim8Simulator:
                       "DominantObjectRatio": (0.6576, 0.2000), "GazeEntryLatency": (2.3105, 3.7783)}
     }
 
-    def __init__(self, exhibits: Optional[List[str]] = None, seed: int = 42):
+    def __init__(self, knowledge_graph=None, exhibits: Optional[List[str]] = None, seed: int = 42):
+        """Initialize simulator with knowledge graph as source of truth.
+        
+        Args:
+            knowledge_graph: SimpleKnowledgeGraph instance (PRIMARY source of truth)
+            exhibits: List of exhibit names (fallback if no knowledge graph)
+            seed: Random seed for reproducibility
+        """
         self.rng = random.Random(seed)
-
-        # If exhibits provided, use them; else derive from mappings
-        if exhibits:
+        
+        # ===== BUILD ALL MAPPINGS FROM KNOWLEDGE GRAPH =====
+        if knowledge_graph:
+            self._init_from_knowledge_graph(knowledge_graph)
+        elif exhibits:
+            # Fallback: use provided exhibit list without AOI mappings
             self.exhibits = exhibits
+            self.aoi_to_exhibit = {}
+            self.exhibit_to_aois = {ex: [] for ex in exhibits}
         else:
-            # Include both parent exhibits and AOI exhibits
-            parent_exhibits = list(set(self.PARENT_TO_EXHIBIT.values()))
-            aoi_exhibits = list(set(self.AOI_TO_EXHIBIT.values()))
-            self.exhibits = list(set(parent_exhibits + aoi_exhibits))
-
+            raise ValueError("Must provide either knowledge_graph or exhibits list")
+        
         # Sentence transformer model
         self._st_model = None
-        self._aoi_list = list(self.AOI_TO_PARENT.keys())
+        self._aoi_list = list(self.aoi_to_exhibit.keys())
         self._aoi_embeddings = None
-        if _has_st:
+        if _has_st and self._aoi_list:
             try:
                 self._st_model = SentenceTransformer("all-MiniLM-L6-v2")
                 self._aoi_embeddings = self._st_model.encode(self._aoi_list, convert_to_tensor=True)
@@ -121,8 +97,20 @@ class Sim8Simulator:
         
         # Track conversation context for realistic responses
         self.last_user_question: Optional[str] = None  # What user asked
+        self.last_user_utterance: Optional[str] = None  # What user last said
         self.last_agent_utterance: Optional[str] = None  # What agent said
+        self.last_agent_option: Optional[str] = None  # What option agent used (Explain, AskQuestion, etc.)
         self.conversation_flow: List[str] = []  # Track conversation quality
+        
+        # Track question spam for engagement reduction (simulator-level only)
+        self.consecutive_ask_questions = 0  # Track consecutive AskQuestion actions
+        
+        # Track transition spam for engagement reduction (simulator-level only)
+        self.consecutive_transitions = 0  # Track consecutive OfferTransition actions
+        
+        # Store prompts for detailed logging
+        self._last_simulator_prompt: Optional[str] = None
+        self._last_simulator_system_prompt: Optional[str] = None
         
         # NEW: Museum context for grounding user responses
         self.museum_context = self._build_museum_context()
@@ -131,23 +119,38 @@ class Sim8Simulator:
         self.engagement_level = 1.0  # 0.0 = fully disengaged, 1.0 = fully engaged
         self.off_topic_strikes = 0  # Track consecutive off-topic responses
     
+    def _init_from_knowledge_graph(self, knowledge_graph):
+        """Build ALL mappings from knowledge graph (single source of truth)"""
+        # Get all exhibits from knowledge graph
+        self.exhibits = knowledge_graph.get_exhibit_names()
+        
+        # Build AOI → Exhibit mapping from knowledge graph
+        self.aoi_to_exhibit: Dict[str, str] = {}
+        self.exhibit_to_aois: Dict[str, List[str]] = {}
+        
+        for exhibit_name in self.exhibits:
+            aois = knowledge_graph.get_exhibit_aois(exhibit_name)
+            self.exhibit_to_aois[exhibit_name] = aois
+            
+            # Map each AOI to this exhibit
+            for aoi in aois:
+                self.aoi_to_exhibit[aoi] = exhibit_name
+        
+        print(f"[Simulator] Initialized from knowledge graph:")
+        print(f"   - {len(self.exhibits)} exhibits: {', '.join(self.exhibits)}")
+        print(f"   - {len(self.aoi_to_exhibit)} AOIs mapped to exhibits")
+    
     def _build_museum_context(self) -> Dict[str, Any]:
         """Build knowledge of museum structure for context-aware responses"""
         context = {
-            "exhibits": {},
+            "exhibits": self.exhibit_to_aois,
             "aoi_descriptions": {}
         }
         
-        # Map exhibits to their AOIs
-        for aoi, parent_code in self.AOI_TO_PARENT.items():
-            exhibit_name = self.PARENT_TO_EXHIBIT.get(parent_code, "Unknown")
-            if exhibit_name not in context["exhibits"]:
-                context["exhibits"][exhibit_name] = []
-            context["exhibits"][exhibit_name].append(aoi)
+        # Simple descriptions for AOIs (for future semantic grounding)
+        for aoi in self.aoi_to_exhibit.keys():
+            context["aoi_descriptions"][aoi] = f"Part of {self.aoi_to_exhibit[aoi]} exhibit"
             
-            # Simple descriptions for AOIs
-            context["aoi_descriptions"][aoi] = f"{aoi} from the {exhibit_name} exhibit"
-        
         return context
 
     # ===== Public API =====
@@ -160,6 +163,12 @@ class Sim8Simulator:
         self.consecutive_silence_count = 0
         self.last_user_response = {}
         
+        # Reset question spam tracking for new session
+        self.consecutive_ask_questions = 0
+        
+        # Reset transition spam tracking for new session
+        self.consecutive_transitions = 0
+        
         # Initialize dialogue history and learning
         self.dialogue_history = []
         self.facts_learned = set()
@@ -170,10 +179,19 @@ class Sim8Simulator:
         """Return current exhibit (for env focus) to match previous simulator contract."""
         return self.current_exhibit or self.exhibits[0]
 
-    def generate_user_response(self, agent_utterance: str) -> Dict[str, Any]:
-        """Generate a response dict with utterance, aoi, persona, gaze_features, response_type."""
-        # Store agent's utterance for context tracking
+    def generate_user_response(self, agent_utterance: str, agent_option: str = None, 
+                             target_exhibit: str = None, current_exhibit_completion: float = 0.0) -> Dict[str, Any]:
+        """Generate a response dict with utterance, aoi, persona, gaze_features, response_type.
+        
+        Args:
+            agent_utterance: The agent's dialogue response
+            agent_option: The agent's chosen option (Explain, AskQuestion, OfferTransition, Conclude)
+            target_exhibit: For OfferTransition, the exhibit the agent wants to transition to
+            current_exhibit_completion: Completion rate (0.0-1.0) of current exhibit
+        """
+        # Store agent's utterance and option for context tracking
         self.last_agent_utterance = agent_utterance
+        self.last_agent_option = agent_option
         
         # VERY RARE silence (1% only, prevents Turn 2 silence issue)
         # Only in first turn OR if too many consecutive silences
@@ -201,60 +219,103 @@ class Sim8Simulator:
         if len(self.dialogue_history) > self.max_history_length:
             self.dialogue_history.pop(0)
         
-        # STEP 1: Check if agent answered our previous question
-        answered_well = self._check_if_question_answered(agent_utterance)
+        # NEW TRANSITION LOGIC: Probability-based transition success
+        transition_success = False
+        detected_aoi = self.current_aoi  # Default: stay at current AOI
         
-        # STEP 2: Detect if agent is suggesting movement (higher chance to switch)
-        is_suggesting_move = self._is_suggesting_movement(agent_utterance)
-        
-        # STEP 3: Detect AOI from agent utterance; fallback to current
-        detected_aoi, parent = self._detect_aoi_and_parent(agent_utterance)
-        
-        # If agent detected a new exhibit/AOI, follow suggestion (deterministic for transitions)
-        if detected_aoi is not None and detected_aoi != self.current_aoi:
-            # Always follow transition suggestions (deterministic behavior)
-            if is_suggesting_move:
-                # Switch to detected AOI for transitions
-                pass  # Keep detected_aoi
-            else:
-                # For non-transition suggestions, use probabilistic behavior but higher chance
-                switch_prob = 0.85  # Much higher chance to follow non-transition suggestions
-                if self.rng.random() < switch_prob:
-                    pass  # Keep detected_aoi
-                else:
-                    # Stay with current
-                    detected_aoi = self.current_aoi
-                    parent = self.AOI_TO_PARENT.get(detected_aoi, None)
-        else:
-            # No new AOI detected, fallback to current
-            detected_aoi = self.current_aoi
-            parent = self.AOI_TO_PARENT.get(detected_aoi, None)
+        if agent_option == "OfferTransition" and target_exhibit is not None:
+            # Calculate transition success probability based on current exhibit completion
+            # Scale: 0 facts = 20% success, 1 fact = 50%, 2 facts = 80%, 3+ facts = 95%
+            if current_exhibit_completion == 0.0:
+                transition_prob = 0.20
+            elif current_exhibit_completion < 0.33:  # 1/3 facts (e.g., 1 of 3 or 1-2 of 5)
+                transition_prob = 0.50
+            elif current_exhibit_completion < 0.67:  # 2/3 facts (e.g., 2 of 3 or 3-4 of 5)
+                transition_prob = 0.80
+            else:  # 3+ facts or high completion
+                transition_prob = 0.95
             
-            # Random exploration to other exhibits (lower chance)
-            if self.rng.random() < 0.25:
-                detected_aoi, parent = self._switch_to_related_aoi(detected_aoi)
-
+            # Roll for transition success
+            if self.rng.random() < transition_prob:
+                # TRANSITION SUCCEEDS: Move to target exhibit
+                transition_success = True
+                
+                # Validate target exhibit exists AND has AOIs
+                if target_exhibit in self.exhibits and target_exhibit in self.exhibit_to_aois and self.exhibit_to_aois[target_exhibit]:
+                    # Select a random AOI from the target exhibit
+                    detected_aoi = self.rng.choice(self.exhibit_to_aois[target_exhibit])
+                    self.current_exhibit = target_exhibit  # Only update after successful AOI selection
+                    import os
+                    verbose = os.environ.get('HRL_VERBOSE', '0') == '1'
+                    if verbose:
+                        print(f"🔄 TRANSITION SUCCESS! → {target_exhibit} (prob={transition_prob:.1%}, completion={current_exhibit_completion:.1%})")
+                elif target_exhibit not in self.exhibits:
+                    # Invalid target exhibit
+                    transition_success = False
+                    print(f"⚠️  TRANSITION FAILED: Invalid target exhibit {target_exhibit}")
+                else:
+                    # No AOIs found for this exhibit
+                    transition_success = False
+                    print(f"⚠️  TRANSITION FAILED: No AOIs found for {target_exhibit}")
+            else:
+                # TRANSITION FAILS: Stay at current exhibit
+                transition_success = False
+                import os
+                verbose = os.environ.get('HRL_VERBOSE', '0') == '1'
+                if verbose:
+                    print(f"❌ TRANSITION REJECTED! Visitor wants to stay at {self.current_exhibit} (prob={transition_prob:.1%}, completion={current_exhibit_completion:.1%})")
+        else:
+            # Not a transition action, stay at current AOI
+            # Allow occasional random exploration to keep engagement diverse
+            if self.rng.random() < 0.15:  # 15% chance of natural gaze wander
+                detected_aoi = self._switch_to_related_aoi(detected_aoi)
+        
         # Update session mapping
         self.current_aoi = detected_aoi
-        self.current_exhibit = self.PARENT_TO_EXHIBIT.get(parent, self.current_exhibit)
+        if detected_aoi in self.aoi_to_exhibit:
+            self.current_exhibit = self.aoi_to_exhibit[detected_aoi]
         self.aoi_usage_count[detected_aoi] = self.aoi_usage_count.get(detected_aoi, 0) + 1
         self.seen_aois.add(detected_aoi)
 
-        # STEP 4: Choose response type based on context and agent quality
-        rtype = self._determine_response_type_contextual(agent_utterance, answered_well)
+        # STEP 2: Choose response type based on context and agent quality
+        # For failed transitions, FORCE confusion response
+        if agent_option == "OfferTransition" and not transition_success:
+            # Transition rejected: visitor is confused why we're leaving without discussing much
+            rtype = "confusion"  # Always confusion for rejected transitions
+        else:
+            rtype = self._determine_response_type_contextual(agent_utterance, agent_option)
         
-        # STEP 5: Generate utterance with LLM-guided response (NEW!)
+        # STEP 3: Generate utterance with LLM-guided response (NEW!)
         import time
         sim_start = time.time()
-        utterance = self._synthesize_llm_guided_utterance(agent_utterance, rtype, detected_aoi, answered_well)
+        # Pass transition context to utterance generation
+        utterance = self._synthesize_llm_guided_utterance(
+            agent_utterance, rtype, detected_aoi,
+            transition_rejected=(agent_option == "OfferTransition" and not transition_success),
+            current_exhibit_completion=current_exhibit_completion
+        )
         self._last_sim_llm_time = time.time() - sim_start
         
-        # STEP 6: Generate gaze features based on response quality
-        gaze_features = self._synthesize_contextual_gaze(rtype, answered_well)
+        # STEP 4: Track question spam and transition spam (reduces engagement/dwell)
+        if agent_option == "AskQuestion":
+            self.consecutive_ask_questions += 1
+        else:
+            self.consecutive_ask_questions = 0
+        
+        if agent_option == "OfferTransition":
+            self.consecutive_transitions += 1
+        else:
+            self.consecutive_transitions = 0
+        
+        # STEP 5: Generate gaze features based on response type (question spam and transition spam reduce dwell)
+        gaze_features = self._synthesize_contextual_gaze(rtype)
         
         # Store user's question if they asked one
         if rtype == "question":
             self.last_user_question = utterance
+        
+        # Store last user utterance for context tracking
+        self.last_user_utterance = utterance
 
         response = {
             "utterance": utterance,
@@ -262,7 +323,10 @@ class Sim8Simulator:
             "persona": self.current_persona,
             "gaze_features": gaze_features,
             "response_type": rtype,
-            "answered_well": answered_well,  # Track for debugging
+            "engagement_level": self.engagement_level,  # Track disengagement
+            "off_topic_strikes": self.off_topic_strikes,  # Track penalties
+            "agent_option": self.last_agent_option,  # Track agent's strategy
+            "transition_success": transition_success,  # Whether transition succeeded (if OfferTransition)
             "simulator_llm_time": getattr(self, '_last_sim_llm_time', 0.0)
         }
         self.last_user_response = response
@@ -324,13 +388,13 @@ class Sim8Simulator:
 
     # ===== Internals =====
     def _pick_initial_aoi(self, exhibit: str) -> str:
-        parent = None
-        for k, v in self.PARENT_TO_EXHIBIT.items():
-            if v == exhibit:
-                parent = k
-                break
-        candidates = [a for a, p in self.AOI_TO_PARENT.items() if p == parent]
-        return self.rng.choice(candidates) if candidates else self.rng.choice(list(self.AOI_TO_PARENT.keys()))
+        """Pick a random AOI from the given exhibit"""
+        if exhibit in self.exhibit_to_aois and self.exhibit_to_aois[exhibit]:
+            return self.rng.choice(self.exhibit_to_aois[exhibit])
+        # Fallback: pick any AOI from any exhibit
+        if self.aoi_to_exhibit:
+            return self.rng.choice(list(self.aoi_to_exhibit.keys()))
+        return "Unknown"
 
     def _detect_aoi_and_parent(self, text: str, sim_threshold: float = 0.35) -> Tuple[Optional[str], Optional[str]]:
         t = (text or "").lower()
@@ -407,28 +471,27 @@ class Sim8Simulator:
                 pass
         return None, None
 
-    def _switch_to_related_aoi(self, current_aoi: str) -> Tuple[str, Optional[str]]:
+    def _switch_to_related_aoi(self, current_aoi: str) -> str:
         """Switch to a related AOI (70% same exhibit, 30% different exhibit)"""
-        if self.rng.random() < 0.7:
-            # Switch within same exhibit (sibling AOIs)
-            parent = self.AOI_TO_PARENT.get(current_aoi)
-            siblings = [a for a, p in self.AOI_TO_PARENT.items() if p == parent and a != current_aoi]
-            if siblings:
-                choice = self.rng.choice(siblings)
-                return choice, self.AOI_TO_PARENT[choice]
+        current_exhibit = self.aoi_to_exhibit.get(current_aoi, self.current_exhibit)
         
-        # Switch to different exhibit
-        current_parent = self.AOI_TO_PARENT.get(current_aoi)
-        other_parents = [p for p in self.PARENT_TO_EXHIBIT.keys() if p != current_parent]
-        if other_parents:
-            new_parent = self.rng.choice(other_parents)
-            new_aois = [a for a, p in self.AOI_TO_PARENT.items() if p == new_parent]
+        if self.rng.random() < 0.7 and current_exhibit:
+            # Switch within same exhibit (sibling AOIs)
+            siblings = [aoi for aoi in self.exhibit_to_aois.get(current_exhibit, []) if aoi != current_aoi]
+            if siblings:
+                return self.rng.choice(siblings)
+        
+        # Switch to different exhibit - ONLY use exhibits from self.exhibits list
+        other_exhibits = [ex for ex in self.exhibits if ex != current_exhibit]
+        if other_exhibits:
+            new_exhibit = self.rng.choice(other_exhibits)
+            new_aois = self.exhibit_to_aois.get(new_exhibit, [])
             if new_aois:
-                choice = self.rng.choice(new_aois)
-                return choice, new_parent
+                self.current_exhibit = new_exhibit
+                return self.rng.choice(new_aois)
         
         # Fallback: stay with current
-        return current_aoi, current_parent
+        return current_aoi
 
     def _is_suggesting_movement(self, text: str) -> bool:
         """Detect if agent is suggesting moving to another exhibit"""
@@ -533,72 +596,106 @@ class Sim8Simulator:
         
         return relevance_score
     
-    def _check_if_question_answered(self, agent_utterance: str) -> bool:
-        """Check if agent actually answered the user's previous question"""
-        if not self.last_user_question:
-            return True  # No previous question to answer
+    def _check_exhibit_mismatch(self, agent_utterance: str) -> bool:
+        """Check if agent is talking about a different exhibit than visitor is at.
         
-        # Simple heuristic: check if agent provided substantive response
-        agent_lower = (agent_utterance or "").lower()
+        Returns True if there's a mismatch (should trigger confusion).
+        """
+        if not agent_utterance or not self.current_exhibit:
+            return False
         
-        # Bad signs: agent just asks back without answering
-        if agent_lower.count("?") >= 2 and len(agent_lower.split()) < 30:
-            return False  # Agent mostly asked questions, didn't answer
+        agent_lower = agent_utterance.lower()
         
-        # Good signs: agent provided information
-        info_keywords = ["is", "was", "are", "were", "made", "created", "symbolize", "represent", 
-                        "used", "from", "in", "dates", "century", "period"]
-        has_info = sum(1 for kw in info_keywords if kw in agent_lower) >= 2
+        # Get all exhibit names from knowledge graph
+        all_exhibits = self.exhibits
         
-        # Check if agent mentioned what user asked about
-        if self.last_user_question:
-            question_topic = self._extract_topic_from_question(self.last_user_question)
-            if question_topic and question_topic.lower() in agent_lower:
-                has_info = True
+        # Check which exhibits are mentioned in agent's utterance
+        mentioned_exhibits = []
+        for exhibit in all_exhibits:
+            exhibit_clean = exhibit.lower().replace("_", " ")
+            if exhibit_clean in agent_lower:
+                mentioned_exhibits.append(exhibit)
         
-        return has_info
+        # If agent mentioned a different exhibit than where visitor is
+        if mentioned_exhibits and self.current_exhibit not in mentioned_exhibits:
+            import os
+            verbose = os.environ.get('HRL_VERBOSE', '0') == '1'
+            if verbose:
+                print(f"[SIM] Exhibit mismatch: Agent talks about {mentioned_exhibits}, visitor at {self.current_exhibit}")
+            return True
+        
+        return False
     
-    def _extract_topic_from_question(self, question: str) -> Optional[str]:
-        """Extract main topic from user's question"""
-        import re
-        # Extract noun phrases after "about the" or "of the"
-        match = re.search(r'(?:about|of) the ([a-zA-Z\s]+)', question.lower())
-        if match:
-            return match.group(1).strip()
-        return None
-    
-    def _determine_response_type_contextual(self, agent_utterance: str, answered_well: bool) -> str:
-        """Determine response type based on agent's utterance quality"""
+    def _determine_response_type_contextual(self, agent_utterance: str, agent_option: str = None) -> str:
+        """Determine response type based on agent's utterance and option choice.
+        
+        Response types directly signal quality:
+        - acknowledgment, follow_up_question = positive engagement
+        - confusion = negative (agent off-topic or deflecting)
+        - question, statement = neutral engagement
+        """
         text = (agent_utterance or "").lower()
         
-        # If agent answered our question well, show satisfaction or ask follow-up
-        if answered_well and self.last_user_question:
-            if self.rng.random() < 0.4:
-                return "acknowledgment"  # "That's interesting!"
-            elif self.rng.random() < 0.6:
-                return "follow_up_question"  # Related question
-            else:
-                return "statement"  # Show engagement
+        # 1. Check for exhibit mismatch (agent talks about wrong exhibit)
+        exhibit_mismatch = self._check_exhibit_mismatch(agent_utterance)
+        if exhibit_mismatch:
+            # High chance of confusion when exhibits don't match
+            if self.rng.random() < 0.7:
+                return "confusion"
         
-        # If agent didn't answer well, express confusion or re-ask
-        if not answered_well and self.last_user_question:
-            if self.rng.random() < 0.5:
-                return "confusion"  # "I'm not sure I understand..."
-            else:
-                return "question"  # Ask a different question
+        # 2. Check if agent deflected with questions when user requested info
+        if agent_option == "AskQuestion" and self.last_user_utterance:
+            info_request_phrases = [
+                "tell me", "could you tell", "can you tell", "share more", 
+                "i'd love to learn", "explain", "what about", "how does",
+                "could you share", "what is", "what are"
+            ]
+            user_requested_info = any(phrase in self.last_user_utterance.lower() 
+                                     for phrase in info_request_phrases)
+            
+            # Penalize if user explicitly asked for info and agent deflected (after turn 2)
+            if user_requested_info and len(self.dialogue_history) > 2:
+                import os
+                verbose = os.environ.get('HRL_VERBOSE', '0') == '1'
+                if verbose:
+                    print(f"[SIM] User requested info, agent used AskQuestion → confusion")
+                if self.rng.random() < 0.6:
+                    return "confusion"
         
-        # Agent asked a question - respond appropriately
+        # 3. If user asked a question, check if agent provided substantive response
+        if self.last_user_question:
+            # Check if agent provided information (has [FACT_ID] or info keywords)
+            has_fact_id = "[" in text and "]" in text
+            info_keywords = ["is", "was", "are", "made", "created", "from", "century", "period"]
+            has_info = sum(1 for kw in info_keywords if kw in text.split()) >= 2
+            
+            if has_fact_id or has_info:
+                # Agent provided good answer → positive response
+                if self.rng.random() < 0.4:
+                    return "acknowledgment"
+                elif self.rng.random() < 0.6:
+                    return "follow_up_question"
+                else:
+                    return "statement"
+            else:
+                # Agent didn't really answer → confusion or re-ask
+                if self.rng.random() < 0.5:
+                    return "confusion"
+                else:
+                    return "question"
+        
+        # 4. Agent asked a question - respond appropriately
         if "?" in text:
             if self.rng.random() < 0.7:
-                return "question"  # Ask own question
+                return "question"
             else:
-                return "statement"  # Make statement
+                return "statement"
         
-        # Neurotic persona gets confused sometimes
+        # 5. Neurotic persona gets confused sometimes
         if self.current_persona == "Neurotic" and self.rng.random() < 0.15:
             return "confusion"
         
-        # Otherwise, varied responses
+        # 6. Otherwise, varied responses (default positive)
         rand = self.rng.random()
         if rand < 0.5:
             return "question"
@@ -609,7 +706,7 @@ class Sim8Simulator:
         else:
             return "follow_up_question"
 
-    def _synthesize_contextual_utterance(self, rtype: str, aoi: str, answered_well: bool) -> str:
+    def _synthesize_contextual_utterance(self, rtype: str, aoi: str) -> str:
         """Create a plausible utterance for the given response_type and AOI."""
         if rtype == "silence":
             return ""
@@ -708,7 +805,9 @@ class Sim8Simulator:
         else:
             return self.rng.choice(question_templates)
 
-    def _synthesize_llm_guided_utterance(self, agent_utterance: str, rtype: str, aoi: str, answered_well: bool) -> str:
+    def _synthesize_llm_guided_utterance(self, agent_utterance: str, rtype: str, aoi: str,
+                                         transition_rejected: bool = False,
+                                         current_exhibit_completion: float = 0.0) -> str:
         """
         Generate user response using LLM guidance to ensure responses directly address agent utterances.
         Falls back to templates if LLM is unavailable.
@@ -720,16 +819,41 @@ class Sim8Simulator:
             
             # Skip if in fast mode (use templates only)
             if os.environ.get('HRL_FAST_MODE') == '1':
-                return self._synthesize_contextual_utterance(rtype, aoi, answered_well)
+                return self._synthesize_contextual_utterance(rtype, aoi)
             
             import time
             start_time = time.time()
-            print(f"[Simulator LLM] Generating user response ({rtype})...", flush=True)
+            import os
+            verbose = os.environ.get('HRL_VERBOSE', '0') == '1'
+            if verbose:
+                print(f"[Simulator LLM] Generating user response ({rtype})...", flush=True)
             llm = get_simulator_llm()
             clean_aoi = aoi.replace("_", " ")
             
             # Build a prompt that guides the LLM to generate contextually appropriate responses
-            system_prompt = f"""You are a museum visitor with persona: {self.current_persona}.
+            if transition_rejected:
+                # Special handling for rejected transitions - always confusion
+                if current_exhibit_completion < 0.33:
+                    confusion_reason = f"we've barely discussed anything about {clean_aoi} yet"
+                elif current_exhibit_completion < 0.67:
+                    confusion_reason = f"there's still so much more to learn about {clean_aoi}"
+                else:
+                    confusion_reason = f"I'd like to hear a bit more about {clean_aoi} before moving on"
+                
+                system_prompt = f"""You are a museum visitor with persona: {self.current_persona}.
+The guide just suggested moving to another exhibit, but you're CONFUSED because {confusion_reason}.
+Generate a SHORT (1-2 sentence) response expressing confusion about leaving so soon.
+
+RULES:
+- Express confusion or surprise at the suggestion to move
+- Mention that you feel like you haven't learned enough here yet
+- Ask to stay longer or learn more about the current exhibit
+- Be polite but clearly confused about the rush
+- Response type: confusion
+
+Current exhibit: {clean_aoi}"""
+            else:
+                system_prompt = f"""You are a museum visitor with persona: {self.current_persona}.
 Generate a SHORT (1-2 sentence) NATURAL response to what the museum guide just said.
 Be conversational and genuine. React specifically to their statement.
 Response type should be: {rtype}
@@ -741,54 +865,105 @@ Your {rtype} response (1-2 sentences):"""
 
             response = llm.generate(user_prompt, system_prompt=system_prompt)
             elapsed = time.time() - start_time
-            print(f"[Simulator LLM] User response received in {elapsed:.2f}s ({len(response)} chars)", flush=True)
+            if verbose:
+                print(f"[Simulator LLM] User response received in {elapsed:.2f}s ({len(response)} chars)", flush=True)
             response = response.strip().strip('"')
+            
+            # Store prompts for detailed logging
+            self._last_simulator_prompt = user_prompt
+            self._last_simulator_system_prompt = system_prompt
+            self._last_sim_llm_time = elapsed
+            
             return response[:300]  # Limit length
             
         except Exception:
             # Fallback to template-based approach
-            return self._synthesize_contextual_utterance(rtype, aoi, answered_well)
+            return self._synthesize_contextual_utterance(rtype, aoi)
 
-    def _synthesize_contextual_gaze(self, rtype: str, answered_well: bool) -> List[float]:
-        """Generate synthetic gaze features based on response type AND answer quality."""
-        # CRITICAL: Adjust engagement based on whether agent answered well!
+    def _get_question_spam_multiplier(self) -> float:
+        """Calculate penalty multiplier for question spam (reduces dwell).
         
-        # Base engagement modifiers
-        engagement_bonus = 0.0
-        if answered_well:
-            engagement_bonus = 0.2  # Boost engagement when agent is helpful
-        else:
-            engagement_bonus = -0.25  # Reduce engagement when agent is off-topic
+        Returns a multiplier (0.0-1.0) that reduces dwell time.
+        Lower values = more penalty = lower engagement.
+        """
+        multiplier = 1.0
         
+        # Penalty for question spam: -0.15 per consecutive question after first
+        if self.consecutive_ask_questions > 1:
+            penalty = 0.15 * (self.consecutive_ask_questions - 1)
+            multiplier = max(0.3, multiplier - penalty)  # Cap at 30% minimum
+        
+        return multiplier
+    
+    def _get_transition_spam_multiplier(self) -> float:
+        """Calculate penalty multiplier for transition spam (reduces dwell).
+        
+        Returns a multiplier (0.0-1.0) that reduces dwell time.
+        Lower values = more penalty = lower engagement.
+        Transition spam penalty: -0.15 per consecutive transition after first.
+        """
+        multiplier = 1.0
+        
+        # Penalty for transition spam: -0.15 per consecutive transition after first
+        if self.consecutive_transitions > 1:
+            penalty = 0.15 * (self.consecutive_transitions - 1)
+            multiplier = max(0.3, multiplier - penalty)  # Cap at 30% minimum
+        
+        return multiplier
+    
+    def _synthesize_contextual_gaze(self, rtype: str) -> List[float]:
+        """Generate synthetic gaze features based on response type.
+        
+        Response types directly encode quality:
+        - acknowledgment, follow_up_question = HIGH engagement (agent did well)
+        - confusion = LOW engagement (agent was off-topic or deflecting)
+        - question, statement = MODERATE engagement (neutral)
+        
+        Question spam and transition spam reduce dwell time (simulator-level penalties).
+        Transition insufficiency penalty is handled at environment/reward level.
+        """
         # Apply engagement level multiplier from disengagement tracking
-        engagement_bonus *= self.engagement_level
+        engagement_multiplier = self.engagement_level
+        
+        # Apply penalty multiplier for question spam (reduces engagement)
+        question_spam_multiplier = self._get_question_spam_multiplier()
+        
+        # Apply penalty multiplier for transition spam (reduces engagement)
+        transition_spam_multiplier = self._get_transition_spam_multiplier()
+        
+        # Combined penalty multiplier (question spam + transition spam)
+        combined_spam_multiplier = question_spam_multiplier * transition_spam_multiplier
         
         # Different patterns for different response types
         if rtype in ["acknowledgment", "follow_up_question"]:
-            # HIGH engagement - agent answered well, user is satisfied and curious
-            dwell_time = self._clip(self._randf(0.75, 0.95) + engagement_bonus, 0.2, 1.0)
+            # HIGH engagement - agent did well, user is satisfied and curious
+            base_dwell = self._randf(0.75, 0.95)
+            dwell_time = self._clip(base_dwell * engagement_multiplier * combined_spam_multiplier, 0.2, 1.0)
             saccade_span = max(0.05, np.random.normal(0.07, 0.03))  # Low saccades (focused)
         
         elif rtype == "question":
-            # Engagement depends on context - high if genuinely curious, lower if confused
-            base_dwell = self._randf(0.6, 0.9)
-            dwell_time = self._clip(base_dwell + engagement_bonus, 0.2, 1.0)
+            # MODERATE-HIGH engagement - genuinely curious
+            base_dwell = self._randf(0.4, 0.7)
+            dwell_time = self._clip(base_dwell * engagement_multiplier * combined_spam_multiplier, 0.2, 1.0)
             saccade_span = max(0.05, np.random.normal(0.08, 0.04))
         
         elif rtype == "statement":
-            # Moderate engagement when making statements
-            base_dwell = self._randf(0.5, 0.8)
-            dwell_time = self._clip(base_dwell + engagement_bonus, 0.2, 1.0)
+            # MODERATE engagement - making statements
+            base_dwell = self._randf(0.3, 0.6)
+            dwell_time = self._clip(base_dwell * engagement_multiplier * combined_spam_multiplier, 0.2, 1.0)
             saccade_span = max(0.05, np.random.normal(0.09, 0.04))
         
         elif rtype == "confusion":
-            # LOW engagement when confused - agent was unhelpful
-            dwell_time = self._clip(self._randf(0.25, 0.50) + engagement_bonus, 0.1, 0.6)
+            # LOW engagement - agent was unhelpful, off-topic, or deflecting
+            base_dwell = self._randf(0.25, 0.50)
+            # Confusion gets extra penalty from engagement tracking AND spam penalties
+            dwell_time = self._clip(base_dwell * engagement_multiplier * combined_spam_multiplier * 0.8, 0.1, 0.6)
             saccade_span = max(0.05, np.random.normal(0.12, 0.05))  # Higher saccades (unfocused)
         
         else:
-            # Default moderate engagement
-            dwell_time = self._clip(self._randf(0.5, 0.8), 0.2, 1.0)
+            # Default: MODERATE engagement
+            base_dwell = self._randf(0.3, 0.6)
+            dwell_time = self._clip(base_dwell * engagement_multiplier * combined_spam_multiplier, 0.2, 1.0)
             saccade_span = max(0.05, np.random.normal(0.09, 0.04))
         
         # Common gaze features (persona-influenced)
@@ -840,9 +1015,9 @@ Your {rtype} response (1-2 sentences):"""
             "gaze_features": feats,
             "response_type": "silence",
         }
-
     def _clip(self, v: float, lo: float, hi: float) -> float:
         return float(max(lo, min(hi, v)))
 
     def _randf(self, lo: float, hi: float) -> float:
         return lo + (hi - lo) * self.rng.random()
+

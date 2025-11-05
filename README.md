@@ -1,65 +1,70 @@
 # HRL Museum Dialogue Agent
 
-Actor-Critic system for museum dialogue using hierarchical RL.
+Hierarchical Reinforcement Learning for adaptive museum dialogue.
 
-## Overview
+## Quick Start
 
-Implements the approach from `paper.tex`:
-- **Options**: Explain, Ask, Transition, Conclude
-- **Actor-Critic**: Learns option policies and termination
-- **DialogueBERT**: Intent recognition
-- **Mistral LLM**: Local utterance generation
+1. **Set API Key**
+   ```bash
+   $env:GROQ_API_KEY='your_key_here'  # Windows PowerShell
+   export GROQ_API_KEY='your_key_here'  # Linux/Mac
+   ```
 
-## Setup
+2. **Train**
+   ```bash
+   python train.py --episodes 600 --device cuda
+   ```
 
-### 1. Install Mistral
+3. **Results**
+   - Training logs: `training_logs/experiments/exp_XXX/`
+   - Evaluation: Automatically generated after training
+   - Parameterization analysis: Run `python analyze_parameterization.py <exp_num>`
+
+## Documentation
+
+- **[TRAINING.md](TRAINING.md)** - How to train and configure reward weights
+- **[EVALUATION.md](EVALUATION.md)** - Understanding evaluation results
+
+## Project Structure
+
+```
+Thesis_HRL/
+├── train.py                    # Unified training script
+├── analyze_parameterization.py  # Reward weight analysis
+├── create_evaluation_plots.py  # Evaluation plot generator
+│
+├── src/                        # Core code
+│   ├── environment/            # Museum environment
+│   ├── agents/                 # Actor-Critic agent
+│   ├── training/               # Training loop
+│   ├── simulator/              # Visitor simulator
+│   └── utils/                  # LLM, DialogueBERT, logging
+│
+└── training_logs/experiments/  # All results
+```
+
+## Technical Details
+
+- **RL Algorithm**: Actor-Critic with TD(0)
+- **Options**: Explain, Ask, Transition, Conclude (4 high-level strategies)
+- **State**: 149-dim (gaze features + dialogue history + intent)
+- **Reward**: Weighted sum (engagement + novelty + responsiveness + conclude)
+- **LLM**: Groq API (Llama 3.1 8B)
+
+## Reward Configuration
+
+Reward weights are configurable via command line:
+
 ```bash
-# Install Ollama from https://ollama.ai
-ollama pull mistral
-ollama serve
+# Paper baseline
+python train.py --w-engagement 1.0 --w-novelty 0.5
+
+# Encourage more facts
+python train.py --w-novelty 1.0 --novelty-per-fact 0.2
 ```
 
-### 2. Install dependencies
-```bash
-pip install -r requirements.txt
-```
+See [TRAINING.md](TRAINING.md) for full details.
 
-## Training
+---
 
-```bash
-# Quick test (10 episodes, ~2 min)
-python train.py --episodes 10
-
-# Full training (200 episodes, ~2 hours)
-python train.py --episodes 200
-
-# GPU training
-python train.py --episodes 500 --device cuda
-```
-
-Trained model saved to `models/trained_agent.pt`
-
-## Architecture (from paper.tex)
-
-**State Space (149-d)**:
-- Focus: 9-d (8 exhibits + no-focus)
-- History: 12-d (8 exhibits + 4 options)
-- Intent: 64-d (DialogueBERT projection)
-- Context: 64-d (DialogueBERT projection)
-
-**Options**: Explain, Ask, Transition, Conclude
-
-**Reward**: Engagement (dwell) + Novelty (facts) + Deliberation cost
-
-## Files
-
-```
-train.py              - Train agent
-src/
-  agent/              - Actor-Critic implementation
-  environment/        - SMDP environment
-  training/           - Training loop
-  simulator/          - User simulation
-  utils/              - DialogueBERT, LLM handler, prompts
-paper.tex             - Research questions and approach
-```
+**For thesis details, see `paper.tex`**
