@@ -411,6 +411,8 @@ Where each component captures a different aspect of the interaction:
 
 \noindent\textbf{Total state dimension (8 exhibits):} $9$ (focus) $+\,12$ (history) $+\,64$ (last-turn semantics) $+\,64$ (short context) $= \mathbf{149}$.\\
 
+\noindent\textbf{State dimension scaling:} For $n$ exhibits, the total dimension is $2n + 5 + 128 = 2n + 133$. The formula breaks down as: focus vector ($n+1$), history vector ($n+4$), intent embedding ($64$), and dialogue context ($64$). This design scales linearly with the number of exhibits while keeping the semantic embeddings fixed at 128 dimensions total.\\
+
 The last-turn vector $\mathbf{i}_t$ is a compact “semantic coordinate” for $u_t$ (64 numbers that preserve the main meaning cues from the original 768-d space), while $\mathbf{c}_t$ carries a small, separate summary of very recent dialogue (another 64 numbers). Keeping these as two small pieces lets the policy read both “what’s happening now” and “what just happened” without handling the full high-dimensional encoder output. Reducing 768$\rightarrow$64 is a standard move: compact sentence embeddings (e.g., SBERT/MiniLM at 384-d) retain strong task performance \citep{reimers2019sbert,wang2020minilm}, and distance-preserving projections are known to maintain the geometry policies depend on for decision boundaries in much lower dimensions (e.g., random/PCA projections under Johnson–Lindenstrauss–type guarantees).\\
 
 The DialogueBERT integration solves several key problems in museum dialogue systems: (1) \textbf{Better understanding} of diverse visitor communication styles, from direct questions to contemplative observations; (2) \textbf{Conversation memory} that prevents repetitive explanations and maintains coherent narrative flow; (3) \textbf{Adaptive responses} that work across different visitor demographics and communication patterns; and (4) \textbf{Interpretable behavior} through semantically meaningful representations that help us understand and improve the system.\\
@@ -452,7 +454,7 @@ We model actions as options over subactions. The high-level policy chooses one o
 & Ask the visitor to clarify an ambiguous request or comment. 
 & Reduces misalignment; avoids wrong-depth explanations. \\
 \midrule
-\textsc{OfferTransition} & \textit{AssessAndTransition}
+\textsc{OfferTransition} & \textit{SuggestMove}
 & Assess conversation history and KB coverage (facts used vs.\ available) across exhibits; select exhibit $e^\*$ with the \emph{most remaining unexplained facts} and offer a concrete transition rationale
 & Changes focus; prioritizes content novelty/coverage; prevents stagnation. \\
 \midrule
@@ -469,7 +471,7 @@ We model actions as options over subactions. The high-level policy chooses one o
 \end{table}
 \end{landscape}
 
-The planner takes the chosen \texttt{option} and \texttt{subaction} from the manager, builds a small shared context (focus exhibit, \texttt{LAST\_UTT}, brief history, facts used/available, KB ID guardrails), and then hands off to the matching subaction builder. Each builder has a simple job contract: \textit{ExplainNewFact} must pick a new fact ID; \textit{RepeatFact} and \textit{ClarifyFact} operate only over facts already used; \textit{AskOpinion}, \textit{AskMemory}, and \textit{AskClarification} ask questions that respond directly to \texttt{LAST\_UTT}; \textit{AssessAndTransition} \emph{computes coverage across exhibits, selects the exhibit with the highest remaining unexplained content, and proposes that move with a brief justification}; and \textit{WrapUp} closes the session. The short header makes the generator aware of the intended move before decoding, while the HRL layer decides when to keep or switch that header through its learned termination rule.
+The planner takes the chosen \texttt{option} and \texttt{subaction} from the manager, builds a small shared context (focus exhibit, \texttt{LAST\_UTT}, brief history, facts used/available, KB ID guardrails), and then hands off to the matching subaction builder. Each builder has a simple job contract: \textit{ExplainNewFact} must pick a new fact ID; \textit{RepeatFact} and \textit{ClarifyFact} operate only over facts already used; \textit{AskOpinion}, \textit{AskMemory}, and \textit{AskClarification} ask questions that respond directly to \texttt{LAST\_UTT}; \textit{SuggestMove} \emph{computes coverage across exhibits, selects the exhibit with the highest remaining unexplained content, and proposes that move with a brief justification}; and \textit{WrapUp} closes the session. The short header makes the generator aware of the intended move before decoding, while the HRL layer decides when to keep or switch that header through its learned termination rule.
 
 
 \subsection{Reward Function Design}
@@ -514,20 +516,143 @@ J(\pi) = \mathbb{E}_{\pi} \left[ \sum_{t=0}^{T} \gamma^t R_t \right]
 
 \subsection{Summary}
 
-In summary, this formalization aligns the agent’s architecture with the goals of engagement, adaptability, and informative interaction as outlined in our research questions. It leverages HRL to manage dialogue strategy, uses gaze-based metrics for real-time engagement measurement, and employs structured prompting with LLMs to maintain fluency while adhering to pedagogical and conversational goals. This design provides a clear, modular framework for building and evaluating conversational museum agents grounded in the literature while allowing for flexible experimentation in training and evaluation settings. We now specify the training algorithm, simulator, reward shaping, prompting/grounding, and action masking that operationalize and realize this formulation.
+In summary, this formalization aligns the agent's architecture with the goals of engagement, adaptability, and informative interaction as outlined in our research questions. It leverages HRL to manage dialogue strategy, uses gaze-based metrics for real-time engagement measurement, and employs structured prompting with LLMs to maintain fluency while adhering to pedagogical and conversational goals. This design provides a clear, modular framework for building and evaluating conversational museum agents grounded in the literature while allowing for flexible experimentation in training and evaluation settings. The following sections document how this formalization is realized in practice: Section~\ref{sec:system-architecture} covers the system components (environment, simulator, agent, action execution), and Section~\ref{sec:training-methodology} details the training algorithm and reward extensions.
 
-\section{Methodology}
-\label{sec:methodology}
+\section{System Architecture}
+\label{sec:system-architecture}
 
-While the formal problem definition establishes the theoretical foundation for hierarchical control in museum dialogue, deploying a working conversational agent requires addressing practical challenges that emerge from the dynamics of real interaction. This section documents the key implementation extensions beyond the base formalization, their empirical motivation from early development, and their grounding in dialogue systems literature. These extensions operationalize three core requirements: (i) cooperative information exchange aligned with visitor needs, (ii) robust training signals from a simulated visitor that responds contingently to agent quality, and (iii) content pacing that respects both pedagogical coverage and visitor attention.
+While the formal problem definition establishes the theoretical foundation for hierarchical control in museum dialogue, deploying a working conversational agent requires concrete implementation of the environment, simulator, agent architecture, and action execution mechanisms. This section documents how the abstract formalization is realized in practice, covering the system components that enable training and evaluation. The architecture separates concerns: the environment computes state and rewards, the simulator provides contingent visitor responses, the agent implements hierarchical decision-making, and the dialogue planner translates strategic choices into natural utterances.
+
+\subsection{Environment Implementation}
+
+The environment implements the SMDP formulation from Section~\ref{sec:problem-definition}, providing state computation, reward calculation, and action masking. 
+
+\subsubsection{State Space Computation}
+
+The state vector $s_t = [\mathbf{f}_t, \mathbf{h}_t, \mathbf{i}_t, \mathbf{c}_t]$ is computed as follows. The focus vector $\mathbf{f}_t$ is a one-hot encoding of the current exhibit (or no-focus state). The dialogue history vector $\mathbf{h}_t$ concatenates exhibit completion ratios (facts mentioned per exhibit divided by total facts) and normalized option usage counts. The intent embedding $\mathbf{i}_t$ is computed by projecting the DialogueBERT encoding of the last user utterance through a fixed linear projection matrix $\mathbf{P} \in \mathbb{R}^{64 \times 768}$. The dialogue context $\mathbf{c}_t$ applies the same projection to the average of DialogueBERT encodings from the last three exchanges. This design scales linearly with the number of exhibits: for $n$ exhibits, the total dimension is $2n + 5 + 128 = 2n + 133$.
+
+\subsubsection{Action Space and Masking}
+
+The hierarchical action space consists of four options, each with 2-3 subactions. Action masking enforces dialogue coherence: \textsc{Conclude} is masked until at least 3 facts and 2 exhibits have been covered; \textsc{ExplainNewFact} is masked when all facts for an exhibit are exhausted; \textsc{RepeatFact} is masked when no facts have been mentioned yet. These masks prevent structurally invalid actions and guide the policy toward coherent strategies.
+
+\subsubsection{Reward Calculation}
+
+Rewards are computed per-turn according to the combined reward function (Section~\ref{sec:reward-extensions}). Engagement reward equals dwell time (which may be reduced by simulator-level transition spam penalties). Novelty reward is $0.15 \times |\text{new facts}|$. Responsiveness, transition insufficiency, and conclude bonuses are computed based on dialogue state and action history.
+
+\subsection{Simulator Design: Contingent Visitor Responses}
+\label{sec:simulator-implementation}
+
+For training, we use a lightweight simulator instead of live visitors. Each step unfolds as follows: the agent chooses a high-level strategy (an \emph{option}), builds a compact prompt, and a pretrained language model realizes it as a natural sentence. A persona-conditioned user model then replies and also produces a synthetic gaze trace that indicates how much the visitor attended to the current exhibit. When the agent's turn fails to reference anything on display, the simulator yields little or no gaze on the focal object, which we treat as disengagement. This closed loop gives immediate feedback on the two outcomes we care about—moment-to-moment attention (dwell) and progressive coverage of new facts—so the policy can improve.\\
+
+\subsubsection{Simulator Architecture and Response Generation}
+
+Our simulator follows a \textit{persona-conditioned, AOI-grounded, LLM-guided} architecture inspired by recent work on controllable user simulation \citep{shi2019build,zhang2020task}. Each session initializes a visitor persona (Agreeable, Conscientious, Neurotic, based on Big Five traits) and an exhibit focus (current Area of Interest, or AOI). The simulator tracks dialogue history, the agent's last utterance, and the current option/subaction. At each turn, it:
+
+\begin{enumerate}
+    \item \textbf{Determines response type} (question, statement, acknowledgment, confusion, follow-up question) via a rule-based classifier conditioned on agent behavior.
+    \item \textbf{Generates utterance text} using either template-based expansion or an LLM prompt.
+    \item \textbf{Synthesizes gaze features} (dwell time, saccade span, entropy, etc.) conditioned on response type, with dwell serving as the primary engagement signal. In our test case, we operate with dwell time ratio.
+\end{enumerate}
+
+The response-type classifier is the core of the contingent feedback mechanism. It implements several heuristics grounded in dialogue coherence and visitor behavior:
+
+\paragraph{Exhibit mismatch detection.} If the agent's utterance mentions an exhibit different from the visitor's current AOI (extracted via keyword and semantic matching), the simulator flags a coherence violation. With 70\% probability, the response type is set to ``confusion,'' yielding low dwell (0.25--0.50) and an utterance like ``Wait, I'm looking at [current exhibit]—why are you talking about [other exhibit]?'' This operationalizes the finding that off-topic responses disrupt engagement \citep{bohus2009ravenclaw,young2013pomdp}.\\
+
+\paragraph{Question deflection detection.} If the visitor asked a question in the prior turn (\texttt{last\_user\_question} is set) and the agent chose \textsc{AskQuestion} (rather than \textsc{Explain}), the simulator detects a deflection. With 60\% probability, the response type is ``confusion,'' with utterances like ``I asked you a question—could you answer it first?'' This creates the training signal for the responsiveness reward: deflection produces low dwell and confused responses, while answering produces acknowledgment or follow-up questions (high dwell). This is consistent with findings that users disengage when systems repeatedly deflect or fail to address explicit requests \citep{jiang2015natural,su2016line}.\\
+
+\paragraph{Quality-contingent positive responses.} When the agent provides a substantive answer (detected via fact IDs \texttt{[ID]} in the utterance, or information-bearing keywords), the simulator probabilistically selects positive response types: ``acknowledgment'' (40\%, e.g., ``Oh, that's fascinating!'') or ``follow-up question'' (60\%, e.g., ``What else can you tell me about that?''). Both yield high dwell (0.75--0.95), creating a reward signal for informative, grounded explanations.\\
+
+\paragraph{Neurotic persona modulation.} The Neurotic persona has a baseline 15\% chance of confusion responses even when the agent behaves well, modeling visitors who are inherently less certain or more questioning. This adds diversity and prevents overfitting to always-positive feedback.
+
+\subsubsection{Gaze Feature Synthesis: Dwell as Contingent Engagement}
+
+Gaze dwell time is the primary engagement signal in our reward function. To ensure it provides a meaningful learning signal, we synthesize dwell values contingent on response type, creating a direct coupling between dialogue quality (as judged by the response classifier) and the engagement reward.\\
+
+For each response type, we define a base dwell range informed by empirical gaze studies in VR and museum settings \citep{Bozkir2021,Dubovi2022}:\\
+
+\begin{itemize}
+    \item \textbf{Acknowledgment / Follow-up question} (high engagement): dwell $\in [0.75, 0.95]$, sampled uniformly. These responses indicate the visitor is satisfied and curious, so gaze remains focused on the exhibit.
+    \item \textbf{Question} (moderate-high engagement): dwell $\in [0.40, 0.70]$. The visitor is engaged but seeking information, so attention is steady but not peak.
+    \item \textbf{Statement} (moderate engagement): dwell $\in [0.30, 0.60]$. Neutral observation; attention is present but less intense.
+    \item \textbf{Confusion} (low engagement): dwell $\in [0.25, 0.50]$, with an additional $0.8\times$ penalty multiplier. Confusion signals the agent has lost the visitor, so gaze wanders or drops.
+\end{itemize}
+
+These ranges were calibrated during early development to produce a reward signal with sufficient dynamic range: good behavior (answering questions, staying on-topic) yields $r^{\text{eng}}_t \approx 0.7$--0.9, while poor behavior yields $r^{\text{eng}}_t \approx 0.2$--0.4, a difference of 0.3--0.5 per turn. Over a 10-turn dialogue, this compounds to a 3--5 point difference in cumulative return, sufficient to drive policy learning.\\
+
+The dwell values are further modulated by an \textit{engagement level} tracker that decays with repeated off-topic or deflecting behavior. If the agent produces two consecutive low-quality turns (detected via exhibit mismatch or deflection), the engagement level drops by 40\%, and all subsequent dwell values are scaled down until the agent recovers with on-topic, informative responses. This implements a simple model of visitor patience: people tolerate occasional mistakes, but repeated failures lead to disengagement and early exit. Empirically, this mechanism caused poorly performing policies to receive shorter episodes (visitors mentally ``check out'' after 5--6 turns, yielding low returns), while good policies sustained engagement for 12--15 turns, maximizing coverage and conclude bonuses.
+
+\subsubsection{Transition Logic: Probabilistic Acceptance}
+
+As described in the transition control subsection (Section~\ref{sec:reward-extensions}), the simulator models transitions as probabilistic events conditioned on exhibit completion. When the agent selects \textsc{OfferTransition}, the simulator:
+
+\begin{enumerate}
+    \item Computes current exhibit completion: $c = |\mathcal{F}_{\text{current}}| / |\mathcal{F}_{\text{total}}|$.
+    \item Maps $c$ to acceptance probability $p_{\text{accept}}$ (staged: 0.20 / 0.50 / 0.80 / 0.95).
+    \item Draws a Bernoulli random variable; if success, update \texttt{current\_exhibit} to \texttt{target\_exhibit} and select a random AOI from the new exhibit; if failure, remain at current exhibit and set response type to ``confusion.''
+\end{enumerate}
+
+On success, the visitor utterance is generated via LLM with a prompt framing: ``The guide suggested visiting [target exhibit]. You're interested and ready to move.'' This yields affirmative responses like ``Sure, let's check that out!'' On failure, the prompt is: ``The guide wants to move on, but you feel you've barely learned anything here. Express confusion.'' This produces utterances like ``Wait, we just got here—can you tell me more about this first?''\\
+
+This probabilistic mechanism teaches the agent two lessons: (i) transitions are more likely to succeed after explaining multiple facts, incentivizing depth before breadth; (ii) transitions can fail even when well-timed, so the agent must handle rejection gracefully (typically by returning to \textsc{Explain}). Empirically, learned policies adapted their transition timing: early in training, agents attempted transitions after 1--2 facts (avg. success rate 35\%); by convergence, they waited for 3--4 facts (avg. success rate 78\%), and learned to explain further after rejections rather than immediately re-attempting transition.
+
+\subsubsection{Utterance Generation: Template and LLM Modes}
+
+For efficiency, the simulator operates in two modes. \textbf{Template mode} (fast) uses hand-authored templates per response type (e.g., ``What's special about the [AOI]?'' for questions, ``That's interesting!'' for acknowledgments), with slot-filling for the current AOI and exhibit. This runs in $<10$ms per turn and is used during high-throughput training. \textbf{LLM mode} (detailed) uses an LLM with a structured prompt that includes the agent's last utterance, current AOI, persona, and desired response type. The prompt instructs the LLM to generate a 1--2 sentence natural response that reflects the visitor's state (engaged, confused, curious). This produces more diverse and contextually appropriate utterances at the expense of longer turn times during training.
+
+\subsection{Agent Architecture}
+
+The agent implements hierarchical decision-making through an Actor-Critic network with option-level and subaction-level policies. The network outputs option probabilities, intra-option subaction probabilities, termination probabilities, and value estimates. Option selection follows the Option-Critic architecture \citep{bacon2017option}: the agent selects an option, executes it for multiple turns (with learned termination), then selects a new option based on the updated state. Action masking constrains available options and subactions based on dialogue state.
+
+\subsection{Action Masking and Strategic Constraints}
+\label{sec:action-masking-detail}
+
+To prevent structurally invalid actions and guide the policy toward coherent strategies, we implement action masking at both the option and subaction levels. Masking dynamically adjusts the available action set based on the current dialogue state, effectively encoding domain constraints as hard constraints on the policy \citep{huang2020action,tang2021discovering}.
+
+\subsubsection{Option-Level Masking}
+
+The primary option-level constraint is on \textsc{Conclude}: the agent may not end the session prematurely. We define two thresholds:
+
+\begin{itemize}
+    \item \texttt{min\_facts\_before\_conclude = 3}: At least 3 facts must have been mentioned across all exhibits.
+    \item \texttt{min\_exhibits\_before\_conclude = 2}: At least 2 distinct exhibits must have been discussed (i.e., have $|\mathcal{F}_e| > 0$).
+\end{itemize}
+
+If either condition is unmet, \textsc{Conclude} is masked (unavailable). This prevents the pathological policy of concluding immediately for safety, which occasionally emerged in early unconstrained training (yielding zero novelty and conclude bonus, but avoiding any risk of low dwell from bad explanations—a local minimum).\\
+
+The thresholds are set based on minimal tour expectations: a ``guided tour'' that covers only one exhibit with 1--2 facts is not a tour at all. The values (3 facts, 2 exhibits) represent the bare minimum for a coherent session. Empirically, trained policies typically exceed these thresholds significantly (avg. 8--12 facts, 5--7 exhibits), so the masking acts as a safety guardrail rather than a binding constraint during normal operation.
+
+\subsubsection{Subaction-Level Masking}
+
+Within the \textsc{Explain} option, we mask subactions based on knowledge availability:
+
+\begin{itemize}
+    \item \textbf{ExplainNewFact} is masked if all facts for the current exhibit have already been mentioned ($|\mathcal{F}_{\text{current}}^{\text{new}}| = 0$). This prevents the agent from attempting to introduce ``new'' facts when none remain, which would force the LLM to either hallucinate or produce a generic non-explanation.
+    \item \textbf{RepeatFact} is masked if no facts have been mentioned yet for the current exhibit ($|\mathcal{F}_{\text{current}}^{\text{used}}| = 0$). This prevents the agent from trying to ``repeat'' something that was never said.
+    \item \textbf{ClarifyFact} is always available (no masking), as clarification can be provided even without explicit fact repetition (e.g., defining terms, providing analogies based on prior context).
+\end{itemize}
+
+These masks are implemented via \texttt{\_get\_available\_subactions(option)}, which returns a filtered list of subactions. The actor's subaction selection is then clamped to this list: if the actor's raw output would select an invalid subaction, it is replaced with the first available one. This ensures the prompt builder always receives a valid subaction, maintaining the subaction contract.\\
+
+Masking serves two purposes. First, it provides \textit{safety}: the agent cannot produce structurally nonsensical moves (e.g., repeating a fact that was never mentioned). Second, it provides \textit{pedagogical guidance}: by disabling \textit{ExplainNewFact} when the exhibit is exhausted, we force the agent to either ask questions, transition, or conclude—preventing it from ``spinning'' on the same exhibit indefinitely. Studies of hierarchical RL show that task-structure-aware masking improves both sample efficiency and final performance by pruning the action space to semantically valid choices \citep{huang2020action,tang2021discovering}.
+
+\subsection{Summary: System Architecture}
+
+The architecture documented in this section operationalizes the formal hierarchical framework into a practical, trainable dialogue agent. The environment computes state and rewards, the simulator provides contingent feedback that reflects realistic visitor behavior—rewarding good dialogue moves with high engagement and positive responses, penalizing poor moves with confusion and disengagement. The agent implements hierarchical decision-making through Option-Critic architecture, and grounding mechanisms (fact verification, prompt contracts, action masking) ensure the agent stays faithful to the knowledge base and produces structurally coherent dialogue strategies.\\
+
+Together, these components enable the hierarchical policy to learn long-horizon conversational strategies: the manager learns which options to deploy and when to switch based on engagement and intent signals, while intra-option policies learn how to realize those strategies through structured prompting of the LLM. The result is a system that balances the flexibility and fluency of large language models with the coherence and goal-directedness of learned hierarchical control.
+
+\section{Training Methodology}
+\label{sec:training-methodology}
+
+While the formal problem definition establishes the theoretical foundation for hierarchical control in museum dialogue, deploying a working conversational agent requires addressing practical challenges that emerge from the dynamics of real interaction. This section documents the key training extensions beyond the base formalization, their empirical motivation from early development, and their grounding in dialogue systems literature. These extensions operationalize three core requirements: (i) cooperative information exchange aligned with visitor needs, (ii) robust training signals from a simulated visitor that responds contingently to agent quality, and (iii) content pacing that respects both pedagogical coverage and visitor attention.
 
 \subsection{Training Algorithm}
 
 We adopt an \emph{actor--critic} scheme tailored to options and semi-Markov timing \citep{sutton1999between,bacon2017option}. Intuitively, the actor decides which strategy to run and how to realize turns within it; the critic scores those decisions over the entire span of the option, not just the next turn. That alignment with temporally extended behavior is exactly what dialogue needs: strategies like \textsc{Explain} or \textsc{AskQuestion} often pay off a few turns later, and actor--critic naturally attributes credit across that window. It also supports learning \emph{when to stop} via a parameterized termination function, so pacing adapts to attention and intent rather than a fixed turn budget.\\
 
-Other optimizers are defensible, but add overhead we don’t need. PPO is widely used and steady \citep{schulman2017ppo-openreview}, yet it doesn't intrinsically learn option termination conditions and requires extra work to make functional with SMDPs. SAC is very robust for continuous control \citep{haarnoja2018sac}, but our action space is small and discrete (strategies and subactions). In short, plain actor–critic is a well-cited, stable choice for HRL with options that lets us train the manager, the within-option behavior, and the learned stopping rule under one roof \citep{sutton1999between,bacon2017option}.\\
+Other optimizers are defensible, but add overhead we don't need. PPO is widely used and steady \citep{schulman2017ppo-openreview}, yet it doesn't intrinsically learn option termination conditions and requires extra work to make functional with SMDPs. SAC is very robust for continuous control \citep{haarnoja2018sac}, but our action space is small and discrete (strategies and subactions). In short, plain actor–critic is a well-cited, stable choice for HRL with options that lets us train the manager, the within-option behavior, and the learned stopping rule under one roof \citep{sutton1999between,bacon2017option}.\\
 
-Training proceeds in short segments. At each cycle, the manager selects an option; the agent then speaks for several turns under that option; and the critic scores the entire chunk with SMDP returns, summing rewards collected during the option and bootstrapping at its boundary with \(\gamma^{\tau}V(s_{t+\tau})\). The manager updates from these segment-level advantages so it learns which strategic choices pay off. While an option is active, its intra-option policy updates from per-turn advantages to improve local realization, and the termination function learns pacing—tending to persist when dwell and topical relevance remain high, and to hand control back sooner when attention drops or the visitor’s intent shifts.\\
+Training proceeds in short segments. At each cycle, the manager selects an option; the agent then speaks for several turns under that option; and the critic scores the entire chunk with SMDP returns, summing rewards collected during the option and bootstrapping at its boundary with \(\gamma^{\tau}V(s_{t+\tau})\). The manager updates from these segment-level advantages so it learns which strategic choices pay off. While an option is active, its intra-option policy updates from per-turn advantages to improve local realization, and the termination function learns pacing—tending to persist when dwell and topical relevance remain high, and to hand control back sooner when attention drops or the visitor's intent shifts.\\
 
 To keep training steady, we rely on light, well-known stabilizers: normalize advantages, add a small entropy bonus to avoid early collapse, clip gradient norms, and monitor a gentle KL to flag overly large policy moves. In practice this yields smooth learning curves (low variance), sensible option durations, and fewer oscillations between strategies.\\
 
@@ -568,176 +693,55 @@ This mechanism aligns with findings from dialogue policy learning: reward shapin
 
 \subsubsection{Transition Control: Content-Contingent Movement}
 
-Museum visitors exhibit diverse pacing preferences, but empirical studies consistently show frustration when guides rush through exhibits without substantive discussion \citep{falk-dierking-2016-museum,bitgood2013attention}. A functional transition policy must balance visitor autonomy (respecting signals to move on) with pedagogical responsibility (ensuring adequate content delivery). Early training revealed agents offering transitions after single-fact explanations, producing shallow coverage and low cumulative novelty rewards.
-
-We implement a two-part solution grounded in the notion of \textit{content readiness} for transitions. First, we introduce a \textbf{transition insufficiency penalty}:
+Early training showed agents attempting transitions prematurely—after only 1--2 facts per exhibit—which frustrated visitors and reduced coverage depth. Research on pacing in educational dialogue suggests transitions should occur only after sufficient content delivery \citep{koedinger2012knowledge,reimann2024dm}. We address this through a \textbf{transition insufficiency penalty} $r^{\text{trans}}_t$ that penalizes premature transitions:
 
 \[
 r^{\text{trans}}_t = 
 \begin{cases}
--0.20 & \text{if agent chose OfferTransition and } |\mathcal{F}_{\text{current}}| < 2 \\
-0 & \text{otherwise}
+-0.20 & \text{if } \textsc{OfferTransition} \text{ chosen at } t \text{ and } |\mathcal{F}_{\text{current}}| < 2 \\
+-0.16 & \text{if } \textsc{OfferTransition} \text{ chosen at } t \text{ and } |\mathcal{F}_{\text{current}}| = 1 \\
+0 & \text{otherwise (2+ facts or exemption)}
 \end{cases}
 \]
 
-where $\mathcal{F}_{\text{current}}$ denotes the set of facts already shared about the current exhibit. The threshold of 2 facts represents a minimal substantive engagement: identifying the object and providing at least one contextual detail. This is consistent with museum interpretation guidelines that recommend ``layered'' content delivery, starting with basic identification and building to deeper themes \citep{serrell2015exhibit}.\\
+The penalty scales with insufficient coverage: transitioning with zero facts at the current exhibit incurs the full penalty ($-0.20$), while transitioning with exactly one fact incurs a reduced penalty ($-0.16$). Transitions with two or more facts are not penalized. Additionally, a \textit{3-turn exemption rule} applies: if a transition was successfully completed (visitor accepted) within the last 3 turns, the penalty is waived, allowing natural follow-up transitions after successful moves. This design encourages agents to provide substantive content before moving while maintaining flexibility for natural dialogue flow.\\
 
-Second, we model \textbf{visitor acceptance of transitions as probabilistic}, conditioned on exhibit completion. When the agent selects \textsc{OfferTransition}, the simulator computes a transition success probability:
+Empirically, this reduced premature transitions from 45\% of all transition attempts (baseline) to under 15\%, while maintaining successful transitions at 70--80\% acceptance rates. The exemption rule prevents over-penalization of natural multi-step navigation sequences.
 
-\[
-p_{\text{accept}} = 
-\begin{cases}
-0.20 & \text{if completion} = 0\% \\
-0.50 & \text{if } 0\% < \text{completion} < 33\% \\
-0.80 & \text{if } 33\% \leq \text{completion} < 67\% \\
-0.95 & \text{if completion} \geq 67\%
-\end{cases}
-\]
+\subsubsection{Conclude Bonus: Coverage Breadth Incentive}
 
-where completion is the ratio of facts mentioned to total available facts for the exhibit. If the transition succeeds (Bernoulli draw with probability $p_{\text{accept}}$), the visitor moves to the target exhibit and responds positively. If it fails, the visitor remains at the current exhibit and responds with confusion (e.g., ``But we've barely discussed this piece—why move on already?''), yielding low dwell on the subsequent turn.\\
-
-This design is motivated by models of visitor agency in informal learning: people need a sense of control and adequate ``dwell time'' to process information before moving \citep{falk-dierking-2016-museum,bitgood2013attention}. The probabilistic acceptance mirrors findings that even well-timed transitions are sometimes declined due to individual interest, so the agent must learn robustness to rejection. The staged probabilities (20\% $\rightarrow$ 95\%) operationalize the intuition that visitors become more receptive to transitions as content coverage increases. Empirically, this mechanism reduced premature transitions from 35\% of all transitions to under 12\%, while maintaining high overall transition success rates (avg. 78\%) by the end of training.\\
-
-Finally, to prevent \textit{transition spam}—repeated \textsc{OfferTransition} attempts without intervening content—we add a \textbf{spam penalty}:
-
-\[
-r^{\text{spam}}_t = -0.10 \times \max(0, n_{\text{consec}} - 2)
-\]
-
-where $n_{\text{consec}}$ is the count of consecutive \textsc{OfferTransition} actions. This allows up to two sequential transition attempts (e.g., visitor declines, agent rephrases) but escalates penalties for further attempts without explaining. The penalty resets to zero when any non-transition option is chosen. Similar mechanisms appear in dialogue management literature as ``action repetition penalties'' to enforce natural pacing \citep{young2013pomdp,casanueva2018feudal}.\\
-
-\subsubsection{Conclude Bonus: Systematic Coverage Incentive}
-
-The \textsc{Conclude} option ends the session, so its timing directly affects total content coverage and visitor experience. Early policies tended toward two failure modes: concluding too early (after 1--2 exhibits) when the cumulative novelty reward was still low, or never concluding (exhausting the turn budget) because immediate per-turn rewards from continued explanation outweighed the uncertain value of stopping. Both violate the spirit of a guided tour, which should systematically cover multiple exhibits and end gracefully rather than abruptly truncating or dragging on.\\
-
-Educational dialogue systems address this through \textit{goal-completion bonuses} that reward achieving session-level objectives \citep{koedinger2012knowledge,rollinson2014framework}. In museum settings, systematic coverage—touching on multiple exhibits rather than deep-diving on one—aligns with visitor preferences for ``overview'' tours and learning objectives around breadth of exposure \citep{falk-dierking-2016-museum,bitgood2013attention}. We operationalize this through a \textbf{conclude bonus} that scales with exhibit diversity:
+To incentivize comprehensive coverage across multiple exhibits, we introduce a \textbf{conclude bonus} $r^{\text{conclude}}_t$ that rewards breadth of exploration when the agent chooses to end the session:
 
 \[
 r^{\text{conclude}}_t = 
 \begin{cases}
-0.20 \times |\mathcal{E}_{\text{covered}}| & \text{if agent chose Conclude} \\
+0.2 \times |\{e \in \mathcal{E} : |\mathcal{F}_e^{\text{used}}| > 0\}| & \text{if } \textsc{Conclude} \text{ chosen at } t \\
 0 & \text{otherwise}
 \end{cases}
 \]
 
-where $\mathcal{E}_{\text{covered}} = \{ e \in \mathcal{E} : |\mathcal{F}_e| > 0 \}$ is the set of exhibits for which at least one fact has been mentioned. With 8 exhibits in the knowledge graph, the maximum bonus is $+1.6$, comparable to 6--7 turns of high-engagement explanation (each worth $\approx 0.25$ from dwell + novelty). This makes concluding after broad coverage competitively attractive relative to extending the session on fewer exhibits.\\
+The bonus scales linearly with the number of distinct exhibits that have at least one fact mentioned: $0.2$ per exhibit. This directly incentivizes the agent to explore diverse content rather than staying on a single exhibit, aligning with the museum's goal of providing comprehensive tours. The bonus is only awarded when the \textsc{Conclude} option is selected, creating a natural incentive to both explore broadly and recognize when sufficient coverage has been achieved.\\
 
-The linear scaling (0.20 per exhibit) is a simplification; a sublinear function (e.g., logarithmic) might better reflect diminishing marginal value of additional exhibits. However, early experiments with sublinear scaling led to premature conclusions after 3--4 exhibits, as the per-exhibit marginal gain dropped too quickly. The linear form empirically yielded the best balance: agents learned to cover 5--7 exhibits on average (out of 8) before concluding, consistent with visitor attention spans for guided tours (15--20 minutes, or roughly 12--15 dialogue turns in our setting).\\
+This reward component complements the novelty reward: while novelty rewards \textit{within-exhibit} exploration (new facts per exhibit), the conclude bonus rewards \textit{across-exhibit} breadth (coverage diversity). Together, they encourage both depth and breadth of content delivery. Empirically, trained policies with the conclude bonus cover an average of 5--7 exhibits per session (vs. 2--3 without), while maintaining quality through the transition insufficiency penalty.\\
 
-This design is further supported by work on hierarchical RL for long-horizon tasks: explicit ``goal-achievement'' rewards at option termination improve credit assignment when intermediate rewards are sparse \citep{bacon2017option,peng2017composite}. The \textsc{Conclude} option is the natural semantic endpoint for the session, and attaching a coverage-based bonus there directly signals the session-level objective to the learning agent.
+\subsubsection{Prompt Construction and Subaction Contracts}
 
-\subsubsection{Combined Reward Function}
-
-Integrating these extensions with the base components from the formal problem definition, the full per-turn reward is:
-
-\[
-R_t = r^{\text{eng}}_t + r^{\text{nov}}_t + r^{\text{resp}}_t + r^{\text{trans}}_t + r^{\text{spam}}_t + r^{\text{conclude}}_t
-\]
-
-where $r^{\text{eng}}_t = \text{dwell}_t$ (engagement from gaze), $r^{\text{nov}}_t = 0.15 \times |\text{new facts at } t|$ (knowledge novelty), and the three extensions add cooperative responsiveness, content-pacing constraints, and session-level coverage goals. The weights are hand-tuned based on early training: engagement and novelty provide the primary signal (typical per-turn range 0.0--0.8), while responsiveness, transition control, and conclude bonus act as corrective shaping (range $-0.2$ to $+1.6$, but sparse—most turns these are zero). This balance keeps the agent sensitive to moment-to-moment engagement while respecting higher-level conversational and pedagogical structure.
-
-\subsection{Simulator Design: Contingent Visitor Responses}
-\label{sec:simulator-implementation}
-
-For training, we use a lightweight simulator instead of live visitors. Each step unfolds as follows: the agent chooses a high-level strategy (an \emph{option}), builds a compact prompt, and a pretrained language model realizes it as a natural sentence. A persona-conditioned user model then replies and also produces a synthetic gaze trace that indicates how much the visitor attended to the current exhibit. When the agent’s turn fails to reference anything on display, the simulator yields little or no gaze on the focal object, which we treat as disengagement. This closed loop gives immediate feedback on the two outcomes we care about—moment-to-moment attention (dwell) and progressive coverage of new facts—so the policy can improve.\\
-
-\subsubsection{Simulator Architecture and Response Generation}
-
-Our simulator follows a \textit{persona-conditioned, AOI-grounded, LLM-guided} architecture inspired by recent work on controllable user simulation \citep{shi2019build,zhang2020task}. Each session initializes a visitor persona (Agreeable, Conscientious, Neurotic, based on Big Five traits) and an exhibit focus (current Area of Interest, or AOI). The simulator tracks dialogue history, the agent's last utterance, and the current option/subaction. At each turn, it:
-
-\begin{enumerate}
-    \item \textbf{Determines response type} (question, statement, acknowledgment, confusion, follow-up question) via a rule-based classifier conditioned on agent behavior.
-    \item \textbf{Generates utterance text} using either template-based expansion or an LLM prompt (mistral medium for higher quality mode and mistral small for faster responses).
-    \item \textbf{Synthesizes gaze features} (dwell time, saccade span, entropy, etc.) conditioned on response type, with dwell serving as the primary engagement signal. In our test case, we operate with dwell time ratio.
-\end{enumerate}
-
-The response-type classifier is the core of the contingent feedback mechanism. It implements several heuristics grounded in dialogue coherence and visitor behavior:
-
-\paragraph{Exhibit mismatch detection.} If the agent's utterance mentions an exhibit different from the visitor's current AOI (extracted via keyword and semantic matching), the simulator flags a coherence violation. With 70\% probability, the response type is set to ``confusion,'' yielding low dwell (0.25--0.50) and an utterance like ``Wait, I'm looking at [current exhibit]—why are you talking about [other exhibit]?'' This operationalizes the finding that off-topic responses disrupt engagement \citep{bohus2009ravenclaw,young2013pomdp}.\\
-
-\paragraph{Question deflection detection.} If the visitor asked a question in the prior turn (\texttt{last\_user\_question} is set) and the agent chose \textsc{AskQuestion} (rather than \textsc{Explain}), the simulator detects a deflection. With 60\% probability, the response type is ``confusion,'' with utterances like ``I asked you a question—could you answer it first?'' This creates the training signal for the responsiveness reward: deflection produces low dwell and confused responses, while answering produces acknowledgment or follow-up questions (high dwell). This is consistent with findings that users disengage when systems repeatedly deflect or fail to address explicit requests \citep{jiang2015natural,su2016line}.\\
-
-\paragraph{Quality-contingent positive responses.} When the agent provides a substantive answer (detected via fact IDs \texttt{[ID]} in the utterance, or information-bearing keywords), the simulator probabilistically selects positive response types: ``acknowledgment'' (40\%, e.g., ``Oh, that's fascinating!'') or ``follow-up question'' (60\%, e.g., ``What else can you tell me about that?''). Both yield high dwell (0.75--0.95), creating a reward signal for informative, grounded explanations.\\
-
-\paragraph{Neurotic persona modulation.} The Neurotic persona has a baseline 15\% chance of confusion responses even when the agent behaves well, modeling visitors who are inherently less certain or more questioning. This adds diversity and prevents overfitting to always-positive feedback.
-
-\subsubsection{Gaze Feature Synthesis: Dwell as Contingent Engagement}
-
-Gaze dwell time is the primary engagement signal in our reward function. To ensure it provides a meaningful learning signal, we synthesize dwell values contingent on response type, creating a direct coupling between dialogue quality (as judged by the response classifier) and the engagement reward.\\
-
-For each response type, we define a base dwell range informed by empirical gaze studies in VR and museum settings \citep{Bozkir2021,Dubovi2022}:\\
-
-\begin{itemize}
-    \item \textbf{Acknowledgment / Follow-up question} (high engagement): dwell $\in [0.75, 0.95]$, sampled uniformly. These responses indicate the visitor is satisfied and curious, so gaze remains focused on the exhibit.
-    \item \textbf{Question} (moderate-high engagement): dwell $\in [0.40, 0.70]$. The visitor is engaged but seeking information, so attention is steady but not peak.
-    \item \textbf{Statement} (moderate engagement): dwell $\in [0.30, 0.60]$. Neutral observation; attention is present but less intense.
-    \item \textbf{Confusion} (low engagement): dwell $\in [0.25, 0.50]$, with an additional $0.8\times$ penalty multiplier. Confusion signals the agent has lost the visitor, so gaze wanders or drops.
-\end{itemize}
-
-These ranges were calibrated during early development to produce a reward signal with sufficient dynamic range: good behavior (answering questions, staying on-topic) yields $r^{\text{eng}}_t \approx 0.7$--0.9, while poor behavior yields $r^{\text{eng}}_t \approx 0.2$--0.4, a difference of 0.3--0.5 per turn. Over a 10-turn dialogue, this compounds to a 3--5 point difference in cumulative return, sufficient to drive policy learning.\\
-
-The dwell values are further modulated by an \textit{engagement level} tracker that decays with repeated off-topic or deflecting behavior. If the agent produces two consecutive low-quality turns (detected via exhibit mismatch or deflection), the engagement level drops by 40\%, and all subsequent dwell values are scaled down until the agent recovers with on-topic, informative responses. This implements a simple model of visitor patience: people tolerate occasional mistakes, but repeated failures lead to disengagement and early exit. Empirically, this mechanism caused poorly performing policies to receive shorter episodes (visitors mentally ``check out'' after 5--6 turns, yielding low returns), while good policies sustained engagement for 12--15 turns, maximizing coverage and conclude bonuses.\\
-
-\subsubsection{Transition Logic: Probabilistic Acceptance}
-
-As described in the transition control subsection, the simulator models transitions as probabilistic events conditioned on exhibit completion. When the agent selects \textsc{OfferTransition}, the simulator:
-
-\begin{enumerate}
-    \item Computes current exhibit completion: $c = |\mathcal{F}_{\text{current}}| / |\mathcal{F}_{\text{total}}|$.
-    \item Maps $c$ to acceptance probability $p_{\text{accept}}$ (staged: 0.20 / 0.50 / 0.80 / 0.95).
-    \item Draws a Bernoulli random variable; if success, update \texttt{current\_exhibit} to \texttt{target\_exhibit} and select a random AOI from the new exhibit; if failure, remain at current exhibit and set response type to ``confusion.''
-\end{enumerate}
-
-On success, the visitor utterance is generated via LLM with a prompt framing: ``The guide suggested visiting [target exhibit]. You're interested and ready to move.'' This yields affirmative responses like ``Sure, let's check that out!'' On failure, the prompt is: ``The guide wants to move on, but you feel you've barely learned anything here. Express confusion.'' This produces utterances like ``Wait, we just got here—can you tell me more about this first?''\\
-
-This probabilistic mechanism teaches the agent two lessons: (i) transitions are more likely to succeed after explaining multiple facts, incentivizing depth before breadth; (ii) transitions can fail even when well-timed, so the agent must handle rejection gracefully (typically by returning to \textsc{Explain}). Empirically, learned policies adapted their transition timing: early in training, agents attempted transitions after 1--2 facts (avg. success rate 35\%); by convergence, they waited for 3--4 facts (avg. success rate 78\%), and learned to explain further after rejections rather than immediately re-attempting transition.
-
-\subsubsection{Utterance Generation: Template and LLM Modes}
-
-For efficiency, the simulator operates in two modes. \textbf{Template mode} (fast) uses hand-authored templates per response type (e.g., ``What's special about the [AOI]?'' for questions, ``That's interesting!'' for acknowledgments), with slot-filling for the current AOI and exhibit. This runs in $<10$ms per turn and is used during high-throughput training. \textbf{LLM mode} (detailed) uses Mistral-small or Mistral-medium with a structured prompt that includes the agent's last utterance, current AOI, persona, and desired response type. The prompt instructs the LLM to generate a 1--2 sentence natural response that reflects the visitor's state (engaged, confused, curious). This produces more diverse and contextually appropriate utterances at the expense of longer turn times during training.\\
-
-
-
-Reinforcement learning requires an environment that provides informative feedback. For museum dialogue, this means a visitor simulator that (i) generates natural language responses, (ii) produces gaze/engagement signals, and (iii) makes both contingent on agent behavior quality. A simulator that responds uniformly regardless of agent actions would provide no learning signal for dialogue quality; conversely, one that is too sensitive or brittle would produce noisy, high-variance gradients. We aim for a middle ground: clear, interpretable response patterns that reward good behavior (answering questions, staying on-topic) and penalize poor behavior (deflection, off-topic rambling).
-
-\subsubsection{Dialogue action tokens, fluent realization, and hierarchical control}
-\label{sec:dat-templates}
-
-We use a small, fixed vocabulary of \emph{dialogue action tokens} to steer realization while keeping generation fluent. Each turn begins with a compact header that encodes: the current \texttt{OPTION} (\textsc{Explain}, \textsc{AskQuestion}, \textsc{OfferTransition}, \textsc{Conclude}), a \texttt{Subaction} (granular move under that option), the current \texttt{FOCUS} exhibit ID, and the \texttt{LAST\_UTT} (visitor’s most recent utterance). The header is paired with a lightweight \emph{context block} summarizing (i) facts already used vs.\ available from the KB (and their IDs), and (ii) simple guardrails (e.g., “only speak from listed fact IDs”). The planner then routes to a subaction-specific template which frames the next turn; the LLM realizes the surface text freely under that frame.\\
-
-Concretely, the planner’s \texttt{build\_prompt(option, subaction, \dots)} function constructs the shared context once and then dispatches to subaction handlers (e.g., \texttt{build\_explain\_new\_fact\_prompt}, \texttt{build\_ask\_opinion\_prompt}). This makes the tokens \emph{state-aware}: the same option/subaction is always grounded in the current exhibit, last user utterance, knowledge-coverage progress, and the short dialogue history. Because the header is small and human-readable, it is easy to audit and adjust; because realization is delegated to the LLM, phrasing remains natural.\\
-
-Tokens declare \emph{intent} and \emph{constraints} for the next turn within the build prompt sent by the manager to the LLM:\\
-
-\begin{itemize}[nosep,leftmargin=1.2em]
-  \item \texttt{OPTION} tells the generator \emph{why} it is speaking (teach, elicit, move, close).
-  \item \texttt{Subaction} fixes \emph{how} to carry it out (e.g., introduce a new fact vs.\ clarify a prior one).
-  \item \texttt{FOCUS} pins content to the current exhibit/entity.
-  \item \texttt{LAST\_UTT} forces a direct reply to what the visitor just said (local coherence).
-  \item The context block provides the small, structured memory the generator must respect (KB IDs, “facts used,” progression).
-\end{itemize}
-
-This split mirrors the HRL control layer: the manager selects the option (strategy) and termination decides when to switch; the planner takes the HRL decision to choose the appropriate option and subaction from there and builds the appropriate prompt and context. 
 
 \subsection{Action Execution and Grounding}
 \label{sec:action-grounding}
 
-\subsubsection{Dialogue action tokens, fluent realization, and hierarchical control}
+The hierarchical policy selects high-level options and low-level subactions, but these must be realized as concrete utterances through the LLM-based dialogue planner. This section details how subactions are executed, how knowledge-graph grounding is enforced, and how hallucination is detected and penalized.
+
+\subsubsection{Dialogue Action Tokens and Prompt Construction}
 \label{sec:dat-templates}
 
-The controller’s job is long-range: commit to a conversational strategy and decide when to switch. Realization is short-range: say the next thing naturally, on style, and in line with the strategy. Prompt-engineered dialogue action tokens sit right on that boundary. Each option in a conversational strategy set (such as \textsc{Explain}, \textsc{AskQuestion}, \textsc{OfferTransition}, \textsc{Conclude}) could have a compact prompt header—a short, human-readable template with slots—that frames the next turn. The prompt would be paired with a context vector, and a few turn-aligned state bits from intent features. The LLM then realizes the turn freely under that header.\\
+The controller's job is long-range: commit to a conversational strategy and decide when to switch. Realization is short-range: say the next thing naturally, on style, and in line with the strategy. Prompt-engineered dialogue action tokens sit right on that boundary. Each option in a conversational strategy set (such as \textsc{Explain}, \textsc{AskQuestion}, \textsc{OfferTransition}, \textsc{Conclude}) could have a compact prompt header—a short, human-readable template with slots—that frames the next turn. The prompt would be paired with a context vector, and a few turn-aligned state bits from intent features. The LLM then realizes the turn freely under that header.\\
 
-This is a pragmatic variant of plan-aware prompting that takes advantage of the fluency and flexibility of an LLM and long horizon decision making of HRL. Two strands of evidence support this. First, Conversation Routines show that reusable, option-like prompt schema with slots for context and constraints can keep generation “on plan” while preserving fluent surface language \citep{robino2025conversation}. Second, planning tokens show that small, prefixed step cues can improve the structure and reliability of reasoning, yielding stronger performance and analyses consistent with greater controllability; although these cues are learned rather than hand-templated, the control effect is analogous in spirit to our headers \citep{wang2024planning}. Taken together, these results motivate using lightweight, structured headers to shape the next turn while keeping the text natural.\\
+This is a pragmatic variant of plan-aware prompting that takes advantage of the fluency and flexibility of an LLM and long horizon decision making of HRL. Two strands of evidence support this. First, Conversation Routines show that reusable, option-like prompt schema with slots for context and constraints can keep generation ``on plan'' while preserving fluent surface language \citep{robino2025conversation}. Second, planning tokens show that small, prefixed step cues can improve the structure and reliability of reasoning, yielding stronger performance and analyses consistent with greater controllability; although these cues are learned rather than hand-templated, the control effect is analogous in spirit to our headers \citep{wang2024planning}. Taken together, these results motivate using lightweight, structured headers to shape the next turn while keeping the text natural.\\
 
 The limitation is temporal: prompt headers decide what to say \emph{now}, not \emph{when} to change tactics. That decision sits with the strategic layer. As formalized earlier in the options/SMDP view \citep{sutton1999between}, a manager samples a strategy (option), an intra-option policy realizes utterances for several turns, and a termination function hands control back when the evidence says to switch. Under this split, the header is the realization-time contract for the active option; the termination function—not an arbitrary token budget—governs when the header should change.\\
 
-Training follows the same division of labor. On the control side, actor–critic with semi-MDP returns puts credit on option choice and termination; Option–Critic supplies gradients for both the intra-option policy and the stopping rule \citep{bacon2017option}. Policy-gradient variants like PPO work well when on-policy interaction is available \citep{schulman2017ppo-openreview}; maximum-entropy off-policy methods such as SAC capture multi-modal behavior and improve sample efficiency \citep{haarnoja2018sac}; conservative Q-learning stabilizes offline learning from logs \citep{kumar2020conservative}. Dialogue studies report gains even from modest RL at the decision layer \citep{su2017sample,weisz2018sample}. In short: the controller delivers long-horizon coherence; the header keeps the generator locally faithful and fluent.\\
-
-Signals feeding the controller come from the earlier pieces. Turn-aligned intent cues summarize what the visitor is doing now and how confident that reading is; gaze dwell over the current object offers a robust, online proxy for attention. When intent shifts or dwell drops, termination should rise; when attention is steady and the intent calls for elaboration, the currently active option should persist and its header should continue to frame realization. This keeps multi-turn structure without sacrificing the flexibility that makes LLMs effective at the utterance level.\\
-
-The hierarchical policy selects high-level options and low-level subactions, but these must be realized as concrete utterances through the LLM-based dialogue planner. This subsection details how subactions are executed, how knowledge-graph grounding is enforced, and how hallucination is detected and penalized.\\
-
-For efficiency, the simulator operates in two modes. \textbf{Template mode} (fast) uses hand-authored templates per response type (e.g., ``What's special about the [AOI]?'' for questions, ``That's interesting!'' for acknowledgments), with slot-filling for the current AOI and exhibit. This runs in $<10$ms per turn and is used during high-throughput training. \textbf{LLM mode} (detailed) uses Mistral-small or Mistral-medium with a structured prompt that includes the agent's last utterance, current AOI, persona, and desired response type. The prompt instructs the LLM to generate a 1--2 sentence natural response that reflects the visitor's state (engaged, confused, curious). This produces more diverse and contextually appropriate utterances at the expense of longer turn times during training.\\
+Signals feeding the controller come from the earlier pieces. Turn-aligned intent cues summarize what the visitor is doing now and how confident that reading is; gaze dwell over the current object offers a robust, online proxy for attention. When intent shifts or dwell drops, termination should rise; when attention is steady and the intent calls for elaboration, the currently active option should persist and its header should continue to frame realization. This keeps multi-turn structure without sacrificing the flexibility that makes LLMs effective at the utterance level.
 
 \subsubsection{Prompt Construction and Subaction Contracts}
 
@@ -767,14 +771,14 @@ Available new facts:\\
 Your response (include fact ID):}
 \end{quote}
 
-The LLM (GPT-3.5-turbo) then generates a response like: ``The dove you see at the top represents the Holy Spirit [AN\_002], a common symbol in Annunciation scenes. It signifies divine presence.''
+The LLM then generates a response like: ``The dove you see at the top represents the Holy Spirit [AN\_002], a common symbol in Annunciation scenes. It signifies divine presence.''
 
 \paragraph{OfferTransition contract:} assess current exhibit coverage, identify the exhibit with the most unexplained facts, and propose moving there. The prompt builder:
 
 \begin{enumerate}
     \item Computes coverage for all exhibits: for each $e \in \mathcal{E}$, calculate $|\mathcal{F}_e^{\text{total}}| - |\mathcal{F}_e^{\text{used}}|$ (facts remaining).
     \item Selects $e^* = \arg\max_e (|\mathcal{F}_e^{\text{total}}| - |\mathcal{F}_e^{\text{used}}|)$ (exhibit with most content left).
-    \item Constructs a prompt with header: \texttt{OPTION: OfferTransition | SUBACTION: AssessAndTransition | TARGET: [e*]}.
+    \item Constructs a prompt with header: \texttt{OPTION: OfferTransition | SUBACTION: SuggestMove | TARGET: [e*]}.
     \item Includes a context block showing current exhibit, facts discussed, and target exhibit with reason: ``We've covered [N] facts here. [Target exhibit] has [M] facts we haven't discussed yet.''
 \end{enumerate}
 
@@ -782,7 +786,7 @@ Example prompt excerpt:
 
 \begin{quote}
 \texttt{OPTION: OfferTransition\\
-SUBACTION: AssessAndTransition\\
+SUBACTION: SuggestMove\\
 CURRENT: The\_Annunciation\_Triptych (3 facts discussed)\\
 TARGET: King\_Caspar (5 facts remaining)\\
 \\
@@ -791,7 +795,7 @@ Suggest moving to King\_Caspar. Mention what we've covered here and why the next
 
 The LLM generates: ``We've explored the symbolism and materials of the Annunciation Triptych. Shall we move on to King Caspar? There are some fascinating details about his representation I'd love to share.''\\
 
-This design ensures transitions are \textit{coverage-aware}: the agent doesn't just move randomly but selects the next exhibit based on unexplored content, aligning with the novelty reward and conclude bonus (which both depend on breadth of coverage). The prompt makes this reasoning explicit, both for interpretability and to guide the LLM's language (mentioning ``what we've covered'' reassures the visitor that their time was well-spent).\\
+This design ensures transitions are \textit{coverage-aware}: the agent doesn't just move randomly but selects the next exhibit based on unexplored content, aligning with the novelty reward and conclude bonus (which both depend on breadth of coverage). The prompt makes this reasoning explicit, both for interpretability and to guide the LLM's language (mentioning ``what we've covered'' reassures the visitor that their time was well-spent).
 
 \subsubsection{Fact Verification and Hallucination Detection}
 
@@ -814,6 +818,29 @@ self.facts_mentioned_per_exhibit: Dict[str, Set[str]] = {
 \end{verbatim}
 
 After each agent turn, the environment parses fact IDs, validates them, and updates the set for the current exhibit. This simple mechanism provides strong grounding guarantees: only validated facts count toward rewards and only facts from the current exhibit's knowledge subgraph are valid, preventing cross-contamination (e.g., mentioning a fact about King Caspar while discussing the Annunciation Triptych).
+
+\subsection{Combined Reward Function}
+\label{sec:combined-reward}
+
+The complete reward function combines all components into a single per-turn signal:
+
+\[
+R_t = r^{\text{eng}}_t + r^{\text{nov}}_t + r^{\text{resp}}_t + r^{\text{trans}}_t + r^{\text{conclude}}_t
+\]
+
+where:
+
+\begin{itemize}
+    \item $r^{\text{eng}}_t = \text{dwell}_t$: Engagement reward equals the visitor's gaze dwell time on the current exhibit. This is reduced by simulator-level penalties for transition spam (repeated transition offers without visitor acceptance).
+    
+    \item $r^{\text{nov}}_t = 0.15 \times |\mathcal{F}^{\text{new}}_t|$: Novelty reward scales with the number of new, validated facts mentioned at turn $t$ (scale factor $\alpha = 0.15$).
+    
+    \item $r^{\text{resp}}_t \in \{+0.25, -0.15, 0\}$: Responsiveness reward incentivizes answering visitor questions ($+0.25$) and penalizes deflection with counter-questions ($-0.15$).
+
+    \item $r^{\text{conclude}}_t = 0.2 \times |\{e \in \mathcal{E} : |\mathcal{F}_e^{\text{used}}| > 0\}|$ if \textsc{Conclude} chosen, else $0$: Conclude bonus rewards coverage breadth (0.2 per exhibit covered).
+\end{itemize}
+
+This reward structure balances immediate engagement signals (dwell time), content quality (novelty, responsiveness), and strategic behavior (transition control, coverage breadth). The components operate at different timescales: engagement and novelty are turn-level, responsiveness is turn-pair dependent, transition control is option-level, and the conclude bonus is session-level. Together, they guide the agent toward informative, engaging, and well-paced dialogue that explores diverse museum content.
 
 \subsection{Action Masking and Strategic Constraints}
 \label{sec:action-masking-detail}
@@ -847,18 +874,14 @@ These masks are implemented via \texttt{\_get\_available\_subactions(option)}, w
 
 Masking serves two purposes. First, it provides \textit{safety}: the agent cannot produce structurally nonsensical moves (e.g., repeating a fact that was never mentioned). Second, it provides \textit{pedagogical guidance}: by disabling \textit{ExplainNewFact} when the exhibit is exhausted, we force the agent to either ask questions, transition, or conclude—preventing it from ``spinning'' on the same exhibit indefinitely. Studies of hierarchical RL show that task-structure-aware masking improves both sample efficiency and final performance by pruning the action space to semantically valid choices \citep{huang2020action,tang2021discovering}.
 
-\subsection{Summary: From Theory to Trainable System}
 
-The extensions documented in this section operationalize the formal hierarchical framework into a practical, trainable dialogue agent. The reward function now captures three layers of objectives: moment-to-moment engagement (dwell), cooperative information exchange (responsiveness, transition pacing), and session-level pedagogical goals (coverage, systematic conclude). The simulator provides contingent feedback that reflects realistic visitor behavior—rewarding good dialogue moves with high engagement and positive responses, penalizing poor moves with confusion and disengagement. Grounding mechanisms (fact verification, prompt contracts, action masking) ensure the agent stays faithful to the knowledge base and produces structurally coherent dialogue strategies.\\
+\section{Hypotheses}
 
-Together, these mechanisms enable the hierarchical policy to learn long-horizon conversational strategies from online interaction: the manager learns which options to deploy and when to switch based on engagement and intent signals, while intra-option policies learn how to realize those strategies through structured prompting of the LLM. The result is a system that balances the flexibility and fluency of large language models with the coherence and goal-directedness of learned hierarchical control.
-
-\section{Hypotheses} 
 The system couples an option-based controller with actor–critic learning and compact prompt headers. The hypotheses below mirror that design: strategy and timing at the top; wording and grounding at the surface.
 
 \paragraph{Hypothesis 1}
 
-An option-based manager will outperform a flat policy on long-horizon objectives. Concretely, we expect higher episodic return with lower variance, longer coherent stretches under a chosen strategy, and fewer needless switches between strategies when both are trained under the same rewards and prompts. 
+An option-based manager will outperform a flat policy on long-horizon objectives. Concretely, we expect higher episodic return with lower variance, longer coherent stretches under a chosen strategy, and fewer needless switches between strategies when both are trained under the same rewards and prompts.
 
 \paragraph{Hypothesis 2}
 
@@ -873,6 +896,17 @@ Slot-filled prompt headers tied to the active option will improve the next turn�
 
 With semi-Markov returns, actor–critic will train the hierarchy smoothly. Relative to a flat actor–critic (no options) and a fixed-duration hierarchy (one-turn options), we expect steadier learning curves (fewer spikes), smaller update magnitudes, and faster time-to-target reward, while preserving sensible option lengths.
 
+\paragraph{Hypothesis 5}
+
+Replacing DialogueBERT’s full 149-d state (Section~\ref{sec:state-representation}) with a low-dimensional dialogue-act trace (one-hot over recent act types plus option usage) will reduce performance. If lexical semantics are essential, the ablated state should show lower return, poorer coverage, and weaker responsiveness relative to the full embedding setup.
+
+\paragraph{Hypothesis 6}
+
+Removing the transition-acceptance shaping term from the reward (Section~\ref{sec:reward-design})—i.e., training without the probabilistic success bonus/penalty—will degrade pacing. Without this signal, we expect earlier, less-informed transitions, lower dwell prior to transitions, and reduced exhibit coverage compared to the shaped variant.
+
+\paragraph{Hypothesis 7}
+
+Using DialogueBERT's turn-aware and role-aware embeddings for multi-turn dialogue context ($\mathbf{c}_t$) while keeping standard BERT for single-utterance intent ($\mathbf{i}_t$) will improve dialogue coherence and context-dependent responses. Since $\mathbf{c}_t$ encodes the last 3 exchanges, DialogueBERT's hierarchical structure should better capture turn relationships and speaker roles, leading to more contextually appropriate responses. We expect higher dialogue coherence scores, better handling of multi-turn references, improved responsiveness to context-dependent questions, and reduced contradictions compared to using standard BERT for both components.
 
 \section{Evaluation/Experimental Design}
 
@@ -890,6 +924,15 @@ We test whether headers do what they claim by checking outcomes against their co
 
 \textbf{H4: training stability with actor–critic.}
 We track learning curves (smoothed return vs.\ updates), update magnitudes (\(\ell_2\)-norm of parameter steps, KL per update), time-to-target (episodes to reach a fixed return), and option duration sanity (median \(\tau\) per option). The hierarchical actor–critic should show smoother curves (fewer large spikes), smaller average update norms, and faster time-to-target than the flat actor–critic, while keeping sensible option lengths.\\
+
+\textbf{H5: semantic state ablation.}
+We train a variant whose observation replaces DialogueBERT embeddings with a compact dialogue-act summary (one-hot of the last 3 utterance act labels plus option usage counts). Metrics: episodic return, coverage (\(|\mathcal{F}_{\text{used}}|/|\mathcal{F}_{\text{total}}|\)), dwell averages, and act-consistency (agreement between predicted option/subaction and realized utterance classified by the act classifier). We also report responsiveness rate (fraction of visitor questions answered with new facts). Paired seeds against the full state allow Wilcoxon tests; large drops support H5.\\
+
+\textbf{H6: transition shaping ablation.}
+We compare the full reward to a version without the transition sufficiency bonus and insufficiency penalty. Metrics centre on pacing: transition success rate, mean dwell in the turn preceding a transition, number of facts shared per exhibit before leaving, and total coverage/return. We also track confusion responses triggered after transitions as a proxy for premature moves. Paired seeds and paired \(t\)-tests quantify the effect of removing the shaping term.\\
+
+\textbf{H7: hybrid DialogueBERT for multi-turn context.}
+We compare two variants: (i) baseline with standard BERT for both $\mathbf{i}_t$ and $\mathbf{c}_t$; (ii) hybrid with DialogueBERT (turn/role embeddings) for $\mathbf{c}_t$ and standard BERT for $\mathbf{i}_t$. Metrics focus on multi-turn understanding: dialogue coherence (measured via reference resolution accuracy—can the agent correctly interpret pronouns and ellipsis that refer to earlier turns?); context-dependent question answering (fraction of questions that require multi-turn context answered correctly); turn-aware response appropriateness (human evaluation or automated classifier rating responses as contextually appropriate vs.\ generic); and contradiction rate (instances where agent contradicts earlier statements). We also track embedding similarity between consecutive turns to measure context continuity. Paired seeds and paired $t$-tests quantify the benefit of DialogueBERT's turn/role embeddings for multi-turn context encoding.\\
 
 
 \section{Results}

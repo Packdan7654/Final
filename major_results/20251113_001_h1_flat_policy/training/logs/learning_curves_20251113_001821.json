@@ -1,0 +1,11 @@
+{
+  "episode_returns": [],
+  "value_estimates": [],
+  "policy_entropy": [],
+  "value_losses": [],
+  "policy_losses": [],
+  "termination_losses": [],
+  "advantages": [],
+  "smoothed_returns": [],
+  "return_stds": []
+}

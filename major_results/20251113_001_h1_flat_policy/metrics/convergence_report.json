@@ -1,0 +1,9 @@
+{
+  "episode": null,
+  "samples": null,
+  "time_seconds": null,
+  "window_mean": null,
+  "window_std": null,
+  "criterion": "sliding_window",
+  "threshold": 0.05
+}

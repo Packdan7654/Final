@@ -1,0 +1,31 @@
+Validation Report for: 20251113_001_h1_flat_policy
+============================================================
+
+TRAINING METRICS:
+  ✓ metrics/training_metrics.json
+  ✓ metrics/rl_metrics.json
+  ✓ metrics/learning_curves.json
+  ✓ metrics/convergence_report.json
+  ✓ training/logs/metrics_tracker_*.json
+  ✓ training/logs/rl_metrics_*.json
+  ✓ training/logs/learning_curves_*.json
+  ✓ training/logs/convergence_report_*.json
+  ✓ training/metadata.json
+Status: ✓ All present
+
+EVALUATION METRICS:
+  ✗ evaluation_metrics_exist
+  ✗ evaluation/h1_metrics.json
+Status: ✗ Missing items
+
+VISUALIZATIONS:
+  Basic visualizations: 0
+  ✗ visualizations/basic/learning_curve.png
+  ✗ visualizations/basic/convergence_analysis.png
+  ✗ visualizations/basic/rl_metrics_summary.png
+
+CHECKPOINTS:
+  ✗ No checkpoints found
+
+============================================================
+OVERALL STATUS: ⚠ INCOMPLETE

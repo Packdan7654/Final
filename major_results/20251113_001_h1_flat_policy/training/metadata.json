@@ -1,0 +1,12 @@
+{
+  "experiment_number": 1,
+  "experiment_name": "h1_flat_policy",
+  "hypothesis": "H1",
+  "variant": "flat_policy",
+  "timestamp": "2025-11-13T00:18:19.619141",
+  "episodes": 500,
+  "max_turns_per_episode": 40,
+  "device": "cuda",
+  "learning_rate": 0.0001,
+  "gamma": 0.99
+}

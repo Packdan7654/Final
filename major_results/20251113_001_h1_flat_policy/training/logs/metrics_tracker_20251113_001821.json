@@ -1,0 +1,18 @@
+{
+  "episode_returns": [],
+  "episode_lengths": [],
+  "episode_coverage": [],
+  "episode_facts": [],
+  "episode_option_usage": [],
+  "option_counts": {},
+  "flat_action_counts": {},
+  "option_durations": {},
+  "option_transitions": {},
+  "value_losses": [],
+  "policy_losses": [],
+  "entropies": [],
+  "value_estimates": [],
+  "advantages": [],
+  "termination_losses": [],
+  "summary": {}
+}

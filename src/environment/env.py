@@ -57,22 +57,22 @@ class MuseumDialogueEnv(gym.Env):
         self.max_turns = max_turns  # Maximum turns per episode
         
         # ===== REWARD PARAMETERS (configurable via environment variables) =====
-        # Default values match paper baseline (per paper.tex Section 4.7, line 637)
-        # Note: Per paper, r^eng_t = dwell_t and r^nov_t = 0.15 × |new facts| (no weights)
+        # Default values (per paper.tex Section 4.7, line 637)
+        # Note: r^eng_t = dwell_t and r^nov_t = α × |new facts| (default α=0.25, increased to favor new facts)
         
         # Engagement: r^eng_t = dwell_t (no weight, just dwell time)
         # Note: We keep w_engagement for backward compatibility but it should be 1.0
         self.w_engagement = float(os.environ.get("HRL_W_ENGAGEMENT", "1.0"))
         
-        # Novelty: r^nov_t = α × |new facts| where α = 0.15 (per paper.tex line 637)
+        # Novelty: r^nov_t = α × |new facts| where α = 1.0 (increased from 0.25 to strongly favor new facts)
         # This is the scale factor α, not a separate weight
-        self.novelty_per_fact = float(os.environ.get("HRL_NOVELTY_PER_FACT", "0.15"))
+        self.novelty_per_fact = float(os.environ.get("HRL_NOVELTY_PER_FACT", "1.0"))
         
         # Responsiveness reward scale (per paper.tex Section 4.7)
         self.w_responsiveness = float(os.environ.get("HRL_W_RESPONSIVENESS", "0.25"))
         
-        # Conclude bonus scale (per paper.tex Section 4.7)
-        self.w_conclude = float(os.environ.get("HRL_W_CONCLUDE", "0.2"))
+        # Conclude bonus scale (per paper.tex Section 4.7) - increased to encourage conclusion
+        self.w_conclude = float(os.environ.get("HRL_W_CONCLUDE", "0.5"))
         
         # Transition insufficiency penalty parameter (per paper.tex Section 4.7)
         # Note: Transition spam is handled at simulator level (reduces dwell time)
@@ -162,8 +162,9 @@ class MuseumDialogueEnv(gym.Env):
         self._last_user_response_type = "statement"  # Track simulator's response type (question, confusion, etc.)
         
         # Dialogue history for context
-        self.dialogue_history = []  # List of (role, utterance) tuples
+        self.dialogue_history = []  # List of (role, utterance, turn_number) tuples
         self.max_dialogue_history = 6  # Keep last 6 utterances (3 exchanges)
+        self.dialogue_turn_counter = 0  # Track turn number for DialogueBERT
         
         # SIMPLE FACT TRACKING: exhibit_name -> set of fact IDs mentioned
         self.facts_mentioned_per_exhibit: Dict[str, Set[str]] = {ex: set() for ex in self.exhibit_keys}
@@ -181,6 +182,9 @@ class MuseumDialogueEnv(gym.Env):
         # Transition insufficiency tracking (per paper.tex Section 4.7)
         # Track successful transitions and turns since for 3-turn exemption rule
         self.successful_transition_turns = []  # List of turn numbers when successful transitions occurred
+        
+        # Transition frequency tracking (for spam detection)
+        self.recent_transition_turns = []  # Track transitions in last N turns
         
         # Note: Trend tracking removed to match paper specification
         
@@ -279,9 +283,13 @@ class MuseumDialogueEnv(gym.Env):
         # Engagement reward: r^eng_t = dwell_t (per paper.tex line 637)
         engagement_reward = max(0.0, self.dwell) * self.w_engagement
         
-        # Novelty reward: r^nov_t = 0.15 × |new facts at t| (per paper.tex line 637)
-        # No separate weight - the 0.15 is the scale factor α itself
+        # Novelty reward: r^nov_t = α × |new facts at t| where α = novelty_per_fact (default: 1.0)
+        # No separate weight - the scale factor α itself controls the reward magnitude
         novelty_reward = len(new_fact_ids) * self.novelty_per_fact
+        
+        # Diagnostic logging for novelty reward (if verbose)
+        if verbose and len(new_fact_ids) > 0:
+            print(f"📚 NOVELTY REWARD: +{novelty_reward:.3f} ({len(new_fact_ids)} new fact(s): {new_fact_ids[:3]})")
         
         # Responsiveness reward: Incentivize answering visitor questions (Grice's Maxim of Quantity)
         responsiveness_reward = 0.0
@@ -309,9 +317,11 @@ class MuseumDialogueEnv(gym.Env):
             if verbose:
                 print(f"🎯 CONCLUDE BONUS: +{conclude_bonus:.2f} ({exhibits_with_facts} exhibits covered)")
         
-        # Transition insufficiency penalty (per paper.tex Section 4.7: Transition Control)
+        # Transition insufficiency penalty and reward (per paper.tex Section 4.7: Transition Control)
         # Note: Transition spam is handled at simulator level (reduces dwell time)
         transition_insufficiency_penalty = 0.0
+        transition_sufficiency_reward = 0.0  # Reward for transitions with sufficient facts
+        transition_frequency_penalty = 0.0  # Penalty for transition spam
         
         if option == "OfferTransition":
             current_exhibit = self._get_current_exhibit()
@@ -325,20 +335,31 @@ class MuseumDialogueEnv(gym.Env):
             # Check if we're exempt due to recent successful transition
             is_exempt = len(self.successful_transition_turns) > 0
             
-            # Transition insufficiency penalty: scales with fewer facts
-            # The fewer facts, the bigger the penalty
-            # Base penalty at 0 facts, scales down as facts increase
+            # Track recent transitions for spam detection (last 5 turns)
+            self.recent_transition_turns = [t for t in self.recent_transition_turns 
+                                          if (self.turn_count + 1 - t) <= 5]
+            self.recent_transition_turns.append(self.turn_count + 1)
+            recent_transition_count = len(self.recent_transition_turns)
+            
+            # Transition insufficiency penalty: STRONGER penalties for fewer facts
+            # The fewer facts, the bigger the penalty (more graduated scale)
             if facts_shared_at_current == 0:
                 # Maximum penalty when no facts shared
                 penalty_scale = 1.0
             elif facts_shared_at_current == 1:
-                # Medium-high penalty for only 1 fact
-                penalty_scale = 0.8
+                # High penalty for only 1 fact (increased from 0.8)
+                penalty_scale = 0.9
+            elif facts_shared_at_current == 2:
+                # Medium penalty for 2 facts (NEW - previously no penalty)
+                penalty_scale = 0.5
+            elif facts_shared_at_current == 3:
+                # Low penalty for 3 facts (NEW)
+                penalty_scale = 0.2
             else:
-                # No penalty for 2+ facts
+                # No penalty for 4+ facts
                 penalty_scale = 0.0
             
-            # Apply penalty only if:
+            # Apply insufficiency penalty only if:
             # 1. We have insufficient facts (penalty_scale > 0)
             # 2. We're NOT exempt due to successful transition in last 3 turns
             if penalty_scale > 0 and not is_exempt:
@@ -347,16 +368,35 @@ class MuseumDialogueEnv(gym.Env):
                     print(f"⚠️  TRANSITION INSUFFICIENCY PENALTY: {transition_insufficiency_penalty:.2f} (only {facts_shared_at_current} fact(s) at {current_exhibit}, scale={penalty_scale:.1f})")
             elif is_exempt and verbose:
                 print(f"✅ TRANSITION INSUFFICIENCY EXEMPT: Successful transition in last 3 turns (turns since: {[self.turn_count + 1 - t for t in self.successful_transition_turns]})")
+            
+            # Transition sufficiency REWARD: Reward transitions with sufficient facts (3+)
+            # This encourages waiting for enough facts before transitioning
+            if facts_shared_at_current >= 3 and penalty_scale == 0.0:
+                # Reward transitions done correctly (3+ facts shared)
+                transition_sufficiency_reward = 0.15  # Small positive reward
+                if verbose:
+                    print(f"✅ TRANSITION SUFFICIENCY REWARD: +{transition_sufficiency_reward:.2f} ({facts_shared_at_current} facts shared - good timing!)")
+            
+            # Transition frequency penalty: Penalize transition spam
+            # If more than 2 transitions in last 5 turns, apply penalty
+            if recent_transition_count > 2:
+                frequency_penalty_scale = (recent_transition_count - 2) * 0.1  # -0.1 per extra transition
+                transition_frequency_penalty = -0.1 * frequency_penalty_scale
+                if verbose:
+                    print(f"⚠️  TRANSITION FREQUENCY PENALTY: {transition_frequency_penalty:.2f} ({recent_transition_count} transitions in last 5 turns)")
         
         # Clear this turn's tracking for next turn
         facts_shared_count_this_turn = len(new_fact_ids)
         self.facts_mentioned_this_turn = set()
         
         # Total reward: R_t = r^eng + r^nov + r^resp + r^trans + r^conclude (per paper.tex line 634)
-        # Note: r^eng_t = dwell_t, r^nov_t = 0.15 × |new facts|, no weights per paper
+        # Note: r^eng_t = dwell_t, r^nov_t = α × |new facts| (default α=1.0), no additional weights
         # Transition insufficiency is explicit reward component (per paper.tex Section 4.7)
         # Transition spam is handled at simulator level (reduces dwell time)
-        step_reward = engagement_reward + novelty_reward + responsiveness_reward + conclude_bonus + transition_insufficiency_penalty
+        # Transition sufficiency reward encourages good timing (3+ facts)
+        # Transition frequency penalty discourages spam
+        step_reward = (engagement_reward + novelty_reward + responsiveness_reward + conclude_bonus + 
+                      transition_insufficiency_penalty + transition_sufficiency_reward + transition_frequency_penalty)
         
         # Store current dwell for NEXT turn's reward
         self._previous_dwell = self.dwell
@@ -387,6 +427,8 @@ class MuseumDialogueEnv(gym.Env):
             "reward_responsiveness": responsiveness_reward,
             "reward_conclude": conclude_bonus,
             "reward_transition_insufficiency": transition_insufficiency_penalty,
+            "reward_transition_sufficiency": transition_sufficiency_reward,
+            "reward_transition_frequency": transition_frequency_penalty,
             "dwell": self.dwell,
             "total_reward": step_reward,
             "session_reward": self.session_reward,
@@ -422,21 +464,25 @@ class MuseumDialogueEnv(gym.Env):
         Where:
         - f_t: focus vector (one-hot over exhibits + no-focus)
         - h_t: dialogue history (exhibits explained + action counts)
-        - i_t: projected intent embedding = P * DialogueBERT(u_t, role="user")
-        - c_t: projected dialogue context = P * (1/3) * Σ DialogueBERT(recent_utterances)
+        - i_t: projected intent embedding = P * DialogueBERT(u_t, role="user", turn_number)
+        - c_t: projected dialogue context = P * DialogueBERT(recent_utterances with turn/role)
+        
+        DialogueBERT includes turn and role embeddings:
+        - Turn embeddings: Track turn position in dialogue (0-indexed)
+        - Role embeddings: Distinguish user (0) vs system/agent (1)
         
         Projection: 768-d -> 64-d using fixed matrix P
         """
         
-        # 1. Focus vector f_t (9-d)
+        # 1. Focus vector f_t (n_exhibits + 1-d, e.g., 6-d for 5 exhibits)
         focus_snapshot = np.zeros(self.n_exhibits + 1)
         if self.focus > 0:
             focus_snapshot[self.focus - 1] = 1.0
         else:
             focus_snapshot[-1] = 1.0  # No focus
         
-        # 2. Dialogue history vector h_t (12-d) - Updated per paper spec
-        # First 8: exhibit completion ratios (0-1 for facts shared per exhibit)
+        # 2. Dialogue history vector h_t (n_exhibits + 4-d, e.g., 9-d for 5 exhibits)
+        # First n_exhibits: exhibit completion ratios (0-1 for facts shared per exhibit)
         # Next 4: option usage (normalized counts)
         history = np.zeros(self.n_exhibits + len(self.options))
 
@@ -454,10 +500,23 @@ class MuseumDialogueEnv(gym.Env):
             history[self.n_exhibits + i] = self.actions_used[opt] / total_actions
         
         # 3. Intent embedding i_t (64-d projected from 768-d)
-        # Get DialogueBERT embedding: e_t = DialogueBERT(u_t, role="user")
+        # Get DialogueBERT embedding: e_t = DialogueBERT(u_t, role="user", turn_number)
         intent_recognizer = get_dialoguebert_recognizer()
+        # Get turn number from last user utterance in dialogue history
+        # Find the most recent user utterance's turn number
+        current_turn = 0
+        if self.dialogue_history:
+            # Look for last user utterance in history
+            for entry in reversed(self.dialogue_history):
+                if len(entry) >= 3 and entry[0] == "user":
+                    current_turn = entry[2]  # Get turn_number
+                    break
+            # If no user utterance found, use current counter
+            if current_turn == 0 and self.dialogue_turn_counter > 0:
+                current_turn = self.dialogue_turn_counter
+        
         intent_embedding_768 = intent_recognizer.get_intent_embedding(
-            self.last_user_utterance, role="user"
+            self.last_user_utterance, role="user", turn_number=current_turn
         )
         
         # Apply projection: i_t = P * e_t
@@ -482,10 +541,11 @@ class MuseumDialogueEnv(gym.Env):
         self._last_dialogue_context = dialogue_context_768.astype(np.float32)
         
         # Concatenate into observation vector: [f_t, h_t, i_t, c_t]
-        # Total: 9 + 12 + 64 + 64 = 149-d
+        # Total: (n_exhibits + 1) + (n_exhibits + 4) + 64 + 64
+        # Example: For 5 exhibits → 6 + 9 + 64 + 64 = 143-d
         obs = np.concatenate([
-            focus_snapshot,        # 9-d
-            history,               # 12-d
+            focus_snapshot,        # (n_exhibits + 1)-d
+            history,               # (n_exhibits + 4)-d
             intent_embedding_64,   # 64-d
             dialogue_context_64    # 64-d
         ]).astype(np.float32)
@@ -547,12 +607,20 @@ class MuseumDialogueEnv(gym.Env):
         if total_facts_mentioned < self.min_facts_before_conclude:
             if "Conclude" in available_options:
                 available_options.remove("Conclude")
+                # Diagnostic logging
+                import os
+                if os.environ.get('HRL_VERBOSE', '0') == '1':
+                    print(f"🔒 CONCLUDE MASKED: Only {total_facts_mentioned} facts shared (need {self.min_facts_before_conclude})")
         
         # Check if enough exhibits have been covered
         exhibits_covered = sum(1 for ids in self.facts_mentioned_per_exhibit.values() if len(ids) > 0)
         if exhibits_covered < self.min_exhibits_before_conclude:
             if "Conclude" in available_options:
                 available_options.remove("Conclude")
+                # Diagnostic logging
+                import os
+                if os.environ.get('HRL_VERBOSE', '0') == '1':
+                    print(f"🔒 CONCLUDE MASKED: Only {exhibits_covered} exhibits covered (need {self.min_exhibits_before_conclude})")
         
         return available_options
 
@@ -735,7 +803,9 @@ Keep responses 2-3 sentences."""
             utterance: The text utterance
         """
         if utterance and utterance.strip():
-            self.dialogue_history.append((role, utterance))
+            # Increment turn counter for each utterance
+            self.dialogue_turn_counter += 1
+            self.dialogue_history.append((role, utterance, self.dialogue_turn_counter))
             # Keep only recent utterances
             if len(self.dialogue_history) > self.max_dialogue_history:
                 self.dialogue_history = self.dialogue_history[-self.max_dialogue_history:]
@@ -798,10 +868,22 @@ Keep responses 2-3 sentences."""
             self._prev_dialogue_context = prev_context.astype(np.float32)
             
             # Compute new embeddings with current utterance
+            # Find the most recent user utterance's turn number
+            current_turn = 0
+            if self.dialogue_history:
+                # Look for last user utterance in history
+                for entry in reversed(self.dialogue_history):
+                    if len(entry) >= 3 and entry[0] == "user":
+                        current_turn = entry[2]  # Get turn_number
+                        break
+                # If no user utterance found, use current counter
+                if current_turn == 0 and self.dialogue_turn_counter > 0:
+                    current_turn = self.dialogue_turn_counter
+            
             intent_embedding = recognizer.get_intent_embedding(
-                self.last_user_utterance, role="user"
+                self.last_user_utterance, role="user", turn_number=current_turn
             )
-            # dialogue_history already contains (role, utterance) tuples
+            # dialogue_history already contains (role, utterance, turn_number) tuples
             dialogue_context = recognizer.get_dialogue_context(
                 self.dialogue_history, max_turns=3
             )

@@ -39,12 +39,12 @@ class ActorCriticTrainer:
     def __init__(
         self,
         agent,
-        learning_rate: float = 3e-4,
+        learning_rate: float = 1e-4,  # Reduced from 3e-4 for stability
         gamma: float = 0.99,
         value_loss_coef: float = 0.5,
         entropy_coef: float = 0.01,
         termination_reg: float = 0.01,
-        max_grad_norm: float = 0.5,
+        max_grad_norm: float = 1.0,  # Increased from 0.5 for stability
         device: str = 'cpu'
     ):
         """
@@ -192,8 +192,28 @@ class ActorCriticTrainer:
         # Optimization step
         self.optimizer.zero_grad()
         total_loss.backward()
-        torch.nn.utils.clip_grad_norm_(self.agent.network.parameters(), self.max_grad_norm)
+        
+        # Calculate gradient norm BEFORE clipping (for tracking)
+        grad_norm = torch.nn.utils.clip_grad_norm_(self.agent.network.parameters(), self.max_grad_norm)
+        
+        # Store parameter values before update (for update norm calculation)
+        param_values_before = {}
+        for name, param in self.agent.network.named_parameters():
+            if param.requires_grad:
+                param_values_before[name] = param.data.clone()
+        
         self.optimizer.step()
+        
+        # Calculate parameter update norm (L2 norm of parameter changes)
+        update_norm = 0.0
+        for name, param in self.agent.network.named_parameters():
+            if param.requires_grad and name in param_values_before:
+                param_update = param.data - param_values_before[name]
+                update_norm += param_update.norm(2).item() ** 2
+        update_norm = update_norm ** 0.5
+        
+        # Calculate TD errors (advantages are TD errors)
+        td_errors = advantages.cpu().numpy().tolist()
         
         # Statistics
         stats = {
@@ -202,11 +222,16 @@ class ActorCriticTrainer:
             'entropy': (option_entropy + subaction_entropy).item(),
             'termination_loss': termination_loss.item(),
             'mean_advantage': advantages.mean().item(),
-            'mean_value': current_values.mean().item()
+            'mean_value': current_values.mean().item(),
+            # Enhanced RL metrics
+            'gradient_norm': grad_norm.item(),
+            'update_norm': update_norm,
+            'td_error': td_errors  # List of TD errors for this batch
         }
         
         for k, v in stats.items():
-            self.stats[k].append(v)
+            if k != 'td_error':  # Don't append list to stats list
+                self.stats[k].append(v)
         
         return stats
     

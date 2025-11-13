@@ -87,7 +87,13 @@ def _build_enhanced_context_section(ex_id: Optional[str], last_utt: str, facts_a
         # Get last 4 utterances (2 full exchanges: agent->user->agent->user)
         recent_context = dialogue_history[-4:] if len(dialogue_history) > 4 else dialogue_history
         context_parts.append("RECENT CONVERSATION:")
-        for i, (role, utterance) in enumerate(recent_context, 1):
+        for i, utterance_tuple in enumerate(recent_context, 1):
+            # Handle both (role, utterance) and (role, utterance, turn_number) formats
+            if len(utterance_tuple) >= 2:
+                role, utterance = utterance_tuple[0], utterance_tuple[1]
+            else:
+                continue  # Skip invalid entries
+            
             role_label = "🤖 AGENT" if role == "agent" else "👤 VISITOR"
             context_parts.append(f'  {i}. {role_label}: "{utterance}"')
             

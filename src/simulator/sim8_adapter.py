@@ -118,6 +118,23 @@ class Sim8Simulator:
         # NEW: Disengagement tracking
         self.engagement_level = 1.0  # 0.0 = fully disengaged, 1.0 = fully engaged
         self.off_topic_strikes = 0  # Track consecutive off-topic responses
+
+        # Question pacing reward parameters (make well-spaced questions boost engagement)
+        self.turns_since_last_question: int = 999
+        self.question_bonus_cooldown: int = 3  # Require at least this many non-question turns
+        self.question_bonus_boost: float = 1.6  # Large multiplier when spacing respected
+        self.question_penalty_multiplier: float = 0.85  # Slight penalty when spammed
+
+        # Explain spam deterrent when exhibit already complete
+        self.consecutive_explains_on_completed = 0
+        self.explain_completion_threshold = 0.98  # Treat >=98% as complete to allow rounding noise
+        self.explain_spam_penalty_step = 0.2  # Each extra spam turn reduces multiplier by 0.2
+        self.explain_spam_min_multiplier = 0.35  # Floor for multiplier impact
+        self.explain_spam_recovery_rate = 0.05  # Recover engagement when agent switches strategies
+        
+        # Dwell stagnation tracking: penalty increases with time spent at same exhibit
+        self.turns_at_current_exhibit = 0
+        self.previous_exhibit = None
     
     def _init_from_knowledge_graph(self, knowledge_graph):
         """Build ALL mappings from knowledge graph (single source of truth)"""
@@ -175,6 +192,15 @@ class Sim8Simulator:
         self.exhibits_visited = set()
         self.max_history_length = 8
 
+        # Reset question pacing trackers
+        self.turns_since_last_question = self.question_bonus_cooldown
+        self.consecutive_explains_on_completed = 0
+        self.engagement_level = 1.0
+        
+        # Reset exhibit duration tracking
+        self.turns_at_current_exhibit = 0
+        self.previous_exhibit = self.current_exhibit
+
     def get_current_aoi(self) -> str:
         """Return current exhibit (for env focus) to match previous simulator contract."""
         return self.current_exhibit or self.exhibits[0]
@@ -192,6 +218,9 @@ class Sim8Simulator:
         # Store agent's utterance and option for context tracking
         self.last_agent_utterance = agent_utterance
         self.last_agent_option = agent_option
+
+        # Update spacing tracker for AskQuestion option (counts non-question turns)
+        self.turns_since_last_question = min(self.turns_since_last_question + 1, 1000)
         
         # VERY RARE silence (1% only, prevents Turn 2 silence issue)
         # Only in first turn OR if too many consecutive silences
@@ -272,8 +301,19 @@ class Sim8Simulator:
         
         # Update session mapping
         self.current_aoi = detected_aoi
+        previous_exhibit = self.current_exhibit
         if detected_aoi in self.aoi_to_exhibit:
             self.current_exhibit = self.aoi_to_exhibit[detected_aoi]
+        
+        # Track turns at current exhibit (for dwell stagnation penalty)
+        if self.current_exhibit == previous_exhibit and self.current_exhibit is not None:
+            # Same exhibit - increment counter
+            self.turns_at_current_exhibit += 1
+        else:
+            # Exhibit changed - reset counter
+            self.turns_at_current_exhibit = 1
+            self.previous_exhibit = self.current_exhibit
+        
         self.aoi_usage_count[detected_aoi] = self.aoi_usage_count.get(detected_aoi, 0) + 1
         self.seen_aois.add(detected_aoi)
 
@@ -297,18 +337,60 @@ class Sim8Simulator:
         self._last_sim_llm_time = time.time() - sim_start
         
         # STEP 4: Track question spam and transition spam (reduces engagement/dwell)
+        import os
+        verbose = os.environ.get('HRL_VERBOSE', '0') == '1'
+
+        engagement_adjust_multiplier = 1.0
         if agent_option == "AskQuestion":
             self.consecutive_ask_questions += 1
+            spacing_ok = self.turns_since_last_question >= self.question_bonus_cooldown
+            if spacing_ok:
+                question_multiplier = self.question_bonus_boost
+                if verbose:
+                    print(f"✨ QUESTION BOOST: Engagement multiplier {question_multiplier:.2f} (spacing {self.turns_since_last_question} turns)", flush=True)
+            else:
+                question_multiplier = self.question_penalty_multiplier
+                self.engagement_level = max(0.3, self.engagement_level * 0.95)
+                if verbose:
+                    print(f"⚠️ QUESTION TOO SOON: Applying multiplier {question_multiplier:.2f} (spacing {self.turns_since_last_question} turns)", flush=True)
+            engagement_adjust_multiplier *= question_multiplier
+            self.turns_since_last_question = 0
         else:
             self.consecutive_ask_questions = 0
+            # Allow engagement level to recover gradually when not spamming questions
+            if self.turns_since_last_question >= self.question_bonus_cooldown:
+                self.engagement_level = min(1.0, self.engagement_level + 0.03)
         
+        explain_spam_multiplier = 1.0
+        if agent_option == "Explain":
+            if current_exhibit_completion >= self.explain_completion_threshold:
+                self.consecutive_explains_on_completed += 1
+                penalty = 1.0 - (self.explain_spam_penalty_step * self.consecutive_explains_on_completed)
+                explain_spam_multiplier = max(self.explain_spam_min_multiplier, penalty)
+                self.engagement_level = max(0.2, self.engagement_level * explain_spam_multiplier)
+                if verbose:
+                    completion_pct = current_exhibit_completion * 100.0
+                    print(
+                        f"⚠️ EXPLAIN SPAM: Completion {completion_pct:.1f}% → multiplier {explain_spam_multiplier:.2f} "
+                        f"(streak {self.consecutive_explains_on_completed})",
+                        flush=True
+                    )
+            else:
+                self.consecutive_explains_on_completed = 0
+        else:
+            if self.engagement_level < 1.0:
+                self.engagement_level = min(1.0, self.engagement_level + self.explain_spam_recovery_rate)
+            self.consecutive_explains_on_completed = 0
+
+        engagement_adjust_multiplier *= explain_spam_multiplier
+
         if agent_option == "OfferTransition":
             self.consecutive_transitions += 1
         else:
             self.consecutive_transitions = 0
         
         # STEP 5: Generate gaze features based on response type (question spam and transition spam reduce dwell)
-        gaze_features = self._synthesize_contextual_gaze(rtype)
+        gaze_features = self._synthesize_contextual_gaze(rtype, engagement_adjust_multiplier=engagement_adjust_multiplier)
         
         # Store user's question if they asked one
         if rtype == "question":
@@ -900,18 +982,41 @@ Your {rtype} response (1-2 sentences):"""
         
         Returns a multiplier (0.0-1.0) that reduces dwell time.
         Lower values = more penalty = lower engagement.
-        Transition spam penalty: -0.15 per consecutive transition after first.
+        Transition spam penalty: -0.20 per consecutive transition after first (strengthened from -0.15).
         """
         multiplier = 1.0
         
-        # Penalty for transition spam: -0.15 per consecutive transition after first
+        # Penalty for transition spam: -0.20 per consecutive transition after first (strengthened)
         if self.consecutive_transitions > 1:
-            penalty = 0.15 * (self.consecutive_transitions - 1)
-            multiplier = max(0.3, multiplier - penalty)  # Cap at 30% minimum
+            penalty = 0.20 * (self.consecutive_transitions - 1)  # Increased from 0.15
+            multiplier = max(0.25, multiplier - penalty)  # Lower cap (25% vs 30% minimum)
         
         return multiplier
     
-    def _synthesize_contextual_gaze(self, rtype: str) -> List[float]:
+    def _get_dwell_stagnation_multiplier(self) -> float:
+        """Calculate penalty multiplier for staying at same exhibit too long (reduces dwell).
+        
+        Penalty increases with turns spent at the same exhibit to encourage transitions.
+        Returns a multiplier (0.0-1.0) that reduces dwell time.
+        Lower values = more penalty = lower engagement.
+        """
+        if self.turns_at_current_exhibit <= 3:
+            # No penalty for first 3 turns (reasonable time to explore an exhibit)
+            return 1.0
+        elif self.turns_at_current_exhibit <= 5:
+            # Light penalty: 4-5 turns
+            return 0.9
+        elif self.turns_at_current_exhibit <= 8:
+            # Moderate penalty: 6-8 turns
+            return 0.6
+        elif self.turns_at_current_exhibit <= 12:
+            # Strong penalty: 9-12 turns
+            return 0.3
+        else:
+            # Very strong penalty: 13+ turns (strongly encourage transition)
+            return 0.1
+    
+    def _synthesize_contextual_gaze(self, rtype: str, engagement_adjust_multiplier: float = 1.0) -> List[float]:
         """Generate synthetic gaze features based on response type.
         
         Response types directly encode quality:
@@ -931,39 +1036,45 @@ Your {rtype} response (1-2 sentences):"""
         # Apply penalty multiplier for transition spam (reduces engagement)
         transition_spam_multiplier = self._get_transition_spam_multiplier()
         
-        # Combined penalty multiplier (question spam + transition spam)
-        combined_spam_multiplier = question_spam_multiplier * transition_spam_multiplier
+        # Apply penalty multiplier for dwell stagnation (reduces engagement when staying at same exhibit too long)
+        dwell_stagnation_multiplier = self._get_dwell_stagnation_multiplier()
+        
+        # Combined penalty multiplier (question spam + transition spam + dwell stagnation)
+        combined_spam_multiplier = question_spam_multiplier * transition_spam_multiplier * dwell_stagnation_multiplier
+
+        # Aggregate multiplier including pacing bonuses/penalties (questions, explain spam, etc.)
+        effective_multiplier = engagement_multiplier * combined_spam_multiplier * engagement_adjust_multiplier
         
         # Different patterns for different response types
         if rtype in ["acknowledgment", "follow_up_question"]:
             # HIGH engagement - agent did well, user is satisfied and curious
             base_dwell = self._randf(0.75, 0.95)
-            dwell_time = self._clip(base_dwell * engagement_multiplier * combined_spam_multiplier, 0.2, 1.0)
+            dwell_time = self._clip(base_dwell * effective_multiplier, 0.2, 1.0)
             saccade_span = max(0.05, np.random.normal(0.07, 0.03))  # Low saccades (focused)
         
         elif rtype == "question":
             # MODERATE-HIGH engagement - genuinely curious
             base_dwell = self._randf(0.4, 0.7)
-            dwell_time = self._clip(base_dwell * engagement_multiplier * combined_spam_multiplier, 0.2, 1.0)
+            dwell_time = self._clip(base_dwell * effective_multiplier, 0.2, 1.0)
             saccade_span = max(0.05, np.random.normal(0.08, 0.04))
         
         elif rtype == "statement":
             # MODERATE engagement - making statements
             base_dwell = self._randf(0.3, 0.6)
-            dwell_time = self._clip(base_dwell * engagement_multiplier * combined_spam_multiplier, 0.2, 1.0)
+            dwell_time = self._clip(base_dwell * effective_multiplier, 0.2, 1.0)
             saccade_span = max(0.05, np.random.normal(0.09, 0.04))
         
         elif rtype == "confusion":
             # LOW engagement - agent was unhelpful, off-topic, or deflecting
             base_dwell = self._randf(0.25, 0.50)
             # Confusion gets extra penalty from engagement tracking AND spam penalties
-            dwell_time = self._clip(base_dwell * engagement_multiplier * combined_spam_multiplier * 0.8, 0.1, 0.6)
+            dwell_time = self._clip(base_dwell * effective_multiplier * 0.8, 0.1, 0.6)
             saccade_span = max(0.05, np.random.normal(0.12, 0.05))  # Higher saccades (unfocused)
         
         else:
             # Default: MODERATE engagement
             base_dwell = self._randf(0.3, 0.6)
-            dwell_time = self._clip(base_dwell * engagement_multiplier * combined_spam_multiplier, 0.2, 1.0)
+            dwell_time = self._clip(base_dwell * effective_multiplier, 0.2, 1.0)
             saccade_span = max(0.05, np.random.normal(0.09, 0.04))
         
         # Common gaze features (persona-influenced)

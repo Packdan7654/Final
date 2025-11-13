@@ -34,11 +34,14 @@ from pathlib import Path
 import torch
 import sys
 import io
+import logging
 
 # Fix Windows console encoding for emojis
 if sys.platform == 'win32':
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
     sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
+
+logger = logging.getLogger(__name__)
 
 
 class ExhibitTracker:
@@ -127,7 +130,7 @@ class HRLTrainingLoop:
     
     def __init__(self, max_episodes: int = 10, max_turns_per_episode: int = 20,
                  knowledge_graph_path: str = None, turn_delay: float = 1.5,
-                 learning_rate: float = 3e-4, gamma: float = 0.99,
+                 learning_rate: float = 1e-4, gamma: float = 0.99,  # Reduced from 3e-4 for stability
                  use_actor_critic: bool = True, device: str = 'cpu',
                  show_prompts: bool = False, force_option: str = None,
                  force_subaction: str = None, enable_live_monitor: bool = False,
@@ -135,6 +138,7 @@ class HRLTrainingLoop:
                  save_map_frames: bool = False, live_map_display: bool = False,
                  map_interval: int = 50, verbose: bool = False):
         # ===== TRAINING CONFIGURATION =====
+        self.training_title = "HRL MUSEUM DIALOGUE TRAINING"
         self.max_episodes = max_episodes
         self.max_turns_per_episode = max_turns_per_episode
         self.turn_delay = turn_delay
@@ -147,7 +151,7 @@ class HRLTrainingLoop:
         self.force_option = force_option
         self.force_subaction = force_subaction
         if self.force_option or self.force_subaction:
-            print(f"\n⚠️  TESTING MODE ENABLED")
+            print(f"\n[WARNING] TESTING MODE ENABLED")
             if self.force_option:
                 print(f"   Force Option: {self.force_option}")
             if self.force_subaction:
@@ -266,7 +270,7 @@ class HRLTrainingLoop:
         
         # Show configuration
         print("=" * 80)
-        print("HRL MUSEUM DIALOGUE TRAINING")
+        print(self.training_title)
         print("=" * 80)
         print(f"Episodes: {self.max_episodes} | Max Turns: {self.max_turns_per_episode} | Device: {self.device}")
         print(f"Exhibits: {len(self.env.exhibit_keys)} | Checkpoints: Every 50 episodes")
@@ -284,15 +288,15 @@ class HRLTrainingLoop:
                 self.progress_tracker.start_episode(self.current_episode)
                 
                 if self.verbose:
-                    print(f"\n📚 Episode {self.current_episode}/{self.max_episodes}")
+                    print(f"\n[EPISODE] {self.current_episode}/{self.max_episodes}")
                     print("-" * 40)
                 
                 # Run single episode
-                episode_reward, episode_length = self._run_episode()
+                episode_reward, episode_length, episode_time = self._run_episode()
                 self.episode_rewards.append(episode_reward)
                 
                 # End episode tracking (prints summary)
-                self.progress_tracker.end_episode(episode_reward, episode_length)
+                self.progress_tracker.end_episode(episode_reward, episode_length, episode_time)
                 
                 if self.verbose:
                     # Print verbose episode summary
@@ -300,45 +304,48 @@ class HRLTrainingLoop:
                 
                 # Progress report every 50 episodes for overnight monitoring
                 if self.current_episode % 50 == 0:
-                    if self.verbose:
-                        self._print_progress_report()
+                    # Always print progress report (not just in verbose mode)
+                    self._print_progress_report()
                     
                     # Save incremental checkpoint (metrics + model)
                     self._save_checkpoint(f"checkpoint_ep{self.current_episode}")
                 
                 # Check for early termination
                 if self._should_terminate_early():
-                    print("\n🛑 Early termination condition met")
+                    print("\n[STOP] Early termination condition met")
                     break
             
             # Finalize training
             self._finalize_training()
             
         except KeyboardInterrupt:
-            print("\n⚠️  Training interrupted by user")
+            print("\n[WARNING] Training interrupted by user")
             self._finalize_training()
         except Exception as e:
             # Check if it's an LLM critical error
             from src.utils.llm_handler import LLMCriticalError
             if isinstance(e, LLMCriticalError):
-                print("\n" + "🚨" * 80)
+                print("\n" + "=" * 80)
                 print("CRITICAL LLM ERROR - GRACEFUL SHUTDOWN")
-                print("🚨" * 80)
+                print("=" * 80)
                 print(f"\nError: {e}")
                 print(f"\nTraining stopped at Episode {self.current_episode}/{self.max_episodes}")
                 print(f"Saving model and metrics up to this point...\n")
                 self._finalize_training()
-                print("\n✅ Model and metrics saved successfully!")
+                print("\n[SUCCESS] Model and metrics saved successfully!")
                 print("Training can resume from this checkpoint later.")
                 print("=" * 80)
             else:
-                print(f"\n❌ Training failed with error: {e}")
+                print(f"\n[ERROR] Training failed with error: {e}")
                 import traceback
                 traceback.print_exc()
                 self._finalize_training()
 
-    def _run_episode(self) -> float:
+    def _run_episode(self) -> tuple:
         """Run a single training episode"""
+        # Track episode start time for efficiency metrics
+        episode_start_time = time.time()
+        
         # Initialize episode
         obs, info = self.env.reset()
         self.simulator.initialize_session(persona="Agreeable")
@@ -376,20 +383,32 @@ class HRLTrainingLoop:
         # ===== MAP VISUALIZER: Reset for Episode =====
         self.map_visualizer.reset()
         
+        # Print Groq API status at start of episode
+        print(f"[Groq API] Groq API okay! (Episode {self.current_episode})")
+        
         episode_reward = 0.0
         turn_count = 0
+        
+        # Track reward components for this episode
+        episode_reward_components = {
+            "engagement": 0.0,
+            "novelty": 0.0,
+            "responsiveness": 0.0,
+            "transition": 0.0,
+            "conclude": 0.0
+        }
         
         if self.verbose:
             print("=" * 80)
             print(" " * 25 + "EPISODE INITIALIZATION" + " " * 25)
             print("=" * 80)
-            print(f"   🎭 Simulator Persona: Agreeable")
-            print(f"   👁️  Starting AOI: {self.simulator.get_current_aoi()}")
-            print(f"   🎯 Episode Goal: Explore exhibits and engage visitor")
-            print(f"   📋 Available Exhibits: {', '.join(self.env.exhibit_keys)}")
+            print(f"   [PERSONA] Simulator Persona: Agreeable")
+            print(f"   [AOI] Starting AOI: {self.simulator.get_current_aoi()}")
+            print(f"   [GOAL] Episode Goal: Explore exhibits and engage visitor")
+            print(f"   [EXHIBITS] Available Exhibits: {', '.join(self.env.exhibit_keys)}")
             print("═" * 82)
             print()
-            print(f"   🔄 Starting episode loop (max {self.max_turns_per_episode} turns)...")
+            print(f"   [START] Starting episode loop (max {self.max_turns_per_episode} turns)...")
         
         # Episode loop
         while turn_count < self.max_turns_per_episode:
@@ -457,6 +476,18 @@ class HRLTrainingLoop:
             # Update episode state
             episode_reward += reward
             
+            # Accumulate reward components for this episode
+            episode_reward_components["engagement"] += info.get("reward_engagement", 0.0)
+            episode_reward_components["novelty"] += info.get("reward_novelty", 0.0)
+            episode_reward_components["responsiveness"] += info.get("reward_responsiveness", 0.0)
+            # Sum all transition-related rewards
+            episode_reward_components["transition"] += (
+                info.get("reward_transition_insufficiency", 0.0) +
+                info.get("reward_transition_sufficiency", 0.0) +
+                info.get("reward_transition_frequency", 0.0)
+            )
+            episode_reward_components["conclude"] += info.get("reward_conclude", 0.0)
+            
             # ===== LIVE MONITOR & METRICS: Turn Update =====
             # Get simulator data for turn tracking
             simulator_state = self.simulator.get_current_state()
@@ -474,9 +505,10 @@ class HRLTrainingLoop:
                 "reward_engagement": info.get("reward_engagement", 0.0),
                 "reward_novelty": info.get("reward_novelty", 0.0),
                 "reward_responsiveness": info.get("reward_responsiveness", 0.0),
-                "reward_transition_penalty": info.get("reward_transition_penalty", 0.0),
+                "reward_transition_insufficiency": info.get("reward_transition_insufficiency", 0.0),
+                "reward_transition_sufficiency": info.get("reward_transition_sufficiency", 0.0),
+                "reward_transition_frequency": info.get("reward_transition_frequency", 0.0),
                 "reward_conclude": info.get("reward_conclude", 0.0),
-                "reward_spam_penalty": info.get("reward_spam_penalty", 0.0),
                 "total_reward": reward,
                 "exhibit_coverage": self.env._get_museum_exhibit_coverage()
             }
@@ -555,8 +587,8 @@ class HRLTrainingLoop:
                     print("=" * 80)
                     print(" " * 28 + "EPISODE COMPLETED" + " " * 28)
                     print("=" * 80)
-                    print(f"   ✅ Episode finished after {turn_count} turns")
-                    print(f"   🎯 Final reward: {episode_reward:.3f}")
+                    print(f"   [DONE] Episode finished after {turn_count} turns")
+                    print(f"   [REWARD] Final reward: {episode_reward:.3f}")
                     print()
                 
                 # End detailed logging
@@ -579,7 +611,22 @@ class HRLTrainingLoop:
             }
             self.detailed_logger.end_episode(episode_reward, episode_stats)
         
+        # Track episode time for efficiency metrics
+        episode_time = time.time() - episode_start_time
+        self.metrics_tracker.update_training_efficiency(time_per_ep=episode_time)
+        
+        # Calculate samples per second
+        if episode_time > 0:
+            samples_per_sec = turn_count / episode_time
+            self.metrics_tracker.update_training_efficiency(samples_per_sec=samples_per_sec)
+        
+        # Track updates per episode
+        num_updates = 1 if self.use_actor_critic and len(self.episode_buffer['states']) > 0 else 0
+        if hasattr(self.metrics_tracker, 'updates_per_episode'):
+            self.metrics_tracker.updates_per_episode.append(num_updates)
+        
         # Train Actor-Critic agent on collected experience
+        train_stats = None
         if self.use_actor_critic and len(self.episode_buffer['states']) > 0:
             train_stats = self.trainer.update(
                 states=self.episode_buffer['states'],
@@ -590,9 +637,12 @@ class HRLTrainingLoop:
                 dones=self.episode_buffer['dones']
             )
             
+            # Update metrics tracker with RL training stats
+            self.metrics_tracker.update_training_stats(train_stats)
+            
             # Log training statistics
             if self.verbose:
-                print(f"   📈 Training Update:")
+                print(f"   [TRAINING] Training Update:")
                 print(f"      Policy Loss: {train_stats['policy_loss']:.4f}")
                 print(f"      Value Loss: {train_stats['value_loss']:.4f}")
                 print(f"      Entropy: {train_stats['entropy']:.4f}")
@@ -617,26 +667,12 @@ class HRLTrainingLoop:
             "coverage_ratio": coverage_ratio,
             "total_facts": total_facts,
             "exhibits_covered": exhibits_covered,
-            "reward_engagement": sum(info.get("reward_engagement", 0.0) for info in 
-                                    [self.monitor.training_history[i]['info'] 
-                                     for i in range(len(self.monitor.training_history))
-                                     if self.monitor.training_history[i].get('episode') == self.current_episode]),
-            "reward_novelty": sum(info.get("reward_novelty", 0.0) for info in 
-                                 [self.monitor.training_history[i]['info'] 
-                                  for i in range(len(self.monitor.training_history))
-                                  if self.monitor.training_history[i].get('episode') == self.current_episode]),
-            "reward_responsiveness": sum(info.get("reward_responsiveness", 0.0) for info in 
-                                        [self.monitor.training_history[i]['info'] 
-                                         for i in range(len(self.monitor.training_history))
-                                         if self.monitor.training_history[i].get('episode') == self.current_episode]),
-            "reward_transition": sum(info.get("reward_transition_penalty", 0.0) for info in 
-                                    [self.monitor.training_history[i]['info'] 
-                                     for i in range(len(self.monitor.training_history))
-                                     if self.monitor.training_history[i].get('episode') == self.current_episode]),
-            "reward_conclude": sum(info.get("reward_conclude", 0.0) for info in 
-                                  [self.monitor.training_history[i]['info'] 
-                                   for i in range(len(self.monitor.training_history))
-                                   if self.monitor.training_history[i].get('episode') == self.current_episode])
+            "mean_value": train_stats.get('mean_value', 0.0) if train_stats else 0.0,
+            "reward_engagement": episode_reward_components["engagement"],
+            "reward_novelty": episode_reward_components["novelty"],
+            "reward_responsiveness": episode_reward_components["responsiveness"],
+            "reward_transition": episode_reward_components["transition"],
+            "reward_conclude": episode_reward_components["conclude"]
         }
         
         # Update live monitor
@@ -649,11 +685,11 @@ class HRLTrainingLoop:
         if self.enable_map_viz and (self.current_episode % self.map_interval == 0):
             animation_filename = f"episode_{self.current_episode:03d}_animation.gif"
             self.map_visualizer.save_animation(animation_filename, fps=2)
-            print(f"   🗺️ Map animation saved: training_logs/maps/{animation_filename}")
+            print(f"   [MAP] Map animation saved: training_logs/maps/{animation_filename}")
         elif self.enable_map_viz:
-            print(f"   🗺️ Map episode {self.current_episode} (animation saved every {self.map_interval} episodes)")
+            print(f"   [MAP] Map episode {self.current_episode} (animation saved every {self.map_interval} episodes)")
         
-        return episode_reward, turn_count
+        return episode_reward, turn_count, episode_time
 
     def _update_environment_state(self):
         """Update environment with current simulator state"""
@@ -664,9 +700,11 @@ class HRLTrainingLoop:
             focus = self.env.exhibit_keys.index(current_exhibit) + 1
         
         # Update environment with available simulator data
+        # NOTE: Don't clear utterance - it should persist from the previous turn's user response
+        # The utterance will be updated later when the simulator responds to the agent
         self.env.update_user_state(
-            focus=focus,
-            utterance=""  # No utterance initially; dwell persists until updated by simulator
+            focus=focus
+            # utterance is NOT cleared here - it should carry over from previous turn
         )
         
     def _generate_action_actor_critic(self, obs: np.ndarray) -> Dict[str, Any]:
@@ -678,7 +716,7 @@ class HRLTrainingLoop:
             # Determine which option to use
             if self.force_option:
                 if self.force_option not in available_options:
-                    print(f"⚠️  Warning: Force option '{self.force_option}' not available. "
+                    print(f"[WARNING] Force option '{self.force_option}' not available. "
                           f"Available: {available_options}")
                     option_idx = available_options.index(available_options[0])
                     option = available_options[0]
@@ -693,7 +731,7 @@ class HRLTrainingLoop:
             available_subactions = self.env._get_available_subactions(option)
             if self.force_subaction:
                 if self.force_subaction not in available_subactions:
-                    print(f"⚠️  Warning: Force subaction '{self.force_subaction}' not available for '{option}'. "
+                    print(f"[WARNING] Force subaction '{self.force_subaction}' not available for '{option}'. "
                           f"Available: {available_subactions}")
                     subaction_idx = 0
                     subaction = available_subactions[0]
@@ -704,7 +742,7 @@ class HRLTrainingLoop:
                 subaction_idx = 0
                 subaction = available_subactions[0]
             
-            print(f"🎯 FORCED ACTION: Option={option}, Subaction={subaction}")
+            print(f"[FORCED] FORCED ACTION: Option={option}, Subaction={subaction}")
             
             return {
                 "option": option_idx,
@@ -834,7 +872,7 @@ class HRLTrainingLoop:
         context_dim = 64
         total_dim = focus_dim + history_dim + intent_dim + context_dim
         
-        print(f"📊 STATE VECTOR ({total_dim}-d) [Before Action Selection]:")
+        print(f"[STATE] STATE VECTOR ({total_dim}-d) [Before Action Selection]:")
         
         # Focus vector
         focus_end = focus_dim
@@ -844,13 +882,13 @@ class HRLTrainingLoop:
             focus_name = "No focus"
         else:
             focus_name = self.env.exhibit_keys[focus_idx]
-        print(f"   👁️  Focus (0-{focus_end-1}): {focus_vec.round(2)} → {focus_name}")
+        print(f"   [FOCUS] Focus (0-{focus_end-1}): {focus_vec.round(2)} -> {focus_name}")
         
         # History vector - Exhibit completion ratios
         completion_start = focus_end
         completion_end = completion_start + n_exhibits
         completion_vec = state[completion_start:completion_end]
-        print(f"   📈 Completion ({completion_start}-{completion_end-1}):")
+        print(f"   [COMPLETION] Completion ({completion_start}-{completion_end-1}):")
         for i, exhibit_name in enumerate(self.env.exhibit_keys):
             print(f"      [{i}] {exhibit_name:15s}: {completion_vec[i]:.2f}")
         
@@ -858,7 +896,7 @@ class HRLTrainingLoop:
         option_start = completion_end
         option_end = option_start + len(self.env.options)
         option_vec = state[option_start:option_end]
-        print(f"   🎯 Option Usage ({option_start}-{option_end-1}):")
+        print(f"   [OPTIONS] Option Usage ({option_start}-{option_end-1}):")
         for i, opt_name in enumerate(self.env.options):
             print(f"      [{i}] {opt_name:15s}: {option_vec[i]:.3f}")
         
@@ -866,13 +904,19 @@ class HRLTrainingLoop:
         intent_start = option_end
         intent_end = intent_start + intent_dim
         intent_vec = state[intent_start:intent_end]
-        print(f"   🧠 Intent Emb ({intent_start}-{intent_end-1}): [{intent_vec[0]:.3f}, {intent_vec[1]:.3f}, ..., {intent_vec[-1]:.3f}] ({intent_dim}-d)")
+        print(f"   [INTENT] Intent Emb ({intent_start}-{intent_end-1}): [{intent_vec[0]:.3f}, {intent_vec[1]:.3f}, ..., {intent_vec[-1]:.3f}] ({intent_dim}-d)")
         
-        # Context embedding
+        # Context embedding (may be empty for state ablation experiments)
         context_start = intent_end
         context_end = context_start + context_dim
-        context_vec = state[context_start:context_end]
-        print(f"   💬 Context Emb ({context_start}-{context_end-1}): [{context_vec[0]:.3f}, {context_vec[1]:.3f}, ..., {context_vec[-1]:.3f}] ({context_dim}-d)")
+        if context_end <= len(state):
+            context_vec = state[context_start:context_end]
+            if len(context_vec) > 0:
+                print(f"   [CONTEXT] Context Emb ({context_start}-{context_end-1}): [{context_vec[0]:.3f}, {context_vec[1]:.3f}, ..., {context_vec[-1]:.3f}] ({context_dim}-d)")
+            else:
+                print(f"   [CONTEXT] Context Emb: [EMPTY] (state ablation)")
+        else:
+            print(f"   [CONTEXT] Context Emb: [NOT PRESENT] (state ablation)")
         print()
     
     def _print_agent_decision(self, action: Dict[str, Any], info: Dict[str, Any]):
@@ -890,9 +934,9 @@ class HRLTrainingLoop:
             is_same_option = (self._previous_option_name == option)
         else:
             is_same_option = (current_option == option)
-            
-        option_status = "🔄 CONTINUING" if is_same_option else "🆕 NEW"
-        termination_text = " | ⛔ TERMINATED" if terminated_option else ""
+        
+        option_status = "[CONTINUING]" if is_same_option else "[NEW]"
+        termination_text = " | [TERMINATED]" if terminated_option else ""
         
         # Store for next turn comparison
         if terminated_option:
@@ -902,14 +946,14 @@ class HRLTrainingLoop:
             self._previous_option_name = option
         
         # AGENT DECISION SECTION
-        print("🤖 AGENT DECISION:")
-        print(f"   📋 Option: {option} ({option_status}) | Turns in option: {turns_in_option}{termination_text}")
-        print(f"   ⚡ Subaction: {subaction}")
-        print(f"   🎲 Raw Action: option={action.get('option', '?')}, subaction={action.get('subaction', '?')}, terminate={action.get('terminate_option', '?')}")
+        print("[AGENT] AGENT DECISION:")
+        print(f"   [OPTION] Option: {option} ({option_status}) | Turns in option: {turns_in_option}{termination_text}")
+        print(f"   [SUBACTION] Subaction: {subaction}")
+        print(f"   [ACTION] Raw Action: option={action.get('option', '?')}, subaction={action.get('subaction', '?')}, terminate={action.get('terminate_option', '?')}")
         print()
         
         # AGENT UTTERANCE SECTION
-        print("💬 AGENT UTTERANCE:")
+        print("[AGENT] AGENT UTTERANCE:")
         if agent_utterance:
             # Word wrap the utterance nicely
             words = agent_utterance.split()
@@ -932,7 +976,7 @@ class HRLTrainingLoop:
         # Show LLM prompt (optional, can be toggled)
         llm_prompt = info.get("llm_prompt", "")
         if llm_prompt and hasattr(self, '_show_prompts') and self._show_prompts:
-            print("📋 LLM PROMPT:")
+            print("[PROMPT] LLM PROMPT:")
             prompt_lines = llm_prompt.split('\n')
             for line in prompt_lines[:15]:  # Show first 15 lines
                 if line.strip():
@@ -952,7 +996,7 @@ class HRLTrainingLoop:
         simulator_state = self.simulator.get_current_state()
         user_response = simulator_state.get("last_user_response", {})
         # SIMULATOR RESPONSE SECTION
-        print("🧠 SIMULATOR RESPONSE:")
+        print("[SIMULATOR] SIMULATOR RESPONSE:")
         user_utterance = user_response.get("utterance")
         user_aoi = user_response.get("aoi", "Unknown")
         user_persona = user_response.get("persona", "Unknown")
@@ -964,12 +1008,12 @@ class HRLTrainingLoop:
         visitor_exhibit = sim_state.get("current_exhibit", "Unknown")
         
         if user_utterance:
-            print(f"   👤 User Says: \"{user_utterance}\"")
+            print(f"   [USER] User Says: \"{user_utterance}\"")
         else:
-            print(f"   👤 User Says: [SILENT] ({response_type})")
+            print(f"   [USER] User Says: [SILENT] ({response_type})")
         
-        print(f"   🏛️  Visitor at Exhibit: {visitor_exhibit} | 👁️  Looking at AOI: {user_aoi}")
-        print(f"   🎭 Persona: {user_persona} | Response Type: {response_type}")
+        print(f"   [VISITOR] Visitor at Exhibit: {visitor_exhibit} | Looking at AOI: {user_aoi}")
+        print(f"   [PERSONA] Persona: {user_persona} | Response Type: {response_type}")
         
         # Gaze features display
         if gaze_features and len(gaze_features) >= 6:
@@ -980,10 +1024,10 @@ class HRLTrainingLoop:
             dom_ratio = gaze_features[4]
             entry_lat = gaze_features[5]
             
-            print(f"   📊 Gaze: Dwell={dwell:.3f} | Saccade={saccade:.3f} | Entropy={entropy:.3f}")
+            print(f"   [GAZE] Gaze: Dwell={dwell:.3f} | Saccade={saccade:.3f} | Entropy={entropy:.3f}")
             print(f"           FixRate={fix_rate:.3f} | DomRatio={dom_ratio:.3f} | EntryLat={entry_lat:.3f}")
         else:
-            print(f"   📊 Gaze: [No gaze data available]")
+            print(f"   [GAZE] Gaze: [No gaze data available]")
         
         # Show simulator engagement metrics
         engagement_level = user_response.get("engagement_level", 1.0)
@@ -994,13 +1038,13 @@ class HRLTrainingLoop:
         
         transition_status = ""
         if agent_option == "OfferTransition" and transition_success is not None:
-            transition_status = f" | Transition: {'✅ SUCCESS' if transition_success else '❌ REJECTED'}"
+            transition_status = f" | Transition: {'[SUCCESS]' if transition_success else '[REJECTED]'}"
         
-        print(f"   🎯 Agent Option: {agent_option} | Response Type: {response_type}{transition_status} | Engagement: {engagement_level:.2f} | Strikes: {off_topic_strikes}")
+        print(f"   [OPTION] Agent Option: {agent_option} | Response Type: {response_type}{transition_status} | Engagement: {engagement_level:.2f} | Strikes: {off_topic_strikes}")
         print()
         
         # REWARD BREAKDOWN SECTION
-        print("💰 REWARD BREAKDOWN:")
+        print("[REWARD] REWARD BREAKDOWN:")
         engagement_reward = info.get("reward_engagement", 0.0)
         novelty_reward = info.get("reward_novelty", 0.0)
         responsiveness_reward = info.get("reward_responsiveness", 0.0)
@@ -1008,20 +1052,20 @@ class HRLTrainingLoop:
         transition_penalty = info.get("reward_transition_penalty", 0.0)
         spam_penalty = info.get("reward_spam_penalty", 0.0)
         
-        print(f"   🔥 Engagement:    {engagement_reward:+7.3f} (lagged from prev turn)")
-        print(f"   ✨ Novelty:       {novelty_reward:+7.3f} (verified facts)")
+        print(f"   [ENGAGEMENT] Engagement:    {engagement_reward:+7.3f} (lagged from prev turn)")
+        print(f"   [NOVELTY] Novelty:       {novelty_reward:+7.3f} (verified facts)")
         if responsiveness_reward != 0:
             if responsiveness_reward > 0:
-                print(f"   ✅ Responsiveness: {responsiveness_reward:+7.3f} (answered question)")
+                print(f"   [SUCCESS] Responsiveness: {responsiveness_reward:+7.3f} (answered question)")
             else:
-                print(f"   ❌ Responsiveness: {responsiveness_reward:+7.3f} (deflected question)")
+                print(f"   [FAIL] Responsiveness: {responsiveness_reward:+7.3f} (deflected question)")
         if conclude_bonus > 0:
-            print(f"   🎯 Conclude:      {conclude_bonus:+7.3f} (exhibits covered)")
+            print(f"   [CONCLUDE] Conclude:      {conclude_bonus:+7.3f} (exhibits covered)")
         if transition_penalty < 0:
-            print(f"   ⚠️  Transition:    {transition_penalty:+7.3f} (insufficient facts)")
+            print(f"   [WARNING] Transition:    {transition_penalty:+7.3f} (insufficient facts)")
         if spam_penalty < 0:
-            print(f"   🚫 Spam:          {spam_penalty:+7.3f} (too many transitions)")
-        print(f"   📈 TOTAL:         {reward:+7.3f}")
+            print(f"   [SPAM] Spam:          {spam_penalty:+7.3f} (too many transitions)")
+        print(f"   [TOTAL] TOTAL:         {reward:+7.3f}")
         print()
         
         # FACT IDs EXTRACTED
@@ -1030,30 +1074,30 @@ class HRLTrainingLoop:
         
         if mentioned_fact_ids or hallucinated_fact_ids:
             if mentioned_fact_ids:
-                print(f"📝 NEW FACTS: {len(mentioned_fact_ids)} fact(s) - {mentioned_fact_ids}")
+                print(f"[FACTS] NEW FACTS: {len(mentioned_fact_ids)} fact(s) - {mentioned_fact_ids}")
             if hallucinated_fact_ids:
-                print(f"❌ HALLUCINATED: {len(hallucinated_fact_ids)} fact(s) - {hallucinated_fact_ids} (no reward)")
+                print(f"[ERROR] HALLUCINATED: {len(hallucinated_fact_ids)} fact(s) - {hallucinated_fact_ids} (no reward)")
             print()
         
         # DialogueBERT INSIGHTS SECTION
         dialoguebert = info.get("dialoguebert_insights")
         if dialoguebert:
-            print("🧩 DialogueBERT INSIGHTS:")
-            print(f"   🏷️ Intent: {dialoguebert.get('intent_category', 'unknown')}")
-            print(f"   📏 ‖intent‖={dialoguebert.get('intent_norm', 0.0):.3f} | ‖context‖={dialoguebert.get('context_norm', 0.0):.3f}")
-            print(f"   🔗 cos(intent, context)={dialoguebert.get('cosine_intent_context', 0.0):+.3f}")
-            print(f"   🔄 cos(intent, prev_intent)={dialoguebert.get('cosine_intent_prev', 0.0):+.3f} | cos(context, prev_context)={dialoguebert.get('cosine_context_prev', 0.0):+.3f}")
+            print("[DIALOGUEBERT] DialogueBERT INSIGHTS:")
+            print(f"   [INTENT] Intent: {dialoguebert.get('intent_category', 'unknown')}")
+            print(f"   [NORM] ||intent||={dialoguebert.get('intent_norm', 0.0):.3f} | ||context||={dialoguebert.get('context_norm', 0.0):.3f}")
+            print(f"   [COSINE] cos(intent, context)={dialoguebert.get('cosine_intent_context', 0.0):+.3f}")
+            print(f"   [COSINE_PREV] cos(intent, prev_intent)={dialoguebert.get('cosine_intent_prev', 0.0):+.3f} | cos(context, prev_context)={dialoguebert.get('cosine_context_prev', 0.0):+.3f}")
             print()
         
         # TRAINING STATS SECTION
-        print("📈 TRAINING STATS:")
-        print(f"   🏛️  Current Exhibit: {current_exhibit} | 👁️  Focus Index: {current_focus}")
-        print(f"   📚 Facts Shared: {facts_shared} | 🎨 Exhibits Covered: {exhibits_covered}")
+        print("[STATS] TRAINING STATS:")
+        print(f"   [EXHIBIT] Current Exhibit: {current_exhibit} | Focus Index: {current_focus}")
+        print(f"   [FACTS] Facts Shared: {facts_shared} | Exhibits Covered: {exhibits_covered}")
         
         # Show available actions for next turn
         available_options = info.get("available_options", [])
         available_subactions = info.get("available_subactions", [])
-        print(f"   🎮 Next Available - Options: {available_options}")
+        print(f"   [ACTIONS] Next Available - Options: {available_options}")
         print(f"                      Subactions: {available_subactions}")
         
         print("─" * 82)
@@ -1081,15 +1125,15 @@ class HRLTrainingLoop:
             option = turn['info'].get('option', 'Unknown')
             action_counts[option] = action_counts.get(option, 0) + 1
         
-        print(f"   📊 Episode {self.current_episode} Summary:")
-        print(f"      🎯 Performance: Total Reward={episode_reward:.3f} | Avg/Turn={avg_reward_per_turn:.3f} | Turns={total_turns}")
-        print(f"      📚 Content: Facts Shared={info.get('facts_shared', 0)} | Exhibits Covered={info.get('exhibits_covered', 0)}")
-        print(f"      🎭 Final State: Focus={info.get('current_exhibit', 'Unknown')} | Dwell={info.get('dwell', 0.0):.2f}")
+        print(f"   [SUMMARY] Episode {self.current_episode} Summary:")
+        print(f"      [PERFORMANCE] Total Reward={episode_reward:.3f} | Avg/Turn={avg_reward_per_turn:.3f} | Turns={total_turns}")
+        print(f"      [CONTENT] Facts Shared={info.get('facts_shared', 0)} | Exhibits Covered={info.get('exhibits_covered', 0)}")
+        print(f"      [STATE] Final State: Focus={info.get('current_exhibit', 'Unknown')} | Dwell={info.get('dwell', 0.0):.2f}")
         
         # Show action distribution
         if action_counts:
             action_str = " | ".join([f"{opt}={count}" for opt, count in action_counts.items()])
-            print(f"      🎮 Actions: {action_str}")
+            print(f"      [ACTIONS] Actions: {action_str}")
         
         # Print detailed exhibit/facts progress
         self._print_exhibit_facts_progress()
@@ -1100,7 +1144,7 @@ class HRLTrainingLoop:
         """SIMPLE: Print which facts were mentioned per exhibit"""
         print()
         print("      " + "=" * 100)
-        print(f"      📍 EXHIBIT PROGRESS [Episode {self.current_episode}]")
+        print(f"      [PROGRESS] EXHIBIT PROGRESS [Episode {self.current_episode}]")
         print("      " + "=" * 100)
         
         total_mentioned = 0
@@ -1113,20 +1157,20 @@ class HRLTrainingLoop:
             total_facts += len(all_facts)
             total_mentioned += len(mentioned_ids)
             
-            print(f"\n      📌 {exhibit} ({len(mentioned_ids)}/{len(all_facts)} facts)")
+            print(f"\n      [EXHIBIT] {exhibit} ({len(mentioned_ids)}/{len(all_facts)} facts)")
             print(f"      {'-' * 96}")
             
             for fact in all_facts:
                 fact_id = self.env.knowledge_graph.extract_fact_id(fact)
                 fact_text = self.env.knowledge_graph.strip_fact_id(fact)
                 if fact_id in mentioned_ids:
-                    print(f"      ✓ {fact_id}  [mentioned]     {fact_text[:70]}")
+                    print(f"      [OK] {fact_id}  [mentioned]     {fact_text[:70]}")
                 else:
-                    print(f"      ○ {fact_id}  [not mentioned] {fact_text[:70]}")
+                    print(f"      [ ] {fact_id}  [not mentioned] {fact_text[:70]}")
         
         print("      " + "=" * 100)
         pct = (total_mentioned / total_facts * 100) if total_facts > 0 else 0
-        print(f"      📊 TOTAL: {total_mentioned}/{total_facts} facts ({pct:.1f}%)")
+        print(f"      [TOTAL] TOTAL: {total_mentioned}/{total_facts} facts ({pct:.1f}%)")
         print("      " + "=" * 100)
         print()
 
@@ -1150,15 +1194,20 @@ class HRLTrainingLoop:
             metrics_file = os.path.join(checkpoint_dir, f"{checkpoint_name}_metrics.json")
             self.metrics_tracker.save_to_json(metrics_file)
             
+            # Also save RL metrics at checkpoint
+            checkpoint_timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            training_time_so_far = time.time() - self.start_time if hasattr(self, 'start_time') else 0
+            self._save_rl_metrics(checkpoint_dir, checkpoint_timestamp, training_time_so_far)
+            
             # Save model if using Actor-Critic (ALWAYS)
             if self.use_actor_critic and hasattr(self, 'agent'):
                 model_file = os.path.join(checkpoint_dir, f"{checkpoint_name}_model.pt")
                 self.trainer.save_checkpoint(model_file, self.current_episode)
             
-            print(f"   💾 Checkpoint saved: {checkpoint_name}")
+            print(f"   [SAVED] Checkpoint saved: {checkpoint_name}")
             
         except Exception as e:
-            print(f"   ⚠️  Failed to save checkpoint: {e}")
+            print(f"   [WARNING] Failed to save checkpoint: {e}")
     
     def _print_progress_report(self):
         """Print comprehensive progress report every 50 episodes"""
@@ -1173,9 +1222,9 @@ class HRLTrainingLoop:
         # Calculate overall trend
         if len(self.episode_rewards) >= 100:
             first_50 = np.mean(self.episode_rewards[:50])
-            trend = "📈 Improving" if avg_recent > first_50 else "📊 Stable" if abs(avg_recent - first_50) < 0.5 else "📉 Declining"
+            trend = "[IMPROVING]" if avg_recent > first_50 else "[STABLE]" if abs(avg_recent - first_50) < 0.5 else "[DECLINING]"
         else:
-            trend = "📊 Building baseline"
+            trend = "[BUILDING] Building baseline"
         
         # Estimate completion time
         if elapsed_time > 0 and len(self.episode_rewards) > 0:
@@ -1198,27 +1247,29 @@ class HRLTrainingLoop:
             eta_h = eta_m = 0
             turns_per_hour = 0
         
-        print("\n" + "🔥" * 60)
-        print(f"🌙 OVERNIGHT PROGRESS CHECKPOINT - Episode {self.current_episode:,}/{self.max_episodes:,}")
-        print("🔥" * 60)
-        print(f"⏰ Elapsed: {hours}h {minutes}m | ETA: {eta_h}h {eta_m}m")
-        print(f"📊 Recent 50 Episodes Avg Reward: {avg_recent:.3f}")
-        print(f"📈 Learning Trend: {trend}")
+        print("\n" + "=" * 80)
+        print(f"[CHECKPOINT] PROGRESS CHECKPOINT - Episode {self.current_episode:,}/{self.max_episodes:,}")
+        print("=" * 80)
+        print(f"[TIME] Elapsed: {hours}h {minutes}m | ETA: {eta_h}h {eta_m}m")
+        print(f"[REWARD] Recent 50 Episodes Avg Reward: {avg_recent:.3f}")
+        print(f"[TREND] Learning Trend: {trend}")
         print(f"� Current Pace: {turns_per_hour:.0f} turns/hour")
         print(f"�🗺️  Maps Saved: {(self.current_episode // self.map_interval)} animations")
-        print(f"💾 Progress: {(self.current_episode/self.max_episodes)*100:.1f}% complete")
-        print("🔥" * 60 + "\n")
+        print(f"[PROGRESS] Progress: {(self.current_episode/self.max_episodes)*100:.1f}% complete")
+        print("=" * 80 + "\n")
 
     def _finalize_training(self):
         """Finalize training and save results"""
         print("\n" + "=" * 80)
-        print("🏁 OVERNIGHT TRAINING SESSION COMPLETE!")
+        print("[COMPLETE] TRAINING SESSION COMPLETE!")
         print("=" * 80)
         
         # Calculate total training time
         training_time = time.time() - self.start_time if hasattr(self, 'start_time') else 0
+        self.training_duration_seconds = training_time  # Store for summary.json
         hours = int(training_time // 3600)
         minutes = int((training_time % 3600) // 60)
+        seconds = int(training_time % 60)
         
         # Update final statistics
         self.total_episodes = self.current_episode
@@ -1228,31 +1279,33 @@ class HRLTrainingLoop:
         summary = self.monitor.get_training_summary()
         
         # Print comprehensive statistics
-        print(f"🎯 TRAINING PERFORMANCE:")
-        print(f"   ├─ Total Episodes: {summary['total_episodes']:,}")
-        print(f"   ├─ Total Turns: {summary['total_turns']:,}")
-        print(f"   ├─ Training Time: {hours}h {minutes}m")
-        print(f"   ├─ Episodes/Hour: {summary['total_episodes']/max(training_time/3600, 0.1):.1f}")
-        print(f"   └─ Turns/Hour: {summary['total_turns']/max(training_time/3600, 0.1):.1f}")
+        print(f"[PERFORMANCE] TRAINING PERFORMANCE:")
+        print(f"   - Total Episodes: {summary['total_episodes']:,}")
+        print(f"   - Total Turns: {summary['total_turns']:,}")
+        print(f"   - Training Time: {hours}h {minutes}m {seconds}s")
+        print(f"   - Episodes/Hour: {summary['total_episodes']/max(training_time/3600, 0.1):.1f}")
+        print(f"   - Turns/Hour: {summary['total_turns']/max(training_time/3600, 0.1):.1f}")
         
-        print(f"\n📊 LEARNING METRICS:")
-        print(f"   ├─ Avg Reward/Turn: {summary['average_reward_per_turn']:.4f}")
-        print(f"   ├─ Avg Reward/Episode: {summary['average_reward_per_episode']:.4f}")
-        print(f"   ├─ Best Episode Reward: {summary['best_episode_reward']:.4f}")
-        print(f"   ├─ Final 100 Episodes Avg: {np.mean(self.episode_rewards[-100:]):.4f}")
-        print(f"   └─ Learning Curve Trend: {'📈 Improving' if len(self.episode_rewards) > 100 and np.mean(self.episode_rewards[-100:]) > np.mean(self.episode_rewards[:100]) else '📉 Stable/Declining'}")
+        print(f"\n[LEARNING] LEARNING METRICS:")
+        print(f"   - Avg Reward/Turn: {summary['average_reward_per_turn']:.4f}")
+        print(f"   - Avg Reward/Episode: {summary['average_reward_per_episode']:.4f}")
+        print(f"   - Best Episode Reward: {summary['best_episode_reward']:.4f}")
+        print(f"   - Final 100 Episodes Avg: {np.mean(self.episode_rewards[-100:]):.4f}")
+        trend_text = "[IMPROVING]" if len(self.episode_rewards) > 100 and np.mean(self.episode_rewards[-100:]) > np.mean(self.episode_rewards[:100]) else "[STABLE/DECLINING]"
+        print(f"   - Learning Curve Trend: {trend_text}")
         
-        print(f"\n🎮 STRATEGY ANALYSIS:")
-        print(f"   ├─ Most Used Option: {summary['most_used_option']}")
-        print(f"   ├─ Most Used Subaction: {summary['most_used_subaction']}")
-        print(f"   └─ Strategy Diversity: {len(set([h['option'] for h in self.monitor.training_history if 'option' in h]))} unique options used")
+        print(f"\n[STRATEGY] STRATEGY ANALYSIS:")
+        print(f"   - Most Used Option: {summary['most_used_option']}")
+        print(f"   - Most Used Subaction: {summary['most_used_subaction']}")
+        print(f"   - Strategy Diversity: {len(set([h['option'] for h in self.monitor.training_history if 'option' in h]))} unique options used")
         
         # Map generation summary
         maps_saved = (self.current_episode // self.map_interval) if self.enable_map_viz else 0
-        print(f"\n🗺️  VISUALIZATION:")
-        print(f"   ├─ Map Episodes Saved: {maps_saved} (every {self.map_interval} episodes)")
-        print(f"   ├─ Total Frames Captured: {len(self.map_visualizer.frames) if self.enable_map_viz else 0}")
-        print(f"   └─ Storage Optimization: {'✓ Enabled' if maps_saved < self.current_episode else '✗ Disabled'}")
+        print(f"\n[VISUALIZATION] VISUALIZATION:")
+        print(f"   - Map Episodes Saved: {maps_saved} (every {self.map_interval} episodes)")
+        print(f"   - Total Frames Captured: {len(self.map_visualizer.frames) if self.enable_map_viz else 0}")
+        opt_status = "[ENABLED]" if maps_saved < self.current_episode else "[DISABLED]"
+        print(f"   - Storage Optimization: {opt_status}")
         
         # Generate comprehensive RL analysis report (ENABLED for thesis)
         # Only generate if we have enough data
@@ -1261,26 +1314,26 @@ class HRLTrainingLoop:
         
         # Print LLM timing summary
         if self.agent_llm_times or self.simulator_llm_times:
-            print(f"\n⏱️  LLM Timing Summary:")
+            print(f"\n[TIMING] LLM Timing Summary:")
             if self.agent_llm_times:
                 avg_agent = sum(self.agent_llm_times) / len(self.agent_llm_times)
                 total_agent = sum(self.agent_llm_times)
-                print(f"   🤖 Agent LLM:     {len(self.agent_llm_times)} calls | Avg: {avg_agent:.2f}s | Total: {total_agent:.1f}s")
+                print(f"   [AGENT] Agent LLM:     {len(self.agent_llm_times)} calls | Avg: {avg_agent:.2f}s | Total: {total_agent:.1f}s")
             if self.simulator_llm_times:
                 avg_sim = sum(self.simulator_llm_times) / len(self.simulator_llm_times)
                 total_sim = sum(self.simulator_llm_times)
-                print(f"   👤 Simulator LLM: {len(self.simulator_llm_times)} calls | Avg: {avg_sim:.2f}s | Total: {total_sim:.1f}s")
+                print(f"   [SIMULATOR] Simulator LLM: {len(self.simulator_llm_times)} calls | Avg: {avg_sim:.2f}s | Total: {total_sim:.1f}s")
             if self.agent_llm_times and self.simulator_llm_times:
                 total_all = sum(self.agent_llm_times) + sum(self.simulator_llm_times)
                 count_all = len(self.agent_llm_times) + len(self.simulator_llm_times)
                 avg_all = total_all / count_all if count_all > 0 else 0
-                print(f"   ⚡ Total LLM:     {count_all} calls | Avg: {avg_all:.2f}s | Total: {total_all:.1f}s")
+                print(f"   [TOTAL] Total LLM:     {count_all} calls | Avg: {avg_all:.2f}s | Total: {total_all:.1f}s")
         
         # Save training log (ALWAYS SAVE)
         self._save_training_log()
         
         # ===== SAVE METRICS (ALWAYS SAVE FOR THESIS) =====
-        print("\n💾 Saving comprehensive metrics...")
+        print("\n[SAVING] Saving comprehensive metrics...")
         
         # Determine save directory
         experiment_dir = os.environ.get('EXPERIMENT_DIR', None)
@@ -1305,10 +1358,30 @@ class HRLTrainingLoop:
         else:
             metrics_file = os.path.join(logs_dir, f"metrics_tracker_{timestamp}.json")
         self.metrics_tracker.save_to_json(metrics_file)
+        
+        # Save RL metrics (comprehensive RL analysis)
+        self._save_rl_metrics(logs_dir, timestamp, training_time)
+        
+        # Save learning curves data
+        self._save_learning_curves(logs_dir, timestamp)
+        
+        # Save convergence report
+        self._save_convergence_report(logs_dir, timestamp, training_time)
+        
+        # ===== ORGANIZE RESULTS IN MAJOR_RESULTS/ =====
+        # Only organize to major_results/ if explicitly requested (via environment variable)
+        # This is set by train_all_variations.py, not by individual train.py scripts
+        if experiment_dir and os.environ.get('ORGANIZE_TO_MAJOR_RESULTS', '').lower() == 'true':
+            try:
+                self._organize_major_results(experiment_dir, training_time, timestamp)
+            except Exception as e:
+                print(f"\n[WARNING] Failed to organize major_results: {e}")
+                import traceback
+                traceback.print_exc()
             
         # Print summary statistics (ALWAYS)
         summary = self.metrics_tracker.get_summary_statistics()
-        print("\n📊 Training Metrics Summary:")
+        print("\n[METRICS] Training Metrics Summary:")
         print(f"   Mean Return: {summary.get('mean_return', 0.0):.3f} ± {summary.get('std_return', 0.0):.3f}")
         print(f"   Recent Mean Return (last 100): {summary.get('recent_mean_return', 0.0):.3f}")
         print(f"   Mean Episode Length: {summary.get('mean_length', 0.0):.1f} turns")
@@ -1322,36 +1395,68 @@ class HRLTrainingLoop:
             for opt, prop in sorted(option_usage.items(), key=lambda x: -x[1]):
                 print(f"      {opt}: {prop:.1%}")
         
+        # ===== GENERATE RL PLOTS AUTOMATICALLY =====
+        if experiment_dir and len(self.metrics_tracker.episode_returns) > 0:
+            print("\n[PLOTS] Generating RL/HRL evaluation plots...")
+            try:
+                # Import here to avoid circular dependencies
+                import sys
+                from pathlib import Path
+                
+                # Find RL_plots directory (should be at project root)
+                project_root = Path(__file__).parent.parent.parent
+                rl_plots_module = project_root / 'RL_plots' / 'generate_rl_plots.py'
+                
+                if rl_plots_module.exists():
+                    # Add project root to path and import
+                    if str(project_root) not in sys.path:
+                        sys.path.insert(0, str(project_root))
+                    
+                    # Import the plot generator
+                    from RL_plots.generate_rl_plots import RLPlotGenerator
+                    
+                    # Generate plots automatically in experiment_dir/RL_plots
+                    generator = RLPlotGenerator(experiment_dir, output_dir=None)  # None = auto to experiment_dir/RL_plots
+                    generator.generate_all_plots()
+                    print(f"   [SUCCESS] RL plots saved to: {generator.output_dir}")
+                else:
+                    print(f"   [WARNING] RL plot generator not found at {rl_plots_module}")
+                    print(f"      (Project root: {project_root})")
+            except Exception as e:
+                print(f"   [WARNING] Failed to generate RL plots: {e}")
+                import traceback
+                traceback.print_exc()
+        
         # ===== SAVE FINAL MODEL =====
         if self.use_actor_critic and hasattr(self, 'agent'):
-            print("\n🎓 Saving final trained model...")
+            print("\n[SAVING] Saving final trained model...")
             experiment_dir = os.environ.get('EXPERIMENT_DIR', None)
             if experiment_dir:
                 model_dir = os.path.join(experiment_dir, 'models')
                 os.makedirs(model_dir, exist_ok=True)
                 final_model_path = os.path.join(model_dir, f'final_model_ep{self.current_episode}.pt')
                 self.trainer.save_checkpoint(final_model_path, self.current_episode)
-                print(f"   ✅ Final model saved: {final_model_path}")
+                print(f"   [SUCCESS] Final model saved: {final_model_path}")
             else:
                 # Fallback to default location
                 os.makedirs('models', exist_ok=True)
                 final_model_path = f'models/final_model_ep{self.current_episode}_{datetime.now().strftime("%Y%m%d_%H%M%S")}.pt'
                 self.trainer.save_checkpoint(final_model_path, self.current_episode)
-                print(f"   ✅ Final model saved: {final_model_path}")
+                print(f"   [SUCCESS] Final model saved: {final_model_path}")
         
         # Clean up
         self.monitor.close()
         self.map_visualizer.close()
-        print("\n✅ Training completed successfully!")
+        print("\n[SUCCESS] Training completed successfully!")
 
     def _generate_rl_analysis_report(self, training_time, summary):
         """Generate comprehensive RL analysis report with convergence analysis"""
-        print("\n" + "🧠" * 80)
+        print("\n" + "=" * 80)
         print(" " * 25 + "REINFORCEMENT LEARNING ANALYSIS REPORT" + " " * 25)
-        print("🧠" * 80)
+        print("=" * 80)
         
         # Sample Efficiency Analysis
-        print(f"\n📈 SAMPLE EFFICIENCY:")
+        print(f"\n[EFFICIENCY] SAMPLE EFFICIENCY:")
         total_samples = len(self.monitor.training_history)
         episodes_to_convergence = self._analyze_convergence()
         print(f"   ├─ Total Samples (Turns): {total_samples:,}")
@@ -1360,7 +1465,7 @@ class HRLTrainingLoop:
         print(f"   └─ Samples to Convergence: {episodes_to_convergence * (total_samples/self.current_episode) if episodes_to_convergence else 'N/A'}")
         
         # Learning Curve Analysis
-        print(f"\n📊 LEARNING CURVE ANALYSIS:")
+        print(f"\n[ANALYSIS] LEARNING CURVE ANALYSIS:")
         if len(self.episode_rewards) >= 100:
             early_performance = np.mean(self.episode_rewards[:100])
             late_performance = np.mean(self.episode_rewards[-100:])
@@ -1371,10 +1476,11 @@ class HRLTrainingLoop:
             print(f"   ├─ Late Performance (last 100): {late_performance:.3f}")
             print(f"   ├─ Total Improvement: {improvement:.3f}")
             print(f"   ├─ Improvement Rate: {improvement_rate:.4f}/100 episodes")
-            print(f"   └─ Learning Stability: {'✓ Stable' if np.std(self.episode_rewards[-100:]) < 2.0 else '⚠ Unstable'}")
+            stability_status = "[STABLE]" if np.std(self.episode_rewards[-100:]) < 2.0 else "[UNSTABLE]"
+            print(f"   └─ Learning Stability: {stability_status}")
         
         # Policy Analysis
-        print(f"\n🎯 POLICY ANALYSIS:")
+        print(f"\n[POLICY] POLICY ANALYSIS:")
         option_counts = {}
         termination_counts = {}
         option_durations = []
@@ -1399,10 +1505,11 @@ class HRLTrainingLoop:
         if option_durations:
             print(f"   ├─ Average Option Duration: {np.mean(option_durations):.1f} turns")
             print(f"   ├─ Option Duration Std: {np.std(option_durations):.1f}")
-            print(f"   └─ Termination Learning: {'✓ Active' if len(termination_counts) > 0 else '⚠ No terminations detected'}")
+            termination_status = "[ACTIVE]" if len(termination_counts) > 0 else "[NONE] No terminations detected"
+            print(f"   └─ Termination Learning: {termination_status}")
         
         # Exploration vs Exploitation Analysis
-        print(f"\n🎮 EXPLORATION-EXPLOITATION BALANCE:")
+        print(f"\n[EXPLORATION] EXPLORATION-EXPLOITATION BALANCE:")
         if len(self.episode_rewards) >= 200:
             # Convert deque to list for slicing
             history_list = list(self.monitor.training_history)
@@ -1412,10 +1519,11 @@ class HRLTrainingLoop:
             print(f"   ├─ Early Action Entropy: {entropy_early:.3f}")
             print(f"   ├─ Late Action Entropy: {entropy_late:.3f}")
             print(f"   ├─ Exploration Decay: {entropy_early - entropy_late:.3f}")
-            print(f"   └─ Exploitation Status: {'✓ Good balance' if 0.1 < entropy_late < entropy_early else '⚠ Check entropy schedule'}")
+            balance_status = "[GOOD] Good balance" if 0.1 < entropy_late < entropy_early else "[WARNING] Check entropy schedule"
+            print(f"   └─ Exploitation Status: {balance_status}")
         
         # Credit Assignment Analysis (HRL specific)
-        print(f"\n🔗 HIERARCHICAL CREDIT ASSIGNMENT:")
+        print(f"\n[CREDIT] HIERARCHICAL CREDIT ASSIGNMENT:")
         option_rewards = {}
         for turn in self.monitor.training_history:
             option = turn['info'].get('option', 'Unknown')  # Fixed: get option from 'info' dict
@@ -1435,7 +1543,7 @@ class HRLTrainingLoop:
         # Generate comprehensive analysis with individual plots
         self._generate_comprehensive_analysis()
         
-        print("🧠" * 80)
+        print("=" * 80)
 
     def _analyze_convergence(self):
         """Analyze when the policy converged"""
@@ -1577,14 +1685,14 @@ class HRLTrainingLoop:
             plot_filename = f"training_logs/rl_analysis_{timestamp}.png"
             plt.savefig(plot_filename, dpi=300, bbox_inches='tight')
             
-            print(f"\n📊 RL Analysis plots saved to: {plot_filename}")
+            print(f"\n[PLOTS] RL Analysis plots saved to: {plot_filename}")
             
             plt.close()
             
         except ImportError:
-            print("⚠️  Matplotlib not available - skipping plot generation")
+            print("[WARNING] Matplotlib not available - skipping plot generation")
         except Exception as e:
-            print(f"⚠️  Failed to generate plots: {e}")
+            print(f"[WARNING] Failed to generate plots: {e}")
 
     def _generate_comprehensive_analysis(self):
         """Generate comprehensive analysis with individual and combined plots"""
@@ -1594,14 +1702,14 @@ class HRLTrainingLoop:
             
             experiment_dir = os.environ.get('EXPERIMENT_DIR', None)
             if not experiment_dir:
-                print("⚠️  No experiment directory found - skipping comprehensive analysis")
+                print("[WARNING] No experiment directory found - skipping comprehensive analysis")
                 return
             
             plots_dir = os.path.join(experiment_dir, 'plots')
             os.makedirs(plots_dir, exist_ok=True)
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             
-            print("\n📊 Generating Comprehensive Analysis Plots...")
+            print("\n[PLOTS] Generating Comprehensive Analysis Plots...")
             
             # ===== INDIVIDUAL PLOTS =====
             
@@ -1625,7 +1733,7 @@ class HRLTrainingLoop:
             plt.tight_layout()
             plt.savefig(os.path.join(plots_dir, f'learning_curve_{timestamp}.png'), dpi=300, bbox_inches='tight')
             plt.close()
-            print(f"   ✓ Saved: learning_curve_{timestamp}.png")
+            print(f"   [SAVED] Saved: learning_curve_{timestamp}.png")
             
             # 2. Option Usage Distribution (Individual)
             fig2, ax2 = plt.subplots(figsize=(10, 8))
@@ -1645,7 +1753,7 @@ class HRLTrainingLoop:
                 plt.tight_layout()
                 plt.savefig(os.path.join(plots_dir, f'option_distribution_{timestamp}.png'), dpi=300, bbox_inches='tight')
                 plt.close()
-                print(f"   ✓ Saved: option_distribution_{timestamp}.png")
+                print(f"   [SAVED] Saved: option_distribution_{timestamp}.png")
             
             # 3. Option Evolution Over Time (NEW!)
             fig3, ax3 = plt.subplots(figsize=(14, 8))
@@ -1691,7 +1799,7 @@ class HRLTrainingLoop:
             plt.tight_layout()
             plt.savefig(os.path.join(plots_dir, f'option_evolution_{timestamp}.png'), dpi=300, bbox_inches='tight')
             plt.close()
-            print(f"   ✓ Saved: option_evolution_{timestamp}.png")
+            print(f"   [SAVED] Saved: option_evolution_{timestamp}.png")
             
             # 4. Reward Distribution (Individual)
             fig4, ax4 = plt.subplots(figsize=(10, 6))
@@ -1705,7 +1813,7 @@ class HRLTrainingLoop:
             plt.tight_layout()
             plt.savefig(os.path.join(plots_dir, f'reward_distribution_{timestamp}.png'), dpi=300, bbox_inches='tight')
             plt.close()
-            print(f"   ✓ Saved: reward_distribution_{timestamp}.png")
+            print(f"   [SAVED] Saved: reward_distribution_{timestamp}.png")
             
             # ===== COMBINED MEGA PLOT =====
             fig = plt.figure(figsize=(20, 12))
@@ -1774,12 +1882,12 @@ class HRLTrainingLoop:
             plt.suptitle('Comprehensive Training Analysis', fontsize=18, fontweight='bold')
             plt.savefig(os.path.join(plots_dir, f'comprehensive_analysis_{timestamp}.png'), dpi=300, bbox_inches='tight')
             plt.close()
-            print(f"   ✓ Saved: comprehensive_analysis_{timestamp}.png")
+            print(f"   [SAVED] Saved: comprehensive_analysis_{timestamp}.png")
             
-            print(f"\n✅ All analysis plots saved to: {plots_dir}")
+            print(f"\n[SUCCESS] All analysis plots saved to: {plots_dir}")
             
         except Exception as e:
-            print(f"⚠️  Failed to generate comprehensive analysis: {e}")
+            print(f"[WARNING] Failed to generate comprehensive analysis: {e}")
             import traceback
             traceback.print_exc()
     
@@ -1798,19 +1906,34 @@ class HRLTrainingLoop:
                 filename = f"training_log_{timestamp}.json"
                 filepath = os.path.join(logs_dir, filename)
             else:
-                # Fallback to date-organized directory
-                date_folder = now.strftime("%Y-%m-%d")
-                logs_dir = "training_logs"
-                if not os.path.exists(logs_dir):
-                    os.makedirs(logs_dir)
+                # Fallback to date-organized directory under experiments/
+                date_str = now.strftime("%Y%m%d")
+                timestamp_full = now.strftime("%Y%m%d_%H%M%S")
+                exp_base = Path("training_logs/experiments")
+                date_folder = exp_base / date_str
+                date_folder.mkdir(parents=True, exist_ok=True)
                 
-                date_dir = os.path.join(logs_dir, date_folder)
-                if not os.path.exists(date_dir):
-                    os.makedirs(date_dir)
-                    print(f"📁 Created new log directory: {date_dir}")
+                # Create a fallback experiment folder for this date
+                existing = list(date_folder.glob("exp_*"))
+                if existing:
+                    numbers = []
+                    for e in existing:
+                        parts = e.name.split('_')
+                        if len(parts) > 1 and parts[1].isdigit():
+                            numbers.append(int(parts[1]))
+                    next_num = max(numbers) + 1 if numbers else 1
+                else:
+                    next_num = 1
+                
+                fallback_exp_dir = date_folder / f"exp_{next_num:03d}_{timestamp_full}"
+                fallback_exp_dir.mkdir(exist_ok=True)
+                logs_dir = fallback_exp_dir / "logs"
+                logs_dir.mkdir(exist_ok=True)
+                
+                print(f"[WARNING] EXPERIMENT_DIR not set, using fallback: {fallback_exp_dir}")
                 
                 filename = f"training_log_{timestamp}.json"
-                filepath = os.path.join(date_dir, filename)
+                filepath = logs_dir / filename
             
             # Prepare data for JSON serialization
             training_data = {
@@ -1848,14 +1971,476 @@ class HRLTrainingLoop:
                 
                 training_data["training_history"].append(serializable_step)
             
-            # Save to file
-            with open(filepath, 'w') as f:
+            # Save to file (ensure filepath is a string)
+            filepath_str = str(filepath) if isinstance(filepath, Path) else filepath
+            with open(filepath_str, 'w', encoding='utf-8') as f:
                 json.dump(training_data, f, indent=2)
             
-            print(f"💾 Training log saved to: {filepath}")
+            print(f"[SAVED] Training log saved to: {filepath_str}")
             
         except Exception as e:
-            print(f"❌ Error saving training log: {e}")
+            print(f"[ERROR] Error saving training log: {e}")
+    
+    def _save_rl_metrics(self, logs_dir: str, timestamp: str, training_time: float):
+        """Save comprehensive RL metrics JSON file"""
+        try:
+            # Update total training time
+            self.metrics_tracker.total_training_time_seconds = training_time
+            
+            # Get RL metrics summary
+            rl_metrics = self.metrics_tracker.get_rl_metrics_summary()
+            
+            # Add training efficiency data
+            rl_metrics["training_efficiency"]["total_time_seconds"] = training_time
+            rl_metrics["training_efficiency"]["updates_per_episode"] = self.metrics_tracker.updates_per_episode
+            
+            # Save to JSON
+            rl_metrics_file = os.path.join(logs_dir, f"rl_metrics_{timestamp}.json")
+            with open(rl_metrics_file, 'w') as f:
+                json.dump(rl_metrics, f, indent=2)
+            
+            print(f"   [SAVED] Saved: rl_metrics_{timestamp}.json")
+        except Exception as e:
+            print(f"   [WARNING] Failed to save RL metrics: {e}")
+    
+    def _save_learning_curves(self, logs_dir: str, timestamp: str):
+        """Save learning curves data JSON file"""
+        try:
+            learning_curves = {
+                "episode_returns": self.episode_rewards,
+                "value_estimates": self.metrics_tracker.value_estimates,
+                "policy_entropy": self.metrics_tracker.entropies,
+                "value_losses": self.metrics_tracker.value_losses,
+                "policy_losses": self.metrics_tracker.policy_losses,
+                "termination_losses": self.metrics_tracker.termination_losses,
+                "advantages": self.metrics_tracker.advantages
+            }
+            
+            # Get smoothed learning curve
+            smoothed, stds = self.metrics_tracker.get_learning_curve(window=50)
+            learning_curves["smoothed_returns"] = smoothed
+            learning_curves["return_stds"] = stds
+            
+            learning_curves_file = os.path.join(logs_dir, f"learning_curves_{timestamp}.json")
+            with open(learning_curves_file, 'w') as f:
+                json.dump(learning_curves, f, indent=2)
+            
+            print(f"   [SAVED] Saved: learning_curves_{timestamp}.json")
+        except Exception as e:
+            print(f"   [WARNING] Failed to save learning curves: {e}")
+    
+    def _save_convergence_report(self, logs_dir: str, timestamp: str, training_time: float):
+        """Save convergence analysis report JSON file"""
+        try:
+            convergence_episode = self._analyze_convergence()
+            
+            # Calculate convergence metrics
+            convergence_data = {
+                "episode": convergence_episode,
+                "samples": None,
+                "time_seconds": None,
+                "window_mean": None,
+                "window_std": None,
+                "criterion": "sliding_window",
+                "threshold": 0.05
+            }
+            
+            if convergence_episode is not None:
+                # Calculate samples to convergence
+                total_samples = len(self.monitor.training_history)
+                samples_per_episode = total_samples / self.current_episode if self.current_episode > 0 else 0
+                convergence_data["samples"] = int(convergence_episode * samples_per_episode)
+                
+                # Calculate time to convergence
+                time_per_episode = training_time / self.current_episode if self.current_episode > 0 else 0
+                convergence_data["time_seconds"] = convergence_episode * time_per_episode
+                
+                # Calculate window statistics
+                window_size = 50
+                if convergence_episode + window_size <= len(self.episode_rewards):
+                    convergence_window = self.episode_rewards[convergence_episode:convergence_episode+window_size]
+                    convergence_data["window_mean"] = float(np.mean(convergence_window))
+                    convergence_data["window_std"] = float(np.std(convergence_window))
+            
+            # Update metrics tracker with convergence data
+            self.metrics_tracker.update_convergence_metrics(convergence_data)
+            
+            # Save convergence report
+            convergence_file = os.path.join(logs_dir, f"convergence_report_{timestamp}.json")
+            with open(convergence_file, 'w') as f:
+                json.dump(convergence_data, f, indent=2)
+            
+            print(f"   [SAVED] Saved: convergence_report_{timestamp}.json")
+        except Exception as e:
+            print(f"   [WARNING] Failed to save convergence report: {e}")
+    
+    def _organize_major_results(self, experiment_dir: str, training_time: float, timestamp: str):
+        """
+        Organize training results in major_results/ directory.
+        
+        Args:
+            experiment_dir: Path to experiment directory
+            training_time: Total training time in seconds
+            timestamp: Timestamp string
+        """
+        from pathlib import Path
+        import json
+        from src.utils.major_results_manager import MajorResultsManager
+        from src.utils.major_results_templates import create_readme_file
+        from src.utils.metrics_validator import MetricsValidator
+        
+        print("\n[ORGANIZING] Organizing results in major_results/...")
+        
+        # Initialize manager
+        manager = MajorResultsManager()
+        
+        # Detect model name from experiment directory or metadata
+        exp_path = Path(experiment_dir)
+        model_name = self._detect_model_name(exp_path)
+        
+        print(f"   Detected model: {model_name}")
+        
+        # Extract date from timestamp (YYYYMMDD_HHMMSS -> YYYYMMDD)
+        date_str = timestamp.split('_')[0] if '_' in timestamp else datetime.now().strftime("%Y%m%d")
+        
+        # Create experiment folder with date and auto-incrementing number
+        exp_dir = manager.create_experiment_folder(model_name, date_str=date_str)
+        
+        print(f"   Created experiment folder: {exp_dir.name}")
+        
+        # Load metadata for README
+        metadata = {}
+        metadata_path = exp_path / "metadata.json"
+        if metadata_path.exists():
+            with open(metadata_path, 'r') as f:
+                metadata = json.load(f)
+        
+        # Create README
+        create_readme_file(exp_dir, model_name, metadata)
+        print(f"   [SUCCESS] Created README.md")
+        
+        # Copy training results
+        success = manager.copy_training_results(str(exp_path), exp_dir, copy_maps=True)
+        if success:
+            print(f"   [SUCCESS] Copied training results")
+        else:
+            print(f"   [WARNING] Failed to copy some training results")
+        
+        # Consolidate metrics
+        training_dir = exp_dir / "training"
+        manager.consolidate_metrics(exp_dir, training_dir)
+        print(f"   [SUCCESS] Consolidated metrics")
+        
+        # Generate basic visualizations
+        self._generate_basic_visualizations(exp_dir, model_name)
+        
+        # Run evaluation automatically
+        self._run_automatic_evaluation(exp_dir, model_name)
+        
+        # Validate metrics
+        validator = MetricsValidator()
+        validation_results = validator.validate_all(exp_dir)
+        
+        # Save validation report
+        validator.save_validation_report(exp_dir)
+        
+        # Print validation summary
+        missing = []
+        for category, results in validation_results.items():
+            for item, exists in results.items():
+                if not exists and 'count' not in item.lower():
+                    missing.append(f"{category}/{item}")
+        
+        if missing:
+            print(f"   [WARNING] Missing items: {len(missing)} (see validation_report.txt)")
+        else:
+            print(f"   [SUCCESS] All required metrics present")
+        
+        print(f"\n[SUCCESS] Results organized in: {exp_dir}")
+        print(f"   View README: {exp_dir / 'README.md'}")
+        print(f"   Validation: {exp_dir / 'validation_report.txt'}")
+    
+    def _detect_model_name(self, experiment_dir: Path) -> str:
+        """
+        Detect model name from experiment directory name or metadata.
+        
+        Args:
+            experiment_dir: Path to experiment directory
+            
+        Returns:
+            Normalized model name
+        """
+        # Try to extract from directory name
+        dir_name = experiment_dir.name.lower()
+        
+        # Check for model indicators in directory name
+        if 'baseline' in dir_name:
+            return 'baseline'
+        elif 'h1' in dir_name or 'flat' in dir_name:
+            return 'h1_flat_policy'
+        elif 'h2' in dir_name or 'termination' in dir_name:
+            return 'h2_learned_terminations'
+        elif 'h3' in dir_name or 'minimal' in dir_name or 'prompt' in dir_name:
+            return 'h3_minimal_prompts'
+        elif 'h5' in dir_name or 'state' in dir_name or 'ablation' in dir_name:
+            return 'h5_state_ablation'
+        elif 'h6' in dir_name or 'transition' in dir_name:
+            return 'h6_transition_reward'
+        elif 'h7' in dir_name or 'hybrid' in dir_name or 'bert' in dir_name:
+            return 'h7_hybrid_bert'
+        
+        # Try metadata
+        metadata_path = experiment_dir / "metadata.json"
+        if metadata_path.exists():
+            try:
+                with open(metadata_path, 'r') as f:
+                    metadata = json.load(f)
+                    exp_name = metadata.get('experiment_name', '').lower()
+                    if exp_name:
+                        # Use MajorResultsManager to normalize
+                        from src.utils.major_results_manager import MajorResultsManager
+                        manager = MajorResultsManager()
+                        return manager.normalize_model_name(exp_name)
+            except:
+                pass
+        
+        # Default to baseline
+        return 'baseline'
+    
+    def _generate_basic_visualizations(self, model_dir: Path, model_name: str):
+        """
+        Generate basic visualizations for major_results.
+        
+        Args:
+            model_dir: Path to model directory in major_results/
+            model_name: Model name
+        """
+        try:
+            viz_basic_dir = model_dir / "visualizations" / "basic"
+            
+            # Generate learning curve
+            if len(self.episode_rewards) > 0:
+                self._plot_basic_learning_curve(viz_basic_dir)
+            
+            # Generate convergence analysis (always generate, even if convergence not detected)
+            if len(self.episode_rewards) > 0:
+                self._plot_basic_convergence(viz_basic_dir)
+            
+            # Generate RL metrics summary
+            if len(self.metrics_tracker.value_losses) > 0:
+                self._plot_basic_rl_metrics(viz_basic_dir)
+            
+            print(f"   [SUCCESS] Generated basic visualizations")
+            
+        except Exception as e:
+            print(f"   [WARNING] Failed to generate some visualizations: {e}")
+            import traceback
+            traceback.print_exc()
+    
+    def _plot_basic_learning_curve(self, output_dir: Path):
+        """Generate basic learning curve plot."""
+        try:
+            import matplotlib.pyplot as plt
+            import numpy as np
+            
+            episodes = np.arange(1, len(self.episode_rewards) + 1)
+            
+            fig, ax = plt.subplots(figsize=(10, 6))
+            ax.plot(episodes, self.episode_rewards, alpha=0.3, color='steelblue', linewidth=0.5, label='Episode Returns')
+            
+            # Moving average
+            if len(self.episode_rewards) >= 50:
+                window = 50
+                ma = []
+                for i in range(len(self.episode_rewards)):
+                    start = max(0, i - window + 1)
+                    ma.append(np.mean(self.episode_rewards[start:i+1]))
+                ax.plot(episodes, ma, color='orange', linewidth=2, label=f'{window}-Episode MA')
+            
+            ax.set_xlabel('Episode')
+            ax.set_ylabel('Return')
+            ax.set_title('Learning Curve')
+            ax.legend()
+            ax.grid(True, alpha=0.3)
+            
+            plt.tight_layout()
+            plt.savefig(output_dir / 'learning_curve.png', dpi=300, bbox_inches='tight')
+            plt.close()
+            
+        except Exception as e:
+            logger.warning(f"Failed to plot learning curve: {e}")
+    
+    def _plot_basic_convergence(self, output_dir: Path):
+        """Generate basic convergence analysis plot."""
+        try:
+            import matplotlib.pyplot as plt
+            import numpy as np
+            
+            if len(self.episode_rewards) == 0:
+                return
+            
+            episodes = np.arange(1, len(self.episode_rewards) + 1)
+            
+            fig, ax = plt.subplots(figsize=(10, 6))
+            ax.plot(episodes, self.episode_rewards, alpha=0.3, color='steelblue', linewidth=0.5, label='Episode Returns')
+            
+            # Add moving average if we have enough episodes
+            if len(self.episode_rewards) >= 10:
+                window = min(10, len(self.episode_rewards))
+                ma = []
+                for i in range(len(self.episode_rewards)):
+                    start = max(0, i - window + 1)
+                    ma.append(np.mean(self.episode_rewards[start:i+1]))
+                ax.plot(episodes, ma, color='orange', linewidth=2, label=f'{window}-Episode MA')
+            
+            # Mark convergence point if detected
+            conv_ep = None
+            if hasattr(self.metrics_tracker, 'convergence_episode') and self.metrics_tracker.convergence_episode:
+                conv_ep = self.metrics_tracker.convergence_episode
+                if conv_ep is not None and conv_ep <= len(self.episode_rewards):
+                    ax.axvline(x=conv_ep, color='red', linestyle='--', linewidth=2, label=f'Convergence (ep {conv_ep})')
+                    ax.scatter([conv_ep], [self.episode_rewards[conv_ep-1]], color='red', s=100, zorder=5)
+            else:
+                # Show that convergence hasn't been detected yet
+                ax.text(0.5, 0.95, 'Convergence not yet detected\n(requires more episodes)', 
+                       transform=ax.transAxes, ha='center', va='top',
+                       bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
+            
+            ax.set_xlabel('Episode')
+            ax.set_ylabel('Return')
+            ax.set_title('Convergence Analysis')
+            ax.legend()
+            ax.grid(True, alpha=0.3)
+            
+            plt.tight_layout()
+            plt.savefig(output_dir / 'convergence_analysis.png', dpi=300, bbox_inches='tight')
+            plt.close()
+            
+        except Exception as e:
+            logger.warning(f"Failed to plot convergence: {e}")
+    
+    def _plot_basic_rl_metrics(self, output_dir: Path):
+        """Generate basic RL metrics summary plot."""
+        try:
+            import matplotlib.pyplot as plt
+            import numpy as np
+            
+            fig, axes = plt.subplots(2, 2, figsize=(12, 10))
+            
+            # Value loss
+            if self.metrics_tracker.value_losses:
+                axes[0, 0].plot(self.metrics_tracker.value_losses, alpha=0.7)
+                axes[0, 0].set_title('Value Loss')
+                axes[0, 0].set_xlabel('Update')
+                axes[0, 0].set_ylabel('Loss')
+                axes[0, 0].grid(True, alpha=0.3)
+            
+            # Policy loss
+            if self.metrics_tracker.policy_losses:
+                axes[0, 1].plot(self.metrics_tracker.policy_losses, alpha=0.7)
+                axes[0, 1].set_title('Policy Loss')
+                axes[0, 1].set_xlabel('Update')
+                axes[0, 1].set_ylabel('Loss')
+                axes[0, 1].grid(True, alpha=0.3)
+            
+            # Entropy
+            if self.metrics_tracker.entropies:
+                axes[1, 0].plot(self.metrics_tracker.entropies, alpha=0.7)
+                axes[1, 0].set_title('Policy Entropy')
+                axes[1, 0].set_xlabel('Update')
+                axes[1, 0].set_ylabel('Entropy')
+                axes[1, 0].grid(True, alpha=0.3)
+            
+            # Value estimates
+            if self.metrics_tracker.value_estimates:
+                axes[1, 1].plot(self.metrics_tracker.value_estimates, alpha=0.7)
+                axes[1, 1].set_title('Value Estimates')
+                axes[1, 1].set_xlabel('Episode')
+                axes[1, 1].set_ylabel('Value')
+                axes[1, 1].grid(True, alpha=0.3)
+            
+            plt.tight_layout()
+            plt.savefig(output_dir / 'rl_metrics_summary.png', dpi=300, bbox_inches='tight')
+            plt.close()
+            
+        except Exception as e:
+            logger.warning(f"Failed to plot RL metrics: {e}")
+    
+    def _run_automatic_evaluation(self, exp_dir: Path, model_name: str):
+        """
+        Automatically run evaluation script for the model after training.
+        
+        Args:
+            exp_dir: Path to experiment directory in major_results/
+            model_name: Normalized model name
+        """
+        import subprocess
+        import sys
+        
+        # Map model names to their evaluation scripts
+        # Baseline runs H2 evaluation (learned terminations analysis)
+        evaluation_scripts = {
+            'baseline': 'experiments/h2_learned_terminations/evaluate.py',  # Baseline analyzed for H2
+            'h1_flat_policy': 'experiments/h1_option_structure/evaluate.py',
+            'h2_learned_terminations': 'experiments/h2_learned_terminations/evaluate.py',
+            'h3_minimal_prompts': 'experiments/h3_prompt_headers/evaluate.py',
+            'h5_state_ablation': 'experiments/h5_state_ablation/evaluate.py',
+            'h6_transition_reward': 'experiments/h6_transition_reward/evaluate.py',
+            'h7_hybrid_bert': 'experiments/h7_hybrid_bert/evaluate.py',
+        }
+        
+        eval_script = evaluation_scripts.get(model_name)
+        if not eval_script:
+            # No evaluation script for this model
+            print(f"   [INFO] No evaluation script for model: {model_name}")
+            return
+        
+        eval_script_path = Path(eval_script)
+        if not eval_script_path.exists():
+            print(f"   [WARNING] Evaluation script not found: {eval_script}")
+            return
+        
+        print(f"\n[EVALUATION] Running automatic evaluation...")
+        print(f"   Script: {eval_script}")
+        
+        # Create evaluation output directory
+        eval_output_dir = exp_dir / 'evaluation'
+        eval_output_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Run evaluation script
+        try:
+            cmd = [
+                sys.executable,
+                str(eval_script_path),
+                '--experiment-dir', str(exp_dir),
+                '--output-dir', str(eval_output_dir)
+            ]
+            
+            result = subprocess.run(
+                cmd,
+                cwd=Path.cwd(),
+                capture_output=True,
+                text=True,
+                encoding='utf-8',
+                errors='replace'
+            )
+            
+            if result.returncode == 0:
+                print(f"   [SUCCESS] Evaluation complete")
+                if result.stdout:
+                    # Print last few lines of output
+                    lines = result.stdout.strip().split('\n')
+                    for line in lines[-5:]:
+                        if line.strip():
+                            print(f"   {line}")
+            else:
+                print(f"   [WARNING] Evaluation failed with return code {result.returncode}")
+                if result.stderr:
+                    print(f"   Error: {result.stderr[:200]}")
+        except Exception as e:
+            print(f"   [WARNING] Failed to run evaluation: {e}")
+            import traceback
+            traceback.print_exc()
 
 
 def main():

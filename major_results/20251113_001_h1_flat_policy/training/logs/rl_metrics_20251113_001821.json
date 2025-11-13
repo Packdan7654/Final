@@ -1,0 +1,38 @@
+{
+  "convergence": {
+    "episode": null,
+    "samples": null,
+    "time_seconds": null,
+    "window_mean": null,
+    "window_std": null
+  },
+  "learning_dynamics": {
+    "gradient_norms": [],
+    "update_norms": [],
+    "td_errors": [],
+    "value_accuracy": null
+  },
+  "training_efficiency": {
+    "samples_per_second": [],
+    "updates_per_episode": [],
+    "time_per_episode": [],
+    "total_time_seconds": 0.03848671913146973,
+    "time_to_target_return": null
+  },
+  "policy_learning": {
+    "entropy_over_time": [],
+    "exploration_rate": [],
+    "exploitation_ratio": []
+  },
+  "value_learning": {
+    "value_estimates": [],
+    "value_variance": [],
+    "value_bias": [],
+    "convergence_episode": null
+  },
+  "stability": {
+    "stability_score": null,
+    "loss_spikes": [],
+    "gradient_explosions": []
+  }
+}

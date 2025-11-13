@@ -20,6 +20,9 @@ import numpy as np
 from transformers import AutoTokenizer, AutoModel
 from typing import List, Dict, Any, Optional, Tuple
 import logging
+import os
+
+from src.utils.dialoguebert_model import DialogueBERTModel
 
 logger = logging.getLogger(__name__)
 
@@ -28,27 +31,42 @@ class DialogueBERTIntentRecognizer:
     """
     DialogueBERT based intent recognition for museum dialogue agent.
     
+    Implements DialogueBERT architecture (Zhang et al. 2021) with:
+    - Turn embeddings: Track turn position in dialogue (0-indexed)
+    - Role embeddings: Distinguish user (0) vs system/agent (1)
+    
     DialogueBERT advantages over standard BERT:
     - Turn-order and role encoding for dialogue context
     - Multi-turn conversation understanding
     - Better intent recognition accuracy in dialogues
     - Dialogue state tracking capabilities
+    
+    Architecture:
+    - Base model: BERT (bert-base-uncased) with pre-trained weights
+    - Additional embeddings: Turn embedding (50 turns) + Role embedding (2 roles)
+    - Final embedding = TokenEmbedding + PositionEmbedding + TurnEmbedding + RoleEmbedding
     """
     
     def __init__(self, model_name: str = "bert-base-uncased", 
-                 device: Optional[str] = None):
+                 device: Optional[str] = None,
+                 mode: str = "dialoguebert"):
         """
         Initialize DialogueBERT intent recognizer.
         
+        Loads DialogueBERT model with turn and role embeddings, or standard BERT
+        depending on mode parameter.
+        
         Args:
-            model_name: HuggingFace model name for base BERT model
+            model_name: HuggingFace model name for base BERT model (default: bert-base-uncased)
             device: Device to run model on ('cpu', 'cuda', or None for auto)
+            mode: "dialoguebert" (default) for DialogueBERT with turn/role embeddings,
+                  "standard_bert" for standard BERT without turn/role embeddings
         """
         self.model_name = model_name
         self.device = device or ('cuda' if torch.cuda.is_available() else 'cpu')
+        self.mode = mode.lower()
         
         # Check if we should use offline mode (skip model loading)
-        import os
         if os.environ.get('TRANSFORMERS_OFFLINE') == '1' or os.environ.get('HRL_FAST_MODE') == '1':
             logger.info("FAST MODE: Using fallback embeddings (no model loading)")
             self.model = None
@@ -56,17 +74,30 @@ class DialogueBERTIntentRecognizer:
             return
         
         try:
-            # Load DialogueBERT tokenizer and model (BERT backbone with dialogue features)
+            # Load tokenizer (same for both modes)
             self.tokenizer = AutoTokenizer.from_pretrained(model_name)
-            self.model = AutoModel.from_pretrained(model_name)
-            self.model.to(self.device)
-            self.model.eval()
             
-            logger.info(f"DialogueBERT loaded successfully on {self.device}")
-            logger.info(f"Model: {model_name}")
+            if self.mode == "standard_bert":
+                # Load standard BERT model (no turn/role embeddings)
+                self.model = AutoModel.from_pretrained(model_name)
+                self.model.to(self.device)
+                self.model.eval()
+                logger.info(f"Standard BERT loaded successfully on {self.device}")
+                logger.info(f"Model: {model_name} (standard BERT, no turn/role embeddings)")
+            else:
+                # Load DialogueBERT model with turn and role embeddings
+                self.model = DialogueBERTModel(
+                    base_model_name=model_name,
+                    max_turns=50,  # Support up to 50 turns
+                    embedding_dim=768  # BERT-base embedding dimension
+                )
+                self.model.to(self.device)
+                self.model.eval()
+                logger.info(f"DialogueBERT loaded successfully on {self.device}")
+                logger.info(f"Model: {model_name} with turn/role embeddings")
             
         except Exception as e:
-            logger.error(f"Failed to load DialogueBERT: {e}")
+            logger.error(f"Failed to load model: {e}")
             logger.info("Falling back to rule-based embeddings")
             self.model = None
             self.tokenizer = None
@@ -84,13 +115,17 @@ class DialogueBERTIntentRecognizer:
             self.model = None
             self.tokenizer = None
     
-    def get_intent_embedding(self, utterance: str, role: str = "user") -> np.ndarray:
+    def get_intent_embedding(self, utterance: str, role: str = "user", 
+                            turn_number: Optional[int] = None) -> np.ndarray:
         """
-        Generate intent embedding for a visitor utterance using DialogueBERT.
+        Generate intent embedding for a visitor utterance.
+        
+        Uses DialogueBERT (with turn/role embeddings) or standard BERT depending on mode.
         
         Args:
             utterance: Visitor's utterance text
             role: Speaker role ("user" or "system")
+            turn_number: Turn number in dialogue (0-indexed, optional)
             
         Returns:
             Intent embedding vector of shape (768,)
@@ -102,46 +137,83 @@ class DialogueBERTIntentRecognizer:
             return self._fallback_intent_embedding(utterance)
         
         try:
-            # DialogueBERT approach: Add role markers for dialogue context
-            if role.lower() == "user":
-                # Prefix with role identifier for user utterances
-                processed_text = f"user: {utterance}"
+            if self.mode == "standard_bert":
+                # Standard BERT: tokenize and get [CLS] token (no turn/role embeddings)
+                inputs = self.tokenizer(
+                    utterance,
+                    return_tensors="pt",
+                    add_special_tokens=True,
+                    truncation=True,
+                    max_length=512,
+                    padding=True
+                )
+                input_ids = inputs['input_ids'].to(self.device)
+                attention_mask = inputs.get('attention_mask', None)
+                if attention_mask is not None:
+                    attention_mask = attention_mask.to(self.device)
+                
+                with torch.no_grad():
+                    outputs = self.model(
+                        input_ids=input_ids,
+                        attention_mask=attention_mask,
+                        return_dict=True
+                    )
+                    # Get [CLS] token embedding
+                    intent_embedding = outputs.last_hidden_state[:, 0, :]
+                
+                return intent_embedding.cpu().numpy().flatten()
             else:
-                # Prefix with role identifier for system/agent utterances
-                processed_text = f"system: {utterance}"
-            
-            # Tokenize with DialogueBERT approach (BERT with dialogue context)
-            inputs = self.tokenizer(
-                processed_text,
-                return_tensors="pt",
-                add_special_tokens=True,
-                truncation=True,
-                max_length=512,
-                padding=True
-            )
-            
-            # Move inputs to device
-            inputs = {k: v.to(self.device) for k, v in inputs.items()}
-            
-            # Generate embeddings
-            with torch.no_grad():
-                outputs = self.model(**inputs)
-                # Use [CLS] token embedding as intent representation
-                intent_embedding = outputs.last_hidden_state[:, 0, :].cpu().numpy()
-            
-            return intent_embedding.flatten()
+                # DialogueBERT: use turn and role embeddings
+                inputs = self.tokenizer(
+                    utterance,
+                    return_tensors="pt",
+                    add_special_tokens=True,
+                    truncation=True,
+                    max_length=512,
+                    padding=True
+                )
+                
+                input_ids = inputs['input_ids'].to(self.device)
+                attention_mask = inputs.get('attention_mask', None)
+                if attention_mask is not None:
+                    attention_mask = attention_mask.to(self.device)
+                
+                batch_size, seq_len = input_ids.shape
+                
+                # Turn IDs: use turn_number if provided, else default to 0
+                if turn_number is not None:
+                    turn_ids = torch.full((batch_size, seq_len), turn_number, dtype=torch.long, device=self.device)
+                else:
+                    turn_ids = torch.zeros((batch_size, seq_len), dtype=torch.long, device=self.device)
+                
+                # Role IDs: 0 = user, 1 = system/agent
+                role_id = 0 if role.lower() == "user" else 1
+                role_ids = torch.full((batch_size, seq_len), role_id, dtype=torch.long, device=self.device)
+                
+                # Generate embeddings with DialogueBERT (includes turn and role embeddings)
+                with torch.no_grad():
+                    intent_embedding = self.model.get_pooled_output(
+                        input_ids=input_ids,
+                        attention_mask=attention_mask,
+                        turn_ids=turn_ids,
+                        role_ids=role_ids
+                    )
+                
+                return intent_embedding.cpu().numpy().flatten()
             
         except Exception as e:
             logger.warning(f"Error generating intent embedding: {e}")
             return self._fallback_intent_embedding(utterance)
     
-    def get_dialogue_context(self, recent_utterances: List[Tuple[str, str]], 
+    def get_dialogue_context(self, recent_utterances: List[Tuple[str, str, int]], 
                            max_turns: int = 3) -> np.ndarray:
         """
-        Generate dialogue context embedding using DialogueBERT.
+        Generate dialogue context embedding.
+        
+        Uses DialogueBERT (with turn/role embeddings) or standard BERT depending on mode.
         
         Args:
-            recent_utterances: List of (role, text) tuples
+            recent_utterances: List of (role, text, turn_number) tuples
             max_turns: Maximum number of turns to include
             
         Returns:
@@ -151,24 +223,38 @@ class DialogueBERTIntentRecognizer:
             return self._get_empty_context_embedding()
         
         if self.model is None:
-            return self._fallback_context_embedding([u[1] for u in recent_utterances])
+            # Extract just text for fallback
+            texts = [u[1] if len(u) >= 2 else u[0] for u in recent_utterances]
+            return self._fallback_context_embedding(texts)
         
         try:
             # Take last max_turns utterances
             context_utterances = recent_utterances[-max_turns:]
             
-            # Build dialogue text with DialogueBERT role markers
+            # Build dialogue text
             dialogue_parts = []
-            for role, text in context_utterances:
-                if role.lower() == "user":
-                    dialogue_parts.append(f"user: {text}")
-                else:
-                    dialogue_parts.append(f"system: {text}")
+            turn_numbers = []
+            role_ids_list = []
             
-            # Join with separator tokens
+            for utterance_tuple in context_utterances:
+                if len(utterance_tuple) == 3:
+                    role, text, turn_num = utterance_tuple
+                elif len(utterance_tuple) == 2:
+                    # Backward compatibility: (role, text)
+                    role, text = utterance_tuple
+                    turn_num = 0
+                else:
+                    continue
+                
+                dialogue_parts.append(text)
+                turn_numbers.append(turn_num)
+                role_id = 0 if role.lower() == "user" else 1
+                role_ids_list.append(role_id)
+            
+            # Join utterances with [SEP] token
             context_text = " [SEP] ".join(dialogue_parts)
             
-            # Tokenize with DialogueBERT approach
+            # Tokenize
             inputs = self.tokenizer(
                 context_text,
                 return_tensors="pt",
@@ -178,19 +264,49 @@ class DialogueBERTIntentRecognizer:
                 padding=True
             )
             
-            # Move inputs to device
-            inputs = {k: v.to(self.device) for k, v in inputs.items()}
+            input_ids = inputs['input_ids'].to(self.device)
+            attention_mask = inputs.get('attention_mask', None)
+            if attention_mask is not None:
+                attention_mask = attention_mask.to(self.device)
             
-            # Generate context embedding
-            with torch.no_grad():
-                outputs = self.model(**inputs)
-                context_embedding = outputs.last_hidden_state[:, 0, :].cpu().numpy()
-            
-            return context_embedding.flatten()
+            if self.mode == "standard_bert":
+                # Standard BERT: just get [CLS] token (no turn/role embeddings)
+                with torch.no_grad():
+                    outputs = self.model(
+                        input_ids=input_ids,
+                        attention_mask=attention_mask,
+                        return_dict=True
+                    )
+                    context_embedding = outputs.last_hidden_state[:, 0, :]
+                
+                return context_embedding.cpu().numpy().flatten()
+            else:
+                # DialogueBERT: use turn and role embeddings
+                batch_size, seq_len = input_ids.shape
+                
+                # For multi-utterance context, use average turn number
+                avg_turn = int(sum(turn_numbers) / len(turn_numbers)) if turn_numbers else 0
+                turn_ids = torch.full((batch_size, seq_len), avg_turn, dtype=torch.long, device=self.device)
+                
+                # Use role of the last utterance
+                last_role_id = role_ids_list[-1] if role_ids_list else 0
+                role_ids = torch.full((batch_size, seq_len), last_role_id, dtype=torch.long, device=self.device)
+                
+                # Generate context embedding with DialogueBERT
+                with torch.no_grad():
+                    context_embedding = self.model.get_pooled_output(
+                        input_ids=input_ids,
+                        attention_mask=attention_mask,
+                        turn_ids=turn_ids,
+                        role_ids=role_ids
+                    )
+                
+                return context_embedding.cpu().numpy().flatten()
             
         except Exception as e:
             logger.warning(f"Error generating context embedding: {e}")
-            return self._fallback_context_embedding([u[1] for u in recent_utterances])
+            texts = [u[1] if len(u) >= 2 else u[0] for u in recent_utterances]
+            return self._fallback_context_embedding(texts)
     
     def classify_intent_category(self, utterance: str) -> str:
         """
@@ -358,12 +474,22 @@ def get_dialoguebert_recognizer() -> DialogueBERTIntentRecognizer:
     """
     Get global DialogueBERT recognizer instance (singleton pattern).
     
+    Checks environment variable HRL_BERT_MODE:
+    - HRL_BERT_MODE=standard → use standard BERT mode
+    - HRL_BERT_MODE=dialoguebert or unset → use DialogueBERT mode (default)
+    
     Returns:
         DialogueBERTIntentRecognizer instance
     """
     global _dialoguebert_recognizer
     if _dialoguebert_recognizer is None:
-        _dialoguebert_recognizer = DialogueBERTIntentRecognizer()
+        # Check environment variable for mode
+        bert_mode = os.environ.get('HRL_BERT_MODE', 'dialoguebert').lower()
+        if bert_mode == 'standard':
+            mode = 'standard_bert'
+        else:
+            mode = 'dialoguebert'
+        _dialoguebert_recognizer = DialogueBERTIntentRecognizer(mode=mode)
     return _dialoguebert_recognizer
 
 

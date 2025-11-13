@@ -5,7 +5,7 @@ Shows episode-level stats without verbose turn-by-turn details
 
 import sys
 from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, timedelta
 
 class LiveProgressTracker:
     """Clean, real-time training progress display"""
@@ -14,6 +14,7 @@ class LiveProgressTracker:
         self.max_episodes = max_episodes
         self.episode_rewards = []
         self.episode_lengths = []
+        self.episode_times = []
         self.option_counts = defaultdict(int)
         self.current_episode = 0
         self.current_ep_reward = 0.0
@@ -32,10 +33,15 @@ class LiveProgressTracker:
         self.current_ep_turns += 1
         self.option_counts[option] += 1
     
-    def end_episode(self, total_reward, length):
+    def end_episode(self, total_reward, length, episode_time=None):
         """End episode and show summary"""
         self.episode_rewards.append(total_reward)
         self.episode_lengths.append(length)
+        if episode_time is not None:
+            # Store episode time if provided
+            if not hasattr(self, 'episode_times'):
+                self.episode_times = []
+            self.episode_times.append(episode_time)
         self._print_episode_summary()
     
     def _print_episode_summary(self):
@@ -52,6 +58,23 @@ class LiveProgressTracker:
         # Episode progress
         progress_pct = (self.current_episode / self.max_episodes) * 100
         
+        # Calculate ETA and finish time
+        if elapsed > 0 and self.current_episode > 0:
+            eps_per_sec = self.current_episode / elapsed
+            remaining_eps = self.max_episodes - self.current_episode
+            eta_sec = remaining_eps / eps_per_sec if eps_per_sec > 0 else 0
+            eta_hours = int(eta_sec // 3600)
+            eta_mins = int((eta_sec % 3600) // 60)
+            eta_secs = int(eta_sec % 60)
+            
+            # Calculate finish time
+            finish_time = datetime.now() + timedelta(seconds=eta_sec)
+            finish_str = finish_time.strftime("%H:%M:%S")
+            eta_str = f"{eta_hours:02d}:{eta_mins:02d}:{eta_secs:02d}"
+        else:
+            eta_str = "??:??:??"
+            finish_str = "??:??:??"
+        
         # Option distribution (top 3 cumulative)
         total_turns = sum(self.option_counts.values())
         option_dist = {k: (v/total_turns*100) for k, v in self.option_counts.items()} if total_turns > 0 else {}
@@ -61,13 +84,24 @@ class LiveProgressTracker:
         # Current episode turns (not cumulative)
         ep_turns = self.episode_lengths[-1]
         
+        # Episode time (time for this specific episode)
+        if len(self.episode_times) > 0:
+            ep_time_sec = self.episode_times[-1]
+            ep_time_mins = int(ep_time_sec // 60)
+            ep_time_secs = int(ep_time_sec % 60)
+            ep_time_str = f"{ep_time_mins:02d}:{ep_time_secs:02d}"
+        else:
+            ep_time_str = "??:??"
+        
         # Print on new line (no overwriting)
         print(f"Ep {self.current_episode}/{self.max_episodes} ({progress_pct:.1f}%) | "
               f"R: {self.episode_rewards[-1]:.2f} | "
               f"Avg: {recent_avg:.2f} | "
               f"Turns: {ep_turns} | "
               f"{options_str} | "
-              f"⏱ {hours:02d}:{minutes:02d}:{seconds:02d}", flush=True)
+              f"EpTime: {ep_time_str} | "
+              f"Time {hours:02d}:{minutes:02d}:{seconds:02d} | "
+              f"ETA: {eta_str} → {finish_str}", flush=True)
         
         # Every 50 episodes, print detailed progress
         if self.current_episode % 50 == 0:
@@ -99,7 +133,7 @@ class LiveProgressTracker:
         for option, count in sorted(self.option_counts.items(), key=lambda x: -x[1]):
             pct = (count / total_turns * 100) if total_turns > 0 else 0
             bar_len = int(pct / 2)  # Scale to 50 chars max
-            bar = "█" * bar_len
+            bar = "#" * bar_len
             print(f"  {option:15s}: {bar} {pct:5.1f}% ({count})")
         
         # Time estimate

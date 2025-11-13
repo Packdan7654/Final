@@ -65,6 +65,51 @@ class MetricsTracker:
         # Hallucination tracking
         self.hallucination_counts = []
         
+        # RL-specific metrics (for RL plots)
+        self.value_losses = []  # Critic loss per update
+        self.policy_losses = []  # Actor loss per update
+        self.entropies = []  # Policy entropy per update
+        self.value_estimates = []  # Mean value estimate per episode
+        self.advantages = []  # Advantage values per update
+        self.termination_losses = []  # Termination function loss
+        
+        # Enhanced RL metrics tracking
+        # Convergence metrics
+        self.convergence_episode = None
+        self.convergence_samples = None
+        self.convergence_time_seconds = None
+        self.convergence_window_mean = None
+        self.convergence_window_std = None
+        
+        # Learning dynamics
+        self.gradient_norms = []  # L2 norm of gradients per update
+        self.parameter_update_norms = []  # L2 norm of parameter updates per update
+        self.td_errors = []  # Temporal difference errors per update
+        self.value_function_accuracy = None  # MSE between predicted and actual returns
+        
+        # Training efficiency
+        self.samples_per_second = []
+        self.updates_per_episode = []
+        self.time_per_episode = []  # Wall-clock time per episode
+        self.total_training_time_seconds = None
+        self.time_to_target_return = None
+        
+        # Policy learning
+        self.exploration_rate = []  # Action entropy normalized by max entropy
+        self.exploitation_ratio = []  # Ratio of greedy vs exploratory actions
+        self.option_learning_curves = defaultdict(list)  # Per-option return over time
+        self.subaction_learning_curves = defaultdict(list)  # Per-subaction return over time
+        
+        # Value function learning
+        self.value_function_variance = []  # Variance in value estimates
+        self.value_bias = []  # Difference between predicted and actual returns
+        self.value_convergence_episode = None
+        
+        # Stability metrics
+        self.training_stability_score = None
+        self.loss_spikes = []  # Episodes with unusually high losses
+        self.gradient_explosions = []  # Episodes with gradient norm > threshold
+        
     def update_episode(self, episode_data: Dict):
         """Update with complete episode data"""
         self.episode_returns.append(episode_data.get("cumulative_reward", 0.0))
@@ -81,6 +126,10 @@ class MetricsTracker:
             value = episode_data.get(f"reward_{component}", 0.0)
             self.reward_components[component].append(value)
         
+        # Update RL-specific metrics
+        if "mean_value" in episode_data:
+            self.value_estimates.append(episode_data["mean_value"])
+        
         # Update success rates
         if "transition_attempts" in episode_data:
             self.transition_attempts += episode_data["transition_attempts"]
@@ -93,15 +142,54 @@ class MetricsTracker:
         if "hallucinations" in episode_data:
             self.hallucination_counts.append(episode_data["hallucinations"])
     
+    def update_training_stats(self, stats: Dict):
+        """Update with training statistics from ActorCriticTrainer"""
+        if "value_loss" in stats:
+            self.value_losses.append(stats["value_loss"])
+        if "policy_loss" in stats:
+            self.policy_losses.append(stats["policy_loss"])
+        if "entropy" in stats:
+            self.entropies.append(stats["entropy"])
+        if "termination_loss" in stats:
+            self.termination_losses.append(stats["termination_loss"])
+        if "mean_advantage" in stats:
+            self.advantages.append(stats["mean_advantage"])
+        
+        # Enhanced RL metrics
+        if "gradient_norm" in stats:
+            self.gradient_norms.append(stats["gradient_norm"])
+        if "update_norm" in stats:
+            self.parameter_update_norms.append(stats["update_norm"])
+        if "td_error" in stats:
+            if isinstance(stats["td_error"], (list, np.ndarray)):
+                self.td_errors.extend(stats["td_error"] if isinstance(stats["td_error"], list) else stats["td_error"].tolist())
+            else:
+                self.td_errors.append(stats["td_error"])
+    
     def update_turn(self, turn_data: Dict):
         """Update with single turn data"""
         self.turn_rewards.append(turn_data.get("total_reward", 0.0))
         self.turn_dwells.append(turn_data.get("dwell", 0.0))
         
-        option = turn_data.get("option", "Unknown")
-        self.turn_options.append(option)
-        self.option_counts[option] += 1
-        self.current_episode_options[option] += 1
+        # For flat RL, use flat_action_name if available, otherwise use option
+        flat_action_name = turn_data.get("flat_action_name")
+        if flat_action_name:
+            # Flat RL: track flat actions
+            action_key = flat_action_name
+            if not hasattr(self, 'flat_action_counts'):
+                from collections import defaultdict
+                self.flat_action_counts = defaultdict(int)
+            self.flat_action_counts[action_key] += 1
+            # Also store in option_counts for backward compatibility
+            self.option_counts[action_key] += 1
+            self.turn_options.append(action_key)
+            self.current_episode_options[action_key] += 1
+        else:
+            # Hierarchical RL: track options
+            option = turn_data.get("option", "Unknown")
+            self.turn_options.append(option)
+            self.option_counts[option] += 1
+            self.current_episode_options[option] += 1
         
     def update_option_transition(self, from_option: str, to_option: str, duration: int):
         """Track option-to-option transitions and durations"""
@@ -163,9 +251,12 @@ class MetricsTracker:
                 np.mean(self.hallucination_counts) if self.hallucination_counts else 0.0
             ),
             
-            # Reward decomposition
+            # Reward decomposition (total and average per episode)
             "reward_breakdown": {
                 k: np.sum(v) for k, v in self.reward_components.items()
+            },
+            "reward_breakdown_avg": {
+                k: np.mean(v) if len(v) > 0 else 0.0 for k, v in self.reward_components.items()
             }
         }
         
@@ -227,7 +318,16 @@ class MetricsTracker:
             "episode_facts": self.episode_facts,
             "episode_option_usage": self.episode_option_usage,
             "option_counts": dict(self.option_counts),
+            "flat_action_counts": dict(getattr(self, 'flat_action_counts', {})),
             "option_durations": {k: list(v) for k, v in self.option_durations.items()},
+            "option_transitions": {k: dict(v) for k, v in self.option_transitions.items()},
+            # RL-specific metrics
+            "value_losses": self.value_losses,
+            "policy_losses": self.policy_losses,
+            "entropies": self.entropies,
+            "value_estimates": self.value_estimates,
+            "advantages": self.advantages,
+            "termination_losses": self.termination_losses,
             "summary": self.get_summary_statistics()
         }
         
@@ -238,3 +338,74 @@ class MetricsTracker:
             json.dump(data, f, indent=2)
         
         print(f"[INFO] Metrics saved to {filepath}")
+    
+    def update_convergence_metrics(self, convergence_data: Dict):
+        """Store convergence analysis results"""
+        self.convergence_episode = convergence_data.get("episode")
+        self.convergence_samples = convergence_data.get("samples")
+        self.convergence_time_seconds = convergence_data.get("time_seconds")
+        self.convergence_window_mean = convergence_data.get("window_mean")
+        self.convergence_window_std = convergence_data.get("window_std")
+    
+    def update_learning_dynamics(self, gradient_norm: float = None, 
+                                 update_norm: float = None, 
+                                 td_error: float = None):
+        """Store learning dynamics metrics"""
+        if gradient_norm is not None:
+            self.gradient_norms.append(gradient_norm)
+        if update_norm is not None:
+            self.parameter_update_norms.append(update_norm)
+        if td_error is not None:
+            if isinstance(td_error, (list, np.ndarray)):
+                self.td_errors.extend(td_error if isinstance(td_error, list) else td_error.tolist())
+            else:
+                self.td_errors.append(td_error)
+    
+    def update_training_efficiency(self, samples_per_sec: float = None,
+                                   time_per_ep: float = None):
+        """Store training efficiency metrics"""
+        if samples_per_sec is not None:
+            self.samples_per_second.append(samples_per_sec)
+        if time_per_ep is not None:
+            self.time_per_episode.append(time_per_ep)
+    
+    def get_rl_metrics_summary(self) -> Dict:
+        """Return comprehensive RL metrics dictionary"""
+        return {
+            "convergence": {
+                "episode": self.convergence_episode,
+                "samples": self.convergence_samples,
+                "time_seconds": self.convergence_time_seconds,
+                "window_mean": self.convergence_window_mean,
+                "window_std": self.convergence_window_std
+            },
+            "learning_dynamics": {
+                "gradient_norms": self.gradient_norms,
+                "update_norms": self.parameter_update_norms,
+                "td_errors": self.td_errors,
+                "value_accuracy": self.value_function_accuracy
+            },
+            "training_efficiency": {
+                "samples_per_second": self.samples_per_second,
+                "updates_per_episode": self.updates_per_episode,
+                "time_per_episode": self.time_per_episode,
+                "total_time_seconds": self.total_training_time_seconds,
+                "time_to_target_return": self.time_to_target_return
+            },
+            "policy_learning": {
+                "entropy_over_time": self.entropies,
+                "exploration_rate": self.exploration_rate,
+                "exploitation_ratio": self.exploitation_ratio
+            },
+            "value_learning": {
+                "value_estimates": self.value_estimates,
+                "value_variance": self.value_function_variance,
+                "value_bias": self.value_bias,
+                "convergence_episode": self.value_convergence_episode
+            },
+            "stability": {
+                "stability_score": self.training_stability_score,
+                "loss_spikes": self.loss_spikes,
+                "gradient_explosions": self.gradient_explosions
+            }
+        }

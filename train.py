@@ -9,9 +9,20 @@ Unified training script with all features:
 - Parameterization analysis
 
 Usage:
-    python train.py --episodes 600 --device cuda
-    python train.py --episodes 200 --w-engagement 1.0 --w-novelty 0.5
-    python train.py --episodes 500 --map-turns 10,20,30 --save-map-frames
+    # Train baseline (default)
+    python train.py --episodes 500 --device cuda
+    
+    # Train specific variants
+    python train.py --variant baseline --episodes 500 --device cuda
+    python train.py --variant h1 --episodes 500 --device cuda
+    python train.py --variant h3 --episodes 500 --device cuda
+    python train.py --variant h5 --episodes 500 --device cuda
+    python train.py --variant h6 --episodes 500 --device cuda
+    python train.py --variant h7 --episodes 500 --device cuda
+    
+    # Custom reward parameters
+    python train.py --episodes 200 --w-engagement 1.0 --novelty-per-fact 0.5
+    python train.py --episodes 500 --map-interval 10 --save-map-frames
 """
 
 import argparse
@@ -22,9 +33,10 @@ import sys
 from datetime import datetime
 from pathlib import Path
 from src.training.training_loop import HRLTrainingLoop
+from src.flat_rl.training_loop import FlatTrainingLoop
 
 
-def create_experiment_folder(name=None):
+def create_experiment_folder(name=None, experiment_type='minor'):
     """Create organized experiment folder structure with date-based organization."""
     now = datetime.now()
     date_str = now.strftime("%Y%m%d")
@@ -35,10 +47,17 @@ def create_experiment_folder(name=None):
     date_folder = exp_base / date_str
     date_folder.mkdir(parents=True, exist_ok=True)
     
+    if experiment_type == 'major':
+        # Major experiments: major_XXX_YYYYMMDD_HHMMSS
+        prefix = "major"
+        existing = list(date_folder.glob("major_*"))
+    else:
+        # Minor experiments: exp_XXX_YYYYMMDD_HHMMSS
+        prefix = "exp"
+        existing = list(date_folder.glob("exp_*"))
+    
     # Find next experiment number by looking only in the date folder
     # Each date gets its own experiment numbering starting from 001
-    existing = list(date_folder.glob("exp_*"))
-    
     if existing:
         numbers = []
         for e in existing:
@@ -51,9 +70,9 @@ def create_experiment_folder(name=None):
     
     # Create experiment folder inside date folder
     if name:
-        exp_name = f"exp_{next_num:03d}_{name}_{timestamp}"
+        exp_name = f"{prefix}_{next_num:03d}_{name}_{timestamp}"
     else:
-        exp_name = f"exp_{next_num:03d}_{timestamp}"
+        exp_name = f"{prefix}_{next_num:03d}_{timestamp}"
     
     exp_dir = date_folder / exp_name
     exp_dir.mkdir(parents=True, exist_ok=True)
@@ -81,11 +100,11 @@ Reward Configuration (per paper.tex Section 4.7, line 634-637):
 
 Where:
   r^eng_t = dwell_t (engagement from gaze)
-  r^nov_t = 0.15 × |new facts at t| (knowledge novelty, scale α = 0.15)
+  r^nov_t = α × |new facts at t| (knowledge novelty, scale α = 0.25, increased to favor new facts)
   
 Default parameters match paper baseline:
   --w-engagement 1.0              (engagement: r^eng_t = dwell_t × 1.0)
-  --novelty-per-fact 0.15         (novelty scale α: r^nov_t = 0.15 × |new facts|)
+  --novelty-per-fact 0.25         (novelty scale α: r^nov_t = 0.25 × |new facts|, increased to favor new facts)
   --w-responsiveness 0.25          (responsiveness reward scale)
   --w-conclude 0.2                 (conclude bonus per exhibit)
   --w-transition-insufficiency -0.20  (transition penalty when < 2 facts)
@@ -100,32 +119,42 @@ Example:
     )
     
     # ===== CORE TRAINING ARGUMENTS =====
-    parser.add_argument('--episodes', type=int, default=600,
-                       help='Number of training episodes (default: 600)')
+    parser.add_argument('--mode', type=str, default='hrl',
+                       choices=['hrl', 'flat'],
+                       help='Training mode: hierarchical (hrl) or flat (flat). Default: hrl')
+    parser.add_argument('--variant', type=str, default=None,
+                       choices=['baseline', 'h1', 'h3', 'h5', 'h6', 'h7'],
+                       help='Model variant: baseline (default), h1 (flat policy), h3 (minimal prompts), h5 (state ablation), h6 (no transition reward), h7 (hybrid BERT). Note: H2 and H4 are analysis-only (no training). Overrides --mode if specified.')
+    parser.add_argument('--episodes', type=int, default=500,
+                       help='Number of training episodes (default: 500)')
     parser.add_argument('--turns', type=int, default=40,
                        help='Max turns per episode (default: 40)')
-    parser.add_argument('--lr', type=float, default=3e-4,
-                       help='Learning rate (default: 3e-4)')
+    parser.add_argument('--lr', type=float, default=1e-4,
+                       help='Learning rate (default: 1e-4, reduced for stability)')
     parser.add_argument('--gamma', type=float, default=0.99,
                        help='Discount factor (default: 0.99)')
     parser.add_argument('--device', type=str, default='cpu',
                        choices=['cpu', 'cuda'],
                        help='Device for training (default: cpu)')
     parser.add_argument('--name', type=str, default=None,
-                       help='Experiment name (optional identifier)')
+                       help='Experiment name (optional identifier, auto-set from variant)')
+    parser.add_argument('--experiment-type', type=str, default='minor',
+                       choices=['major', 'minor'],
+                       help='Experiment type: major (significant changes) or minor (default: minor)')
     
     # ===== REWARD PARAMETERS (per paper formalization, Section 4.7) =====
-    # Note: Per paper.tex line 637, r^eng_t = dwell_t and r^nov_t = 0.15 × |new facts|
-    # No weights are applied - these are the reward scales themselves
+    # Note: Per paper.tex line 637, r^eng_t = dwell_t and r^nov_t = α × |new facts|
+    # Default α=0.25 (increased from paper baseline 0.15 to favor new facts)
+    # No additional weights are applied - these are the reward scales themselves
     
     parser.add_argument('--w-engagement', type=float, default=1.0,
                        help='Engagement reward scale (default: 1.0, per paper r^eng_t = dwell_t)')
-    parser.add_argument('--novelty-per-fact', type=float, default=0.15,
-                       help='Novelty reward scale α: r^nov_t = α × |new facts| (default: 0.15, per paper.tex line 637)')
+    parser.add_argument('--novelty-per-fact', type=float, default=1.0,
+                       help='Novelty reward scale α: r^nov_t = α × |new facts| (default: 1.0, strongly favors new facts)')
     parser.add_argument('--w-responsiveness', type=float, default=0.25,
                        help='Responsiveness reward scale (default: 0.25)')
-    parser.add_argument('--w-conclude', type=float, default=0.2,
-                       help='Conclude bonus scale per exhibit (default: 0.2)')
+    parser.add_argument('--w-conclude', type=float, default=0.5,
+                       help='Conclude bonus scale per exhibit (default: 0.5, increased to encourage conclusion)')
     
     # Transition insufficiency penalty parameter (per paper.tex Section 4.7)
     # Note: Transition spam is handled at simulator level (reduces dwell time)
@@ -154,6 +183,62 @@ Example:
                        help='Verbose output mode')
     
     args = parser.parse_args()
+    
+    # Handle variant selection - override mode and name if variant is specified
+    variant_configs = {
+        'baseline': {
+            'mode': 'hrl',
+            'name': 'baseline',
+            'loop_class': HRLTrainingLoop,
+            'description': 'Baseline: Hierarchical Option-Critic with Standard BERT'
+        },
+        'h1': {
+            'mode': 'flat',
+            'name': 'h1_flat_policy',
+            'loop_class': FlatTrainingLoop,
+            'description': 'H1: Flat Actor-Critic (no hierarchical structure)'
+        },
+        # H2 is analysis-only, not a training variant
+        # 'h2': {
+        #     'mode': 'hrl',
+        #     'name': 'h2_learned_pacing',
+        #     'loop_class': None,
+        #     'description': 'H2: Learned Pacing Analysis (evaluation only, no training)'
+        # },
+        'h3': {
+            'mode': 'hrl',
+            'name': 'h3_minimal_prompts',
+            'loop_class': None,  # Will import from experiments
+            'description': 'H3: Minimal Prompts (no structured headers)'
+        },
+        'h5': {
+            'mode': 'hrl',
+            'name': 'h5_state_ablation',
+            'loop_class': None,  # Will import from experiments
+            'description': 'H5: State Ablation (dialogue-act-only state)'
+        },
+        'h6': {
+            'mode': 'hrl',
+            'name': 'h6_transition_reward',
+            'loop_class': None,  # Will import from experiments
+            'description': 'H6: No Transition Rewards'
+        },
+        'h7': {
+            'mode': 'hrl',
+            'name': 'h7_hybrid_bert',
+            'loop_class': None,  # Will import from experiments
+            'description': 'H7: Hybrid BERT (standard for intent, DialogueBERT for context)'
+        }
+    }
+    
+    # If variant is specified, override mode and name
+    if args.variant:
+        variant_config = variant_configs[args.variant]
+        args.mode = variant_config['mode']
+        if args.name is None:
+            args.name = variant_config['name']
+        if args.experiment_type == 'minor':
+            args.experiment_type = 'major'  # Variants are major experiments
     
     # Check for Groq API key - try to load from key.txt if not set
     if "GROQ_API_KEY" not in os.environ:
@@ -186,21 +271,35 @@ Example:
             print()
     
     # Create experiment folder
-    exp_dir, exp_num = create_experiment_folder(args.name)
+    exp_dir, exp_num = create_experiment_folder(args.name, args.experiment_type)
     
-    # Set experiment directory environment variable
+    # Convert to absolute path for consistency
+    exp_dir = exp_dir.resolve()
+    
+    # Set experiment directory environment variable (use absolute path)
     os.environ["EXPERIMENT_DIR"] = str(exp_dir)
+    
+    # Set BERT mode for baseline: use standard BERT (no turn/role embeddings)
+    # This can be overridden by setting HRL_BERT_MODE environment variable before running
+    if os.environ.get('HRL_BERT_MODE') is None:
+        os.environ["HRL_BERT_MODE"] = "standard"
+        print("Baseline: Using standard BERT (HRL_BERT_MODE=standard)")
+    else:
+        print(f"Using BERT mode from environment: {os.environ.get('HRL_BERT_MODE')}")
     
     # Save experiment metadata with reward weights
     metadata = {
         "experiment_number": exp_num,
         "experiment_name": args.name or "unnamed",
+        "experiment_type": args.experiment_type,
+        "mode": args.mode,
         "timestamp": datetime.now().isoformat(),
         "episodes": args.episodes,
         "max_turns_per_episode": args.turns,
         "device": args.device,
         "learning_rate": args.lr,
         "gamma": args.gamma,
+        "bert_mode": os.environ.get("HRL_BERT_MODE", "standard"),
         "reward_parameters": {
             "w_engagement": args.w_engagement,
             "novelty_per_fact": args.novelty_per_fact,
@@ -208,7 +307,7 @@ Example:
             "w_conclude": args.w_conclude,
             "w_transition_insufficiency": args.w_transition_insufficiency
         },
-        "note": "Per paper.tex line 637: r^eng_t = dwell_t, r^nov_t = 0.15 × |new facts| (no separate weights). Question spam and transition spam handled at simulator level (reduce dwell).",
+        "note": "Per paper.tex line 637: r^eng_t = dwell_t, r^nov_t = 0.15 × |new facts| (no separate weights). Question spam and transition spam handled at simulator level (reduce dwell). Baseline uses standard BERT (HRL_BERT_MODE=standard).",
         "map_interval": args.map_interval,
         "save_map_frames": args.save_map_frames
     }
@@ -218,7 +317,11 @@ Example:
     
     # Print configuration
     print("=" * 80)
-    print("TRAINING HRL MUSEUM DIALOGUE AGENT")
+    if args.variant:
+        variant_config = variant_configs[args.variant]
+        print(f"TRAINING: {variant_config['description']}")
+    else:
+        print(f"TRAINING {args.mode.upper()} MUSEUM DIALOGUE AGENT")
     print("=" * 80)
     print(f"EXPERIMENT {exp_num:03d}: {exp_dir.name}")
     print(f"Architecture: Actor-Critic (per paper.tex)")
@@ -234,12 +337,12 @@ Example:
     print()
     print("REWARD PARAMETERS (R_t = r^eng + r^nov + r^resp + r^trans + r^conclude, per paper.tex line 634):")
     print(f"  Engagement:         r^eng_t = dwell_t × {args.w_engagement:.2f}")
-    print(f"  Novelty:            r^nov_t = {args.novelty_per_fact:.2f} × |new facts| (per paper.tex line 637)")
+    print(f"  Novelty:            r^nov_t = {args.novelty_per_fact:.2f} × |new facts|")
     print(f"  Responsiveness:     ±{args.w_responsiveness:.2f} (answer questions / deflect penalty)")
     print(f"  Conclude bonus:     {args.w_conclude:.2f} per exhibit covered")
     print(f"  Transition penalty: {args.w_transition_insufficiency:.2f} (scales with fewer facts, per paper.tex Section 4.7)")
     print()
-    print("  Note: Per paper, r^eng_t = dwell_t and r^nov_t = 0.15 × |new facts| (no separate weights)")
+    print("  Note: Default α=1.0 for novelty (strongly favors new facts, increased from 0.25)")
     print("        Question spam and transition spam handled at simulator level (reduce dwell).")
     print("        Transition insufficiency is explicit reward component (3-turn exemption if successful).")
     print()
@@ -259,8 +362,34 @@ Example:
     os.environ["HRL_W_CONCLUDE"] = str(args.w_conclude)
     os.environ["HRL_W_TRANSITION_INSUFFICIENCY"] = str(args.w_transition_insufficiency)
     
-    # Initialize training loop
-    training_loop = HRLTrainingLoop(
+    # Initialize training loop based on variant or mode
+    if args.variant:
+        variant_config = variant_configs[args.variant]
+        if variant_config['loop_class'] is not None:
+            # Use standard loop classes (baseline, h1)
+            loop_cls = variant_config['loop_class']
+        else:
+            # Import variant-specific training loops
+            # Note: H2 is analysis-only, not a training variant
+            if args.variant == 'h3':
+                from experiments.h3_prompt_headers.train import H3TrainingLoop
+                loop_cls = H3TrainingLoop
+            elif args.variant == 'h5':
+                from experiments.h5_state_ablation.train import H5TrainingLoop
+                loop_cls = H5TrainingLoop
+            elif args.variant == 'h6':
+                from experiments.h6_transition_reward.train import H6TrainingLoop
+                loop_cls = H6TrainingLoop
+            elif args.variant == 'h7':
+                from experiments.h7_hybrid_bert.train import H7TrainingLoop
+                loop_cls = H7TrainingLoop
+            else:
+                loop_cls = HRLTrainingLoop
+    else:
+        # Default behavior: use mode
+        loop_cls = HRLTrainingLoop if args.mode == 'hrl' else FlatTrainingLoop
+    
+    training_loop = loop_cls(
         max_episodes=args.episodes,
         max_turns_per_episode=args.turns,
         knowledge_graph_path="museum_knowledge_graph.json",
@@ -324,7 +453,7 @@ Example:
     print("=" * 80)
     
     try:
-        from create_evaluation_plots import HRLEvaluationPlotter
+        from tools.create_evaluation_plots import HRLEvaluationPlotter
         
         plotter = HRLEvaluationPlotter(exp_dir)
         plotter.load_data()
@@ -361,13 +490,21 @@ Example:
         import traceback
         traceback.print_exc()
     
+    # Calculate training duration
+    training_duration_seconds = getattr(training_loop, 'training_duration_seconds', 0)
+    training_duration_hours = training_duration_seconds / 3600
+    training_duration_formatted = f"{int(training_duration_seconds // 3600)}h {int((training_duration_seconds % 3600) // 60)}m {int(training_duration_seconds % 60)}s"
+    
     # Save final summary
     summary = {
         **metadata,
         "status": "completed",
         "completion_time": datetime.now().isoformat(),
         "total_episodes": training_loop.total_episodes,
-        "avg_reward": checkpoint['avg_reward']
+        "avg_reward": checkpoint['avg_reward'],
+        "training_duration_seconds": training_duration_seconds,
+        "training_duration_hours": round(training_duration_hours, 2),
+        "training_duration_formatted": training_duration_formatted
     }
     
     with open(exp_dir / "summary.json", 'w') as f:

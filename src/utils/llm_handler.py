@@ -80,6 +80,12 @@ class FreeLLMHandler:
         self.max_critical_errors = 3  # Allow a few errors before failing
         self.last_critical_error = None
         
+        # Retry configuration for connection errors
+        self.max_retries = 100  # Maximum number of retry attempts
+        self.retry_delay_initial = 2.0  # Initial delay in seconds
+        self.retry_delay_max = 60.0  # Maximum delay in seconds
+        self.retry_delay_multiplier = 1.5  # Exponential backoff multiplier
+        
         if not self.fast_mode:
             # Initialize backend normally
             self._initialize_backend()
@@ -289,74 +295,156 @@ class FreeLLMHandler:
             print(f"[WARN] Mistral API error: {e}")
             return self._fallback_response(prompt)
     
-    def _generate_groq(self, prompt: str, system_prompt: Optional[str]) -> str:
-        """Generate using Groq API with critical error detection."""
-        if not self.groq_available:
-            return self._fallback_response(prompt)
+    def _test_groq_connection(self) -> bool:
+        """
+        Test if Groq API connection is working by making a minimal API call.
+        
+        Returns:
+            True if connection is working, False otherwise
+        """
+        if not self.groq_available or not hasattr(self, 'groq_client'):
+            return False
         
         try:
-            messages = []
-            if system_prompt:
-                messages.append({"role": "system", "content": system_prompt})
-            messages.append({"role": "user", "content": prompt})
-            
-            # Map common model names to Groq model IDs (updated for current models)
-            model_map = {
-                "mistral": "llama-3.3-70b-versatile",  # Use Llama 3.3 as replacement
-                "mixtral": "llama-3.3-70b-versatile",
-                "llama": "llama-3.3-70b-versatile",
-                "llama2": "llama-3.1-70b-versatile",
-                "llama3": "llama-3.3-70b-versatile",
-                "llama-3.3": "llama-3.3-70b-versatile",
-                "llama-3.1": "llama-3.1-70b-versatile",
-                "llama-3.1-8b": "llama-3.1-8b-instant",  # Cheaper 8B model!
-            }
-            groq_model = model_map.get(self.model_name.lower(), self.model_name)
-            
-            response = self.groq_client.chat.completions.create(
-                model=groq_model,
-                messages=messages,
-                temperature=self.temperature,
-                max_tokens=self.max_tokens
+            # Make a minimal test call
+            test_response = self.groq_client.chat.completions.create(
+                model="llama-3.1-8b-instant",
+                messages=[{"role": "user", "content": "test"}],
+                temperature=0.7,
+                max_tokens=5
             )
-            
-            # Reset error count on success
-            self.critical_error_count = 0
-            return response.choices[0].message.content.strip()
-            
-        except Exception as e:
-            error_str = str(e)
-            print(f"[WARN] Groq API error: {e}")
-            
-            # Detect CRITICAL errors that should stop training
-            critical_error_keywords = [
-                'spend_limit_reached',
-                'spend alert threshold',
-                'insufficient_quota',
-                'rate_limit_exceeded',
-                'authentication_error',
-                'invalid_api_key',
-                'account_deactivated'
-            ]
-            
-            is_critical = any(keyword in error_str.lower() for keyword in critical_error_keywords)
-            
-            if is_critical:
-                self.critical_error_count += 1
-                self.last_critical_error = error_str
+            return True
+        except Exception:
+            return False
+    
+    def _generate_groq(self, prompt: str, system_prompt: Optional[str]) -> str:
+        """Generate using Groq API with retry logic for connection errors."""
+        if not self.groq_available:
+            raise LLMCriticalError("Groq API not available - cannot generate response")
+        
+        messages = []
+        if system_prompt:
+            messages.append({"role": "system", "content": system_prompt})
+        messages.append({"role": "user", "content": prompt})
+        
+        # Map common model names to Groq model IDs (updated for current models)
+        model_map = {
+            "mistral": "llama-3.3-70b-versatile",  # Use Llama 3.3 as replacement
+            "mixtral": "llama-3.3-70b-versatile",
+            "llama": "llama-3.3-70b-versatile",
+            "llama2": "llama-3.1-70b-versatile",
+            "llama3": "llama-3.3-70b-versatile",
+            "llama-3.3": "llama-3.3-70b-versatile",
+            "llama-3.1": "llama-3.1-70b-versatile",
+            "llama-3.1-8b": "llama-3.1-8b-instant",  # Cheaper 8B model!
+        }
+        groq_model = model_map.get(self.model_name.lower(), self.model_name)
+        
+        # Retry loop for connection errors
+        import time
+        retry_count = 0
+        retry_delay = self.retry_delay_initial
+        last_error = None
+        
+        while retry_count < self.max_retries:
+            try:
+                response = self.groq_client.chat.completions.create(
+                    model=groq_model,
+                    messages=messages,
+                    temperature=self.temperature,
+                    max_tokens=self.max_tokens
+                )
                 
-                print(f"\n{'='*80}")
-                print(f"CRITICAL LLM ERROR DETECTED ({self.critical_error_count}/{self.max_critical_errors})")
-                print(f"{'='*80}")
-                print(f"Error: {error_str[:200]}")
+                # Success - reset error counts
+                self.critical_error_count = 0
+                if retry_count > 0:
+                    print(f"[OK] Groq API connection restored after {retry_count} retries")
                 
-                if self.critical_error_count >= self.max_critical_errors:
-                    print(f"\nCritical error threshold reached!")
-                    print(f"Training will be stopped to save the model.")
-                    print(f"{'='*80}\n")
-                    raise LLMCriticalError(f"Groq API critical error: {error_str}")
-            
-            return self._fallback_response(prompt)
+                return response.choices[0].message.content.strip()
+                
+            except Exception as e:
+                last_error = e
+                error_str = str(e).lower()
+                
+                # Detect CRITICAL errors that should stop training (no retry)
+                critical_error_keywords = [
+                    'spend_limit_reached',
+                    'spend alert threshold',
+                    'insufficient_quota',
+                    'authentication_error',
+                    'invalid_api_key',
+                    'account_deactivated'
+                ]
+                
+                is_critical = any(keyword in error_str for keyword in critical_error_keywords)
+                
+                if is_critical:
+                    self.critical_error_count += 1
+                    self.last_critical_error = str(e)
+                    
+                    print(f"\n{'='*80}")
+                    print(f"CRITICAL LLM ERROR DETECTED ({self.critical_error_count}/{self.max_critical_errors})")
+                    print(f"{'='*80}")
+                    print(f"Error: {str(e)[:200]}")
+                    
+                    if self.critical_error_count >= self.max_critical_errors:
+                        print(f"\nCritical error threshold reached!")
+                        print(f"Training will be stopped to save the model.")
+                        print(f"{'='*80}\n")
+                        raise LLMCriticalError(f"Groq API critical error: {str(e)}")
+                    else:
+                        # For critical errors that haven't reached threshold, still retry
+                        # but with longer delay
+                        retry_delay = min(retry_delay * 2, self.retry_delay_max)
+                
+                # Check if it's a connection error (retry-able)
+                is_connection_error = any(keyword in error_str for keyword in [
+                    'connection',
+                    'timeout',
+                    'network',
+                    'unreachable',
+                    'refused',
+                    'reset'
+                ])
+                
+                if is_connection_error or not is_critical:
+                    # Connection error - wait and retry
+                    retry_count += 1
+                    
+                    if retry_count == 1:
+                        print(f"[WARN] Groq API connection error: {str(e)[:100]}")
+                        print(f"[RETRY] Waiting for connection to be restored...")
+                    
+                    # Test connection before retrying
+                    print(f"[RETRY] Attempt {retry_count}/{self.max_retries} - Testing connection...")
+                    connection_ok = self._test_groq_connection()
+                    
+                    if connection_ok:
+                        print(f"[OK] Connection test passed, retrying request immediately...")
+                        retry_delay = self.retry_delay_initial  # Reset delay on successful test
+                        # Don't increment retry_count here - we'll retry immediately in the next loop iteration
+                        continue  # Retry immediately
+                    else:
+                        print(f"[WAIT] Connection not ready, waiting {retry_delay:.1f}s before retry...")
+                        time.sleep(retry_delay)
+                        retry_delay = min(retry_delay * self.retry_delay_multiplier, self.retry_delay_max)
+                        # Continue to next retry attempt (retry_count already incremented)
+                else:
+                    # Unknown error - treat as connection error and retry
+                    retry_count += 1
+                    if retry_count == 1:
+                        print(f"[WARN] Groq API error: {str(e)[:100]}")
+                        print(f"[RETRY] Waiting and retrying...")
+                    
+                    print(f"[RETRY] Attempt {retry_count}/{self.max_retries} - Waiting {retry_delay:.1f}s...")
+                    time.sleep(retry_delay)
+                    retry_delay = min(retry_delay * self.retry_delay_multiplier, self.retry_delay_max)
+        
+        # If we've exhausted all retries, raise an error
+        error_msg = f"Groq API connection failed after {self.max_retries} retry attempts."
+        if last_error:
+            error_msg += f" Last error: {str(last_error)}"
+        raise LLMCriticalError(error_msg)
     
     def _fallback_response(self, prompt: str) -> str:
         """
